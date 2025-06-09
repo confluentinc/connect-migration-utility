@@ -1,0 +1,652 @@
+{
+  "templates": [
+    {
+      "template_id": "aws-authentication",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "authentication.method",
+          "type": "STRING",
+          "required": false,
+          "default_value": "Access Keys",
+          "importance": "HIGH",
+          "group": "AWS credentials",
+          "order_in_group": 1,
+          "display_name": "Authentication method",
+          "documentation": "Select how you want to authenticate with AWS.",
+          "recommended_values": [
+            "IAM Roles",
+            "Access Keys"
+          ],
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "provider.integration.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 1,
+            "group_name": "AWS credentials"
+          }
+        },
+        {
+          "name": "provider.integration.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "AWS credentials",
+          "order_in_group": 2,
+          "display_name": "Provider Integration",
+          "documentation": "Select an existing integration that has access to your resource. In case you need to integrate a new IAM role, use provider integration",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "authentication.method==IAM Roles"
+              },
+              "priority": "HIGHEST"
+            }
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 2,
+            "group_name": "AWS credentials",
+            "visibility": "authentication.method==IAM Roles"
+          }
+        },
+        {
+          "name": "customer.aws.iam.role.arn",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "IAM Role ARN",
+          "documentation": "The Amazon Resource Name (ARN) that identifies the AWS IAM role that Confluent Cloud assumes to access resources in customer's AWS account.",
+          "internal": true
+        },
+        {
+          "name": "external.id",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "External ID",
+          "documentation": "The external ID that Confluent Cloud uses when it assumes the IAM role in customer's Amazon Web Services (AWS) account.",
+          "internal": true
+        },
+        {
+          "name": "confluent.aws.iam.role.arn",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "Confluent AWS IAM Role ARN",
+          "documentation": "The Amazon Resource Name (ARN) that specifies the AWS IAM role that Confluent Cloud uses to assume the IAM role within the customer's AWS account.",
+          "internal": true
+        },
+        {
+          "name": "middleware.external.id",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "Confluent Middleware External ID",
+          "documentation": "The external ID that Confluent Cloud uses when it assumes the IAM role in confluent middleware account.",
+          "internal": true
+        },
+        {
+          "name": "aws.iam.assume.role.session.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "AWS IAM Assume Role Session Name",
+          "documentation": "Specify the name for the assumed role session",
+          "internal": true
+        },
+        {
+          "name": "provider.integration.max.retries",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "default_value": 10,
+          "internal": true
+        },
+        {
+          "name": "connect.aws.iam.role.validation.disable",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "provider.integration.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "authentication.method",
+          "switch": {
+            "authentication.method": {
+              "IAM Roles": "IAM Roles",
+              "Access Keys": "Access Keys"
+            }
+          }
+        },
+        {
+          "name": "provider.integration.id"
+        },
+        {
+          "name": "customer.aws.iam.role.arn"
+        },
+        {
+          "name": "external.id"
+        },
+        {
+          "name": "middleware.external.id"
+        },
+        {
+          "name": "confluent.aws.iam.role.arn"
+        },
+        {
+          "name": "aws.iam.assume.role.session.name"
+        },
+        {
+          "name": "provider.integration.max.retries"
+        },
+        {
+          "name": "connect.aws.iam.role.validation.disable"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "authentication.method",
+    "provider.integration.id"
+  ],
+  "all_connector_configs": [],
+  "config_defs_not_used_as_connector_names": []
+}

@@ -1,0 +1,785 @@
+{
+  "templates": [
+    {
+      "template_id": "blob-store-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "topics.dir",
+          "type": "STRING",
+          "required": false,
+          "default_value": "topics",
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "order_in_group": 1,
+          "display_name": "Topic directory",
+          "documentation": "Top-level directory where ingested data is stored.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "path.format",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "default_value": "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH",
+          "order_in_group": 2,
+          "display_name": "Path format",
+          "documentation": "This configuration is used to set the format of the data directories when partitioning with TimeBasedPartitioner. The format set in this configuration converts the Unix timestamp to a valid directory string. To organize files like this example, filesystem://store-name/json_logs/daily/<Topic-Name>/dt=2020-02-06/hr=09/<files>, use the properties: topics.dir=json_logs/daily, path.format='dt'=YYYY-MM-dd/'hr'=HH, and time.interval=HOURLY.",
+          "dependents": [
+            "timestamp.field"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.blank.string"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 2
+          }
+        },
+        {
+          "name": "time.interval",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "order_in_group": 3,
+          "display_name": "Time interval",
+          "documentation": "Partitioning interval of data, according to the time ingested to storage.",
+          "recommended_values": [
+            "DAILY",
+            "HOURLY"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 3
+          }
+        },
+        {
+          "name": "rotate.schedule.interval.ms",
+          "type": "INT",
+          "default_value": "-1",
+          "importance": "MEDIUM",
+          "group": "Organize my data by...",
+          "order_in_group": 4,
+          "documentation": "Scheduled rotation uses rotate.schedule.interval.ms to close the file and upload to storage on a regular basis using the current time, rather than the record time. Setting rotate.schedule.interval.ms is nondeterministic and will invalidate exactly-once guarantees.",
+          "display_name": "Maximum span of record time (in ms) before scheduled rotation",
+          "validators": [
+            {
+              "name": "rotation.configs"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 3
+          }
+        },
+        {
+          "name": "rotate.interval.ms",
+          "type": "INT",
+          "default_value": "${time.interval}",
+          "default_value_provider": {
+            "name": "rotation.config.provider"
+          },
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "order_in_group": 5,
+          "documentation": "The connector\u2019s rotation interval specifies the maximum timespan (in milliseconds) a file can remain open and ready for additional records. In other words, when using rotate.interval.ms, the timestamp for each file starts with the timestamp of the first record inserted in the file. The connector closes and uploads a file to the blob store when the next record's timestamp does not fit into the file's rotate.interval time span from the first record's timestamp. If the connector has no more records to process, the connector may keep the file open until the connector can process another record (which can be a long time).",
+          "display_name": "Maximum span of record time (in ms) before rotation",
+          "validators": [
+            {
+              "name": "rotation.configs"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 4
+          }
+        },
+        {
+          "name": "flush.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "1000",
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "order_in_group": 6,
+          "display_name": "Flush size",
+          "documentation": "Number of records written to storage before invoking file commits.",
+          "validators": [
+            {
+              "name": "conditional.common.range",
+              "arguments": {
+                "min": 1000,
+                "dedicatedMin": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 4
+          }
+        },
+        {
+          "name": "timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "default_value": "",
+          "order_in_group": 7,
+          "display_name": "Timestamp field name",
+          "documentation": "Sets the field that contains the timestamp used for the TimeBasedPartitioner",
+          "dependents": [
+            "path.format"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 5
+          }
+        },
+        {
+          "name": "timezone",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "default_value": "UTC",
+          "order_in_group": 8,
+          "display_name": "Timezone",
+          "documentation": "Sets the timezone used by the TimeBasedPartitioner.",
+          "recommender": {
+            "name": "timezone"
+          },
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 6
+          }
+        },
+        {
+          "name": "locale",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Organize my data by...",
+          "default_value": "en",
+          "order_in_group": 9,
+          "display_name": "Locale",
+          "documentation": "Sets the locale to use with TimeBasedPartitioner.",
+          "recommender": {
+            "name": "locale"
+          },
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 7
+          }
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1
+              }
+            },
+            {
+              "name": "kafka.partitions.max",
+              "arguments": {
+                "partitions.max": "100",
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL",
+                "topic.config.name": "topics"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "SIZING",
+            "order_in_page": 1,
+            "partitions.max": "100"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "partition.duration.ms",
+          "switch": {
+            "time.interval": {
+              "DAILY": "86400000",
+              "HOURLY": "3600000"
+            }
+          }
+        },
+        {
+          "name": "flush.size"
+        },
+        {
+          "name": "topics.dir"
+        },
+        {
+          "name": "path.format"
+        },
+        {
+          "name": "partitioner.class",
+          "value": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner"
+        },
+        {
+          "name": "locale"
+        },
+        {
+          "name": "timezone"
+        },
+        {
+          "name": "timestamp.extractor",
+          "switch": {
+            "timestamp.field": {
+              "": "Record",
+              "DEFAULT": "RecordField"
+            }
+          }
+        },
+        {
+          "name": "timestamp.field",
+          "switch": {
+            "timestamp.field": {
+              "": "timestamp",
+              "DEFAULT": "${timestamp.field}"
+            }
+          }
+        },
+        {
+          "name": "rotate.interval.ms"
+        },
+        {
+          "name": "rotate.schedule.interval.ms"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "flush.size",
+    "locale",
+    "path.format",
+    "rotate.interval.ms",
+    "rotate.schedule.interval.ms",
+    "tasks.max",
+    "time.interval",
+    "timestamp.field",
+    "timezone",
+    "topics.dir"
+  ],
+  "all_connector_configs": [
+    {
+      "name": "timestamp.field",
+      "switch": {
+        "timestamp.field": {
+          "": "timestamp",
+          "DEFAULT": "${timestamp.field}"
+        }
+      }
+    }
+  ],
+  "config_defs_not_used_as_connector_names": [
+    "tasks.max",
+    "time.interval"
+  ]
+}

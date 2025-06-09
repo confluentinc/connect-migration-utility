@@ -1,0 +1,3284 @@
+{
+  "templates": [
+    {
+      "template_id": "MongoDbAtlasSink",
+      "connector_type": "SINK",
+      "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
+      "name": "{{.logicalClusterId}}",
+      "imports": [
+        "common",
+        "common-kafka-connectivity",
+        "common-sink",
+        "csfle-sink",
+        "schema-registry",
+        "common-mongodb",
+        "input-data-format",
+        "input-key-format"
+      ],
+      "group_order": [
+        "How should we connect to your data?",
+        "Schema Config",
+        "Input messages",
+        "Writes",
+        "CSFLE",
+        "Kafka Cluster credentials",
+        "Which topics do you want to get data from?",
+        "How should we connect to your MongoDB Atlas database?",
+        "Database details",
+        "ID strategies",
+        "Namespace mapping",
+        "Server API",
+        "Connection details",
+        "Time Series configuration",
+        "Error handling",
+        "Consumer configuration",
+        "Number of tasks for this connector",
+        "Additional Configs"
+      ],
+      "config_defs": [
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON, STRING or BSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "STRING",
+            "BSON"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "input.key.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "STRING",
+          "importance": "HIGH",
+          "group": "Input messages",
+          "order_in_group": 2,
+          "display_name": "Input Kafka record key format",
+          "alias": "key.format",
+          "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF, or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "BYTES",
+            "JSON",
+            "JSON_SR",
+            "PROTOBUF",
+            "STRING"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            },
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 2
+          }
+        },
+        {
+          "name": "cdc.handler",
+          "type": "STRING",
+          "required": false,
+          "default_value": "None",
+          "importance": "LOW",
+          "group": "Input messages",
+          "order_in_group": 2,
+          "display_name": "Change Data Capture handler",
+          "documentation": "The class name of the CDC handler to use for processing. You can capture CDC events with the MongoDB Kafka sink connector and perform corresponding insert, update, and delete operations to a destination MongoDB cluster.",
+          "recommended_values": [
+            "None",
+            "MongoDbChangeStreamHandler",
+            "DebeziumMongoDbHandler",
+            "DebeziumMySqlHandler",
+            "DebeziumPostgresHandler",
+            "QlikRdbmsHandler"
+          ],
+          "metadata": {
+            "group_name": "Input messages",
+            "order_in_page": 2,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "delete.on.null.values",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 1,
+          "display_name": "Delete on null values",
+          "documentation": "Whether or not the connector should try to delete documents based on key when value is null.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 5,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "connection.host",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your MongoDB Atlas database?",
+          "order_in_group": 1,
+          "display_name": "Connection host",
+          "documentation": "MongoDB Atlas connection host (e.g. confluent-test.mycluster.mongodb.net).",
+          "validators": [
+            {
+              "name": "mongodb.connection.string"
+            },
+            {
+              "name": "mongodb.atlas.region"
+            }
+          ],
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "metadata": {
+            "group_name": "MongoDB Atlas credentials",
+            "order_in_page": 1,
+            "page": "AUTHENTICATION"
+          }
+        },
+        {
+          "name": "connector.endpoint",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "default_value": null,
+          "internal": true,
+          "custom_config_provider": {
+            "name": "mongo.db.atlas.mapper.endpoint"
+          }
+        },
+        {
+          "name": "connection.user",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your MongoDB Atlas database?",
+          "order_in_group": 2,
+          "display_name": "Connection user",
+          "documentation": "MongoDB Atlas connection user.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "metadata": {
+            "group_name": "MongoDB Atlas credentials",
+            "order_in_page": 2,
+            "page": "AUTHENTICATION"
+          }
+        },
+        {
+          "name": "connection.password",
+          "type": "PASSWORD",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your MongoDB Atlas database?",
+          "order_in_group": 3,
+          "display_name": "Connection password",
+          "documentation": "MongoDB Atlas connection password.",
+          "metadata": {
+            "group_name": "MongoDB Atlas credentials",
+            "order_in_page": 3,
+            "page": "AUTHENTICATION"
+          }
+        },
+        {
+          "name": "database",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your MongoDB Atlas database?",
+          "order_in_group": 4,
+          "display_name": "Database name",
+          "documentation": "MongoDB Atlas database name.",
+          "metadata": {
+            "group_name": "MongoDB Atlas Database Details",
+            "order_in_page": 4,
+            "page": "AUTHENTICATION"
+          }
+        },
+        {
+          "name": "collection",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 3,
+          "display_name": "Collection name",
+          "documentation": "Collection name to write to. If the connector is sinking data from multiple topics, this is the default collection the topics are mapped to.",
+          "metadata": {
+            "group_name": "MongoDB Atlas Database Details",
+            "order_in_page": 5,
+            "page": "AUTHENTICATION"
+          }
+        },
+        {
+          "name": "max.num.retries",
+          "type": "INT",
+          "required": false,
+          "default_value": "3",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 1,
+          "display_name": "Max number of retries",
+          "documentation": "How many retries should be attempted on write errors.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0
+              }
+            }
+          ],
+          "metadata": {
+            "group_name": "Connection details",
+            "order_in_page": 3,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "retries.defer.timeout",
+          "type": "INT",
+          "required": false,
+          "default_value": "5000",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "Retry defer timeout (ms)",
+          "documentation": "How long a retry should get deferred.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0
+              }
+            }
+          ],
+          "metadata": {
+            "group_name": "Connection details",
+            "order_in_page": 4,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "write.strategy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "DefaultWriteModelStrategy",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 6,
+          "display_name": "Write Model Strategy",
+          "documentation": "The class that specifies the WriteModel to use for bulk writes.",
+          "recommended_values": [
+            "DefaultWriteModelStrategy",
+            "InsertOneDefaultStrategy",
+            "ReplaceOneDefaultStrategy",
+            "ReplaceOneBusinessKeyStrategy",
+            "DeleteOneDefaultStrategy",
+            "UpdateOneTimestampsStrategy",
+            "UpdateOneBusinessKeyTimestampStrategy",
+            "UpdateOneDefaultStrategy"
+          ],
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 6,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "max.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 2,
+          "display_name": "Max batch size",
+          "documentation": "The maximum number of sink records to possibly batch together for processing.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0
+              }
+            }
+          ],
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 7,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "bulk.write.ordered",
+          "type": "STRING",
+          "required": false,
+          "default_value": "true",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 3,
+          "display_name": "Use ordered bulk writes",
+          "documentation": "Whether the batches controlled by 'max.batch.size' must be written via ordered bulk writes.",
+          "recommended_values": [
+            "false",
+            "true"
+          ],
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 8,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "rate.limiting.timeout",
+          "type": "INT",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 4,
+          "display_name": "Rate limiting timeout",
+          "documentation": "How long in ms processing should wait before continuing after triggering a rate limit.",
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 9,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "rate.limiting.every.n",
+          "type": "INT",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 5,
+          "display_name": "Rate limiting batch number",
+          "documentation": "The number of processed batches that will trigger rate limiting. The default value of 0 sets no rate limiting.",
+          "metadata": {
+            "group_name": "Writes",
+            "order_in_page": 10,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "doc.id.strategy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "BsonOidStrategy",
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 1,
+          "display_name": "Document ID strategy",
+          "documentation": "The IdStrategy class name to use for generating a unique document id (_id).",
+          "recommended_values": [
+            "BsonOidStrategy",
+            "KafkaMetaDataStrategy",
+            "FullKeyStrategy",
+            "ProvidedInKeyStrategy",
+            "ProvidedInValueStrategy",
+            "PartialKeyStrategy",
+            "PartialValueStrategy",
+            "UuidStrategy"
+          ],
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 11,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "doc.id.strategy.overwrite.existing",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 2,
+          "display_name": "Document ID strategy overwrite existing",
+          "documentation": "Whether the connector should overwrite existing values in the `_id` field when the strategy defined in doc.id.strategy is applied.",
+          "recommended_values": [
+            "false",
+            "true"
+          ],
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 12,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "document.id.strategy.uuid.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "string",
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 3,
+          "display_name": "Document ID strategy UUID format",
+          "documentation": "The bson output format when using the `UuidStrategy`. Can be either `String` or `Binary`.",
+          "recommended_values": [
+            "String",
+            "Binary"
+          ],
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 13,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "key.projection.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "none",
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 4,
+          "display_name": "Document ID strategy key projection type",
+          "documentation": "For use with the `PartialKeyStrategy` allows custom key fields to be projected for the ID strategy. Use either `AllowList` or `BlockList`.",
+          "recommended_values": [
+            "allowlist",
+            "blocklist",
+            "none"
+          ],
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 14,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "key.projection.list",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 5,
+          "display_name": "Document ID strategy key projection list",
+          "documentation": "For use with the `PartialKeyStrategy` allows custom key fields to be projected for the ID strategy. A comma-separated list of field names for key projection.",
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 15,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "value.projection.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "none",
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 6,
+          "display_name": "Document ID strategy value projection type",
+          "documentation": "For use with the `PartialValueStrategy` allows custom value fields to be projected for the ID strategy. Use either `AllowList` or `BlockList`.",
+          "recommended_values": [
+            "allowlist",
+            "blocklist",
+            "none"
+          ],
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 16,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "value.projection.list",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "ID strategies",
+          "order_in_group": 7,
+          "display_name": "Document ID strategy value projection list",
+          "documentation": "For use with the `PartialValueStrategy` allows custom value fields to be projected for the ID strategy. A comma-separated list of field names for value projection.",
+          "metadata": {
+            "group_name": "ID strategies",
+            "order_in_page": 17,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.timefield",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 1,
+          "display_name": "Timefield",
+          "documentation": "The name of the top-level field which contains the date in each time series document. Setting this config will create a time series collection where each document will have a BSON date as the value for the timefield.",
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 18,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.timefield.auto.convert",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 2,
+          "display_name": "Auto Conversion",
+          "documentation": "Whether to convert the data in the field into a BSON Date format. Supported formats include integer, long, and string.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 19,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.timefield.auto.convert.date.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "yyyy-MM-dd[['T'][ ]][HH:mm:ss[[.][SSSSSS][SSS]][ ]VV[ ]'['VV']'][HH:mm:ss[[.][SSSSSS][SSS]][ ]X][HH:mm:ss[[.][SSSSSS][SSS]]]",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 3,
+          "display_name": "Auto Convert Date Format",
+          "documentation": "The string pattern to convert the source data from. The setting expects the string representation to contain both date and time information and uses the Java DateTimeFormatter.ofPattern(pattern, locale) API for the conversion. If the string only contains date information, then the time since epoch is from the start of that day. If a string representation does not contain time-zone offset, then the setting interprets the extracted date and time as UTC.",
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 20,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.timefield.auto.convert.locale.language.tag",
+          "type": "STRING",
+          "required": false,
+          "default_value": "en",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 4,
+          "display_name": "Locale Language Tag",
+          "documentation": "The DateTimeFormatter locale language tag to use with the date pattern.",
+          "recommender": {
+            "name": "locale.ietf"
+          },
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 21,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.metafield",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 5,
+          "display_name": "Metafield",
+          "documentation": "The name of the top-level field that contains metadata in each time series document. This field groups related data. It can be of any type except array.",
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 22,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "timeseries.expire.after.seconds",
+          "type": "INT",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 6,
+          "display_name": "Expire After Seconds",
+          "documentation": "The amount of seconds the data remains in MongoDB before MongoDB deletes it. Omitting this field means data will not be deleted automatically.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0
+              }
+            }
+          ],
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 23,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "ts.granularity",
+          "type": "STRING",
+          "required": false,
+          "default_value": "None",
+          "importance": "LOW",
+          "group": "Time Series configuration",
+          "order_in_group": 7,
+          "display_name": "Granularity",
+          "documentation": "The expected interval between subsequent measurements for a time-series. Set this to None or leave it empty if the data is not time-series",
+          "recommended_values": [
+            "None",
+            "seconds",
+            "minutes",
+            "hours"
+          ],
+          "metadata": {
+            "group_name": "Time Series configuration",
+            "order_in_page": 24,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "server.api.version",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Server API",
+          "order_in_group": 1,
+          "display_name": "Server API version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 25,
+            "group_name": "Server API"
+          },
+          "documentation": "The server API version to use. Disabled by default."
+        },
+        {
+          "name": "server.api.deprecation.errors",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Server API",
+          "order_in_group": 2,
+          "display_name": "Deprecation errors",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 26,
+            "group_name": "Server API"
+          },
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "documentation": "Sets whether the connector requires use of deprecated server APIs to be reported as errors."
+        },
+        {
+          "name": "server.api.strict",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Server API",
+          "order_in_group": 3,
+          "display_name": "Strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 27,
+            "group_name": "Server API"
+          },
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "documentation": "Sets whether the application requires strict server API version enforcement."
+        },
+        {
+          "name": "namespace.mapper.class",
+          "type": "STRING",
+          "required": false,
+          "default_value": "DefaultNamespaceMapper",
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 1,
+          "display_name": "Namespace mapper class",
+          "documentation": "The class that determines the namespace to write the sink data to. By default this will be based on the 'database' configuration and either the topic name or the 'collection' configuration.",
+          "recommended_values": [
+            "DefaultNamespaceMapper",
+            "FieldPathNamespaceMapper"
+          ],
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 28,
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        },
+        {
+          "name": "namespace.mapper.key.database.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 2,
+          "display_name": "Key field for destination database name",
+          "documentation": "The key field to use as the destination database name.",
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 29,
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "visibility": "namespace.mapper.class==FieldPathNamespaceMapper"
+          }
+        },
+        {
+          "name": "namespace.mapper.key.collection.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 3,
+          "display_name": "Key field for destination collection name",
+          "documentation": "The key field to use as the destination collection name.",
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 30,
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "visibility": "namespace.mapper.class==FieldPathNamespaceMapper"
+          }
+        },
+        {
+          "name": "namespace.mapper.value.database.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 4,
+          "display_name": "Value field for destination database name",
+          "documentation": "The value field to use as the destination database name.",
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 31,
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "visibility": "namespace.mapper.class==FieldPathNamespaceMapper"
+          }
+        },
+        {
+          "name": "namespace.mapper.value.collection.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 5,
+          "display_name": "Value field for destination collection name",
+          "documentation": "The value field to use as the destination collection name.",
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 32,
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "visibility": "namespace.mapper.class==FieldPathNamespaceMapper"
+          }
+        },
+        {
+          "name": "namespace.mapper.error.if.invalid",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Namespace mapping",
+          "order_in_group": 6,
+          "display_name": "Mapped field error",
+          "documentation": "Whether to throw an error if the mapped field is missing or invalid. Defaults to false.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "metadata": {
+            "group_name": "Namespace mapping",
+            "order_in_page": 33,
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "visibility": "namespace.mapper.class==FieldPathNamespaceMapper"
+          }
+        },
+        {
+          "name": "mongo.errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "default_value": "NONE",
+          "importance": "MEDIUM",
+          "group": "Error handling",
+          "order_in_group": 1,
+          "display_name": "Error tolerance",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 34,
+            "group_name": "Error handling Mongo"
+          },
+          "recommended_values": [
+            "NONE",
+            "ALL"
+          ],
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior differently from the Connect framework's."
+        },
+        {
+          "name": "cloud.provider",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter",
+              "STRING": "org.apache.kafka.connect.storage.StringConverter",
+              "BSON": "org.apache.kafka.connect.converters.ByteArrayConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "topics"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "document.id.strategy",
+          "switch": {
+            "doc.id.strategy": {
+              "BsonOidStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.BsonOidStrategy",
+              "KafkaMetaDataStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.KafkaMetaDataStrategy",
+              "FullKeyStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.FullKeyStrategy",
+              "ProvidedInKeyStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.ProvidedInKeyStrategy",
+              "ProvidedInValueStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.ProvidedInValueStrategy",
+              "PartialKeyStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.PartialKeyStrategy",
+              "PartialValueStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.PartialValueStrategy",
+              "UuidStrategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.UuidStrategy"
+            }
+          }
+        },
+        {
+          "name": "document.id.strategy.overwrite.existing",
+          "value": "${doc.id.strategy.overwrite.existing}"
+        },
+        {
+          "name": "writemodel.strategy",
+          "switch": {
+            "write.strategy": {
+              "DefaultWriteModelStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.DefaultWriteModelStrategy",
+              "InsertOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.InsertOneDefaultStrategy",
+              "ReplaceOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneDefaultStrategy",
+              "ReplaceOneBusinessKeyStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneBusinessKeyStrategy",
+              "DeleteOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.DeleteOneDefaultStrategy",
+              "UpdateOneTimestampsStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneTimestampsStrategy",
+              "UpdateOneBusinessKeyTimestampStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneBusinessKeyTimestampStrategy",
+              "UpdateOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneDefaultStrategy"
+            }
+          }
+        },
+        {
+          "name": "change.data.capture.handler",
+          "switch": {
+            "cdc.handler": {
+              "None": "",
+              "MongoDbChangeStreamHandler": "com.mongodb.kafka.connect.sink.cdc.mongodb.ChangeStreamHandler",
+              "DebeziumMongoDbHandler": "com.mongodb.kafka.connect.sink.cdc.debezium.mongodb.MongoDbHandler",
+              "DebeziumMySqlHandler": "com.mongodb.kafka.connect.sink.cdc.debezium.rdbms.mysql.MysqlHandler",
+              "DebeziumPostgresHandler": "com.mongodb.kafka.connect.sink.cdc.debezium.rdbms.postgres.PostgresHandler",
+              "QlikRdbmsHandler": "com.mongodb.kafka.connect.sink.cdc.qlik.rdbms.RdbmsHandler"
+            }
+          }
+        },
+        {
+          "name": "document.id.strategy.uuid.format"
+        },
+        {
+          "name": "cloud.provider",
+          "switch": {
+            "cloud.environment": {
+              "private": "aws",
+              "DEFAULT": "${cloud.provider}"
+            }
+          }
+        },
+        {
+          "name": "kafka.region",
+          "switch": {
+            "cloud.environment": {
+              "private": "us-west-2",
+              "DEFAULT": "${kafka.region}"
+            }
+          }
+        },
+        {
+          "name": "connection.uri",
+          "switch": {
+            "connection.host": {
+              "DEFAULT": "mongodb+srv://${connection.user}:${connection.password}@${connection.host}"
+            }
+          }
+        },
+        {
+          "name": "namespace.mapper",
+          "switch": {
+            "namespace.mapper.class": {
+              "DefaultNamespaceMapper": "com.mongodb.kafka.connect.sink.namespace.mapping.DefaultNamespaceMapper",
+              "FieldPathNamespaceMapper": "com.mongodb.kafka.connect.sink.namespace.mapping.FieldPathNamespaceMapper"
+            }
+          }
+        },
+        {
+          "name": "database"
+        },
+        {
+          "name": "collection"
+        },
+        {
+          "name": "max.num.retries"
+        },
+        {
+          "name": "retries.defer.timeout"
+        },
+        {
+          "name": "max.batch.size"
+        },
+        {
+          "name": "delete.on.null.values"
+        },
+        {
+          "name": "bulk.write.ordered"
+        },
+        {
+          "name": "rate.limiting.timeout"
+        },
+        {
+          "name": "rate.limiting.every.n"
+        },
+        {
+          "name": "key.projection.type"
+        },
+        {
+          "name": "key.projection.list"
+        },
+        {
+          "name": "value.projection.type"
+        },
+        {
+          "name": "value.projection.list"
+        },
+        {
+          "name": "timeseries.timefield"
+        },
+        {
+          "name": "timeseries.timefield.auto.convert.date.format"
+        },
+        {
+          "name": "timeseries.timefield.auto.convert"
+        },
+        {
+          "name": "timeseries.timefield.auto.convert.locale.language.tag"
+        },
+        {
+          "name": "timeseries.metafield"
+        },
+        {
+          "name": "timeseries.expire.after.seconds"
+        },
+        {
+          "name": "timeseries.granularity",
+          "switch": {
+            "ts.granularity": {
+              "None": "",
+              "seconds": "seconds",
+              "minutes": "minutes",
+              "hours": "hours"
+            }
+          }
+        },
+        {
+          "name": "schema.cache.size",
+          "value": "1000"
+        },
+        {
+          "name": "enhanced.avro.schema.support",
+          "value": "true"
+        },
+        {
+          "name": "locale",
+          "value": "en"
+        },
+        {
+          "name": "timezone",
+          "value": "UTC"
+        },
+        {
+          "name": "rotate.interval.ms",
+          "value": "86400000"
+        },
+        {
+          "name": "timestamp.extractor",
+          "value": "Record"
+        },
+        {
+          "name": "behavior.on.null.values",
+          "value": "ignore"
+        },
+        {
+          "name": "mongo.errors.tolerance"
+        },
+        {
+          "name": "provider",
+          "value": "confluent-cloud"
+        },
+        {
+          "name": "server.api.version"
+        },
+        {
+          "name": "server.api.deprecation.errors"
+        },
+        {
+          "name": "server.api.strict"
+        },
+        {
+          "name": "namespace.mapper.key.database.field"
+        },
+        {
+          "name": "namespace.mapper.key.collection.field"
+        },
+        {
+          "name": "namespace.mapper.value.database.field"
+        },
+        {
+          "name": "namespace.mapper.value.collection.field"
+        },
+        {
+          "name": "namespace.mapper.error.if.invalid"
+        },
+        {
+          "name": "connector.endpoint"
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class",
+          "metadata": {
+            "page": "REVIEW_AND_LAUNCH",
+            "order_in_page": 1,
+            "change_after_launch": false
+          }
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector.",
+          "metadata": {
+            "page": "REVIEW_AND_LAUNCH",
+            "order_in_page": 2,
+            "change_after_launch": false
+          },
+          "validators": [
+            {
+              "name": "common.length",
+              "arguments": {
+                "length": 64
+              }
+            }
+          ]
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "SIZING",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==KAFKA_API_KEY"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials.sanity"
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
+          }
+        },
+        {
+          "name": "kafka.service.account.api.key",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.api.secret",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.region",
+          "type": "STRING",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.endpoint",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "internal": true,
+          "validators": [
+            {
+              "name": "common.regex",
+              "arguments": {
+                "pattern": "^.*://.*$"
+              }
+            }
+          ]
+        },
+        {
+          "name": "kafka.user.id",
+          "type": "INT",
+          "required": false,
+          "internal": true,
+          "importance": "MEDIUM"
+        },
+        {
+          "name": "cloud.environment",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.cloud",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.dedicated",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "valid.kafka.api.key",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.oauth.token",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.logical.cluster.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connect.connector_cross_region.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.regional.connectivity.enabled",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.validity.check",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
+          "type": "STRING",
+          "required": false,
+          "default_value": "SKIP",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.fips.provider",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "default_value_provider": {
+            "name": "defaultvalue.fips.provider"
+          },
+          "importance": "HIGH",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "common-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials.sanity"
+            },
+            {
+              "name": "kafka.credentials",
+              "arguments": {
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
+          }
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==KAFKA_API_KEY"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials",
+              "arguments": {
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL"
+              }
+            }
+          ],
+          "dependents": [
+            "kafka.api.key"
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
+          }
+        },
+        {
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "validators": [
+            {
+              "name": "kafka.topics",
+              "arguments": {
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL",
+                "topic.config.name": "topics"
+              }
+            }
+          ],
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ],
+          "metadata": {
+            "page": "SELECT_TOPICS",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
+          "validators": [
+            {
+              "name": "conditional.common.range",
+              "arguments": {
+                "min": 60000,
+                "max": 1800000,
+                "dedicatedMin": 60000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 1,
+            "advanced": true,
+            "group_name": "Consumer configuration"
+          }
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
+          "validators": [
+            {
+              "name": "conditional.common.range",
+              "arguments": {
+                "min": 1,
+                "max": 500,
+                "dedicatedMin": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 2,
+            "advanced": true,
+            "group_name": "Consumer configuration"
+          }
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "all",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "additional.visible": "true"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "value": "dlq-{{.logicalClusterId}}"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
+        },
+        {
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        }
+      ]
+    },
+    {
+      "template_id": "csfle-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csfle.enabled",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 1,
+          "docs_hidden": true,
+          "display_name": "Enable Client-Side Field Level Encryption",
+          "documentation": "Determines whether the connector honours CSFLE rules or not",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "csfle.configs.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "group_name": "Data decryption",
+            "group_description": "Enable client-side decryption for the data that is pushed out of Confluent Cloud. Encryption rule must be setup for the data to be encrypted. The data will be written in encrypted form if there is no key access. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
+            "order_in_page": 10,
+            "visibility": "input.data.format==AVRO,JSON_SR,PROTOBUF"
+          }
+        },
+        {
+          "name": "csfle.onFailure",
+          "type": "STRING",
+          "required": false,
+          "default_value": "ERROR",
+          "importance": "MEDIUM",
+          "group": "CSFLE",
+          "order_in_group": 3,
+          "docs_hidden": true,
+          "display_name": "Connector behaviour on data decryption failure",
+          "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
+          "recommended_values": [
+            "ERROR",
+            "NONE"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
+            "group_name": "Data decryption",
+            "order_in_page": 12
+          }
+        },
+        {
+          "name": "sr.service.account.id",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 2,
+          "docs_hidden": true,
+          "display_name": "Schema Registry Service Account",
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "csfle.enabled==true"
+              },
+              "priority": "HIGHEST"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
+            "group_name": "Data decryption",
+            "order_in_page": 11
+          }
+        },
+        {
+          "name": "csfle.configs.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "value.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "key.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "key.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.registry.url",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "validators": [
+            {
+              "name": "schema.context.name.exist.check",
+              "priority": "LOWER"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 1
+          }
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "common-mongodb",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "mongodb.connection.uri.unsupported.options",
+          "type": "STRING",
+          "importance": "LOW",
+          "internal": true
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "input-data-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "additional.visible": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "input-key-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.key.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Input messages",
+          "order_in_group": 2,
+          "display_name": "Input Kafka record key format",
+          "alias": "key.format",
+          "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF, or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "BYTES",
+            "JSON",
+            "JSON_SR",
+            "PROTOBUF",
+            "STRING"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            },
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 2
+          }
+        },
+        {
+          "name": "key.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "key.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "key.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Additional Configs"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "key.converter",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "STRING": "org.apache.kafka.connect.storage.StringConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter"
+            }
+          }
+        },
+        {
+          "name": "key.converter.schemas.enable"
+        },
+        {
+          "name": "key.converter.schema.registry.url",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "key.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "key.converter.basic.auth.user.info",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "key.converter.replace.null.with.default"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "bulk.write.ordered",
+    "cdc.handler",
+    "collection",
+    "connection.host",
+    "connection.password",
+    "connection.user",
+    "connector.class",
+    "csfle.enabled",
+    "csfle.onFailure",
+    "database",
+    "delete.on.null.values",
+    "doc.id.strategy",
+    "doc.id.strategy.overwrite.existing",
+    "document.id.strategy.uuid.format",
+    "input.data.format",
+    "input.key.format",
+    "kafka.api.key",
+    "kafka.api.secret",
+    "kafka.auth.mode",
+    "kafka.service.account.id",
+    "key.projection.list",
+    "key.projection.type",
+    "max.batch.size",
+    "max.num.retries",
+    "max.poll.interval.ms",
+    "max.poll.records",
+    "mongo.errors.tolerance",
+    "name",
+    "namespace.mapper.class",
+    "namespace.mapper.error.if.invalid",
+    "namespace.mapper.key.collection.field",
+    "namespace.mapper.key.database.field",
+    "namespace.mapper.value.collection.field",
+    "namespace.mapper.value.database.field",
+    "rate.limiting.every.n",
+    "rate.limiting.timeout",
+    "retries.defer.timeout",
+    "schema.context.name",
+    "server.api.deprecation.errors",
+    "server.api.strict",
+    "server.api.version",
+    "sr.service.account.id",
+    "tasks.max",
+    "timeseries.expire.after.seconds",
+    "timeseries.metafield",
+    "timeseries.timefield",
+    "timeseries.timefield.auto.convert",
+    "timeseries.timefield.auto.convert.date.format",
+    "timeseries.timefield.auto.convert.locale.language.tag",
+    "topics",
+    "ts.granularity",
+    "value.projection.list",
+    "value.projection.type",
+    "write.strategy"
+  ],
+  "all_connector_configs": [
+    {
+      "name": "consumer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "value.converter.schema.registry.url",
+      "switch": {
+        "input.data.format": {
+          "AVRO": "${schema.registry.url}",
+          "JSON_SR": "${schema.registry.url}",
+          "PROTOBUF": "${schema.registry.url}"
+        }
+      }
+    },
+    {
+      "name": "value.converter.basic.auth.user.info",
+      "switch": {
+        "input.data.format": {
+          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+        }
+      }
+    },
+    {
+      "name": "document.id.strategy.overwrite.existing",
+      "value": "${doc.id.strategy.overwrite.existing}"
+    },
+    {
+      "name": "cloud.provider",
+      "switch": {
+        "cloud.environment": {
+          "private": "aws",
+          "DEFAULT": "${cloud.provider}"
+        }
+      }
+    },
+    {
+      "name": "kafka.region",
+      "switch": {
+        "cloud.environment": {
+          "private": "us-west-2",
+          "DEFAULT": "${kafka.region}"
+        }
+      }
+    },
+    {
+      "name": "connection.uri",
+      "switch": {
+        "connection.host": {
+          "DEFAULT": "mongodb+srv://${connection.user}:${connection.password}@${connection.host}"
+        }
+      }
+    },
+    {
+      "name": "consumer.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "producer.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "admin.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "producer.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "consumer.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "admin.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "errors.deadletterqueue.topic.name",
+      "value": "dlq-{{.logicalClusterId}}"
+    },
+    {
+      "name": "consumer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "consumer.override.max.poll.interval.ms",
+      "value": "${max.poll.interval.ms}"
+    },
+    {
+      "name": "consumer.override.max.poll.records",
+      "value": "${max.poll.records}"
+    },
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "value.converter.schema.registry.url",
+      "switch": {
+        "input.data.format": {
+          "AVRO": "${schema.registry.url}",
+          "JSON_SR": "${schema.registry.url}",
+          "PROTOBUF": "${schema.registry.url}"
+        }
+      }
+    },
+    {
+      "name": "value.converter.basic.auth.user.info",
+      "switch": {
+        "input.data.format": {
+          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+        }
+      }
+    },
+    {
+      "name": "key.converter.schema.registry.url",
+      "switch": {
+        "input.key.format": {
+          "AVRO": "${schema.registry.url}",
+          "JSON_SR": "${schema.registry.url}",
+          "PROTOBUF": "${schema.registry.url}"
+        }
+      }
+    },
+    {
+      "name": "key.converter.basic.auth.user.info",
+      "switch": {
+        "input.key.format": {
+          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+        }
+      }
+    }
+  ],
+  "config_defs_not_used_as_connector_names": [
+    "cdc.handler",
+    "connection.host",
+    "connection.password",
+    "connection.user",
+    "connector.class",
+    "csfle.onFailure",
+    "doc.id.strategy",
+    "doc.id.strategy.overwrite.existing",
+    "input.data.format",
+    "input.key.format",
+    "kafka.api.key",
+    "kafka.api.secret",
+    "kafka.auth.mode",
+    "kafka.service.account.id",
+    "max.poll.interval.ms",
+    "max.poll.records",
+    "name",
+    "namespace.mapper.class",
+    "schema.context.name",
+    "sr.service.account.id",
+    "ts.granularity",
+    "write.strategy"
+  ]
+}

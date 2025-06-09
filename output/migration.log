@@ -1,0 +1,10 @@
+2025-06-09 21:53:39,396 - __main__ - INFO - Starting connector discovery...
+2025-06-09 21:53:39,396 - config_discovery - INFO - Discovering connectors from http://worker1:8083
+2025-06-09 21:53:39,399 - config_discovery - ERROR - Error getting connector configs from http://worker1:8083: HTTPConnectionPool(host='worker1', port=8083): Max retries exceeded with url: /connectors (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x3058fbc70>: Failed to resolve 'worker1' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-06-09 21:53:39,399 - config_discovery - INFO - Discovering connectors from http://worker2:8083
+2025-06-09 21:53:39,401 - config_discovery - ERROR - Error getting connector configs from http://worker2:8083: HTTPConnectionPool(host='worker2', port=8083): Max retries exceeded with url: /connectors (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x305974d00>: Failed to resolve 'worker2' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-06-09 21:53:39,402 - config_discovery - INFO - Saved 0 connector configurations to output/connectors.json
+2025-06-09 21:53:39,402 - __main__ - INFO - Connector discovery completed. Configs saved to output/connectors.json
+2025-06-09 21:53:39,402 - __main__ - INFO - Starting connector processing...
+2025-06-09 21:53:39,402 - connector_comparator - INFO - Saved 0 FM configurations to output/all_fm_configs.json
+2025-06-09 21:53:39,402 - __main__ - INFO - Connector processing completed successfully

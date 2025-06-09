@@ -1,0 +1,5280 @@
+{
+  "templates": [
+    {
+      "template_id": "ServiceNowSourceV2",
+      "connector_type": "SOURCE",
+      "connector.class": "io.confluent.connect.http.source.GenericHttpSourceConnector",
+      "name": "{{.logicalClusterId}}",
+      "imports": [
+        "common",
+        "common-kafka-connectivity",
+        "common-source",
+        "csfle-source",
+        "http-network-restrictions-common",
+        "schema-registry",
+        "reporter",
+        "source-connector-schema-enabled-output-data-format"
+      ],
+      "group_order": [
+        "How should we connect to your data?",
+        "Kafka Cluster credentials",
+        "CSFLE",
+        "Schema Config",
+        "Output messages",
+        "Number of tasks for this connector",
+        "Behavior on error",
+        "Authentication",
+        "Tables",
+        "Reporter",
+        "Retry configurations",
+        "Additional Configs",
+        "Table - 1 configurations",
+        "Table - 2 configurations",
+        "Table - 3 configurations",
+        "Table - 4 configurations",
+        "Table - 5 configurations"
+      ],
+      "config_defs": [
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON_SR",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Output Kafka record value format. Valid entries are ``AVRO``, ``JSON_SR``, or ``PROTOBUF``. Ensure you configure the Confluent Cloud Schema Registry for such schema-based message formats.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 1,
+            "group_name": "Output messages"
+          }
+        },
+        {
+          "name": "servicenow.url",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 1,
+          "display_name": "ServiceNow Instance URL",
+          "documentation": "ServiceNow instance URL. For example: `https://${instance-id}.service-now.com/`.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 1,
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "auth.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "BASIC",
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 2,
+          "display_name": "Endpoint Authentication Type",
+          "documentation": "The authentication type of the endpoint. Valid values are ``BASIC`` or ``OAUTH2``.",
+          "recommended_values": [
+            "BASIC",
+            "OAUTH2"
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 2,
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "connection.user",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 3,
+          "display_name": "Auth Username",
+          "documentation": "The username for an endpoint requiring basic authentication.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 3,
+            "visibility": "auth.type==BASIC",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "connection.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 4,
+          "display_name": "Auth Password",
+          "documentation": "The password for an endpoint requiring basic authentication.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 4,
+            "visibility": "auth.type==BASIC",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.token.url",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 6,
+          "display_name": "OAuth2 Token URL",
+          "documentation": "The URL for fetching OAuth2 token. Supported grant type is Client Credentials.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 6,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 7,
+          "display_name": "OAuth2 Client ID",
+          "documentation": "The client ID for fetching the OAuth2 token.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 7,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 8,
+          "display_name": "OAuth2 Client Secret",
+          "documentation": "The client secret for fetching the OAuth2 token.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 8,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.token.property",
+          "type": "STRING",
+          "required": false,
+          "default_value": "access_token",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 9,
+          "display_name": "OAuth2 Token Property Name",
+          "documentation": "The name of the property that contains the OAuth2 token returned by the OAuth2 token URL (defaults to `access_token`).",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 9,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.scope",
+          "type": "STRING",
+          "required": false,
+          "default_value": "any",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 10,
+          "display_name": "OAuth2 Client Scope",
+          "documentation": "The scope parameter sent to the service when fetching the OAuth2 token.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 10,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "header",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 11,
+          "display_name": "OAuth2 Client Mode",
+          "documentation": "The encoding method of the ``client_id`` and ``client_secret`` in an OAuth2 authorization request. If set to ``header``, the credentials are encoded as an `Authorization: Basic <base-64 encoded client_id:client_secret>` HTTP header. If set to `url`, the credentials are sent as URL-encoded parameters.",
+          "recommended_values": [
+            "header",
+            "url"
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 11,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.headers",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "group": "Authentication",
+          "order_in_group": 12,
+          "display_name": "OAuth2 Client Headers",
+          "documentation": "HTTP headers that should be included in the OAuth2 client endpoint. Individual headers must be separated by a `|`.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 12,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.client.header.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "LOW",
+          "group": "Authentication",
+          "order_in_group": 13,
+          "display_name": "OAuth2 Client Headers Separator",
+          "documentation": "The character used as separator in OAuth2 client headers.",
+          "docs_hidden": "true",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 13,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.jwt.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 15,
+          "display_name": "Add JWT token",
+          "documentation": "Specify whether to generate and add a JWT token to the request. If set to `true`, JWT token will be added as a `jwt_token` request parameter.",
+          "docs_hidden": true,
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 15,
+            "visibility": "auth.type==OAUTH2",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.jwt.keystore.path",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 16,
+          "display_name": "JWT keystore",
+          "documentation": "The keystore containing the private key used to sign JWTs.",
+          "docs_hidden": true,
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 16,
+            "inputType": "CREDENTIALS_FILE",
+            "secretType": "BINARY",
+            "visibility": "oauth2.jwt.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.jwt.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 17,
+          "display_name": "JWT keystore password",
+          "documentation": "The password to access the keystore.",
+          "docs_hidden": true,
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 17,
+            "visibility": "oauth2.jwt.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.jwt.keystore.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "JKS",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 18,
+          "display_name": "JWT keystore type",
+          "documentation": "The keystore type for signing JWT. Valid values are `JKS` or `PKCS12`.",
+          "docs_hidden": true,
+          "recommended_values": [
+            "JKS",
+            "PKCS12"
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 18,
+            "visibility": "oauth2.jwt.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "oauth2.jwt.claimset",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 19,
+          "display_name": "JWT JSON claims",
+          "documentation": "A JSON containing JWT claims for authentication.",
+          "docs_hidden": true,
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": true,
+            "order_in_page": 19,
+            "visibility": "oauth2.jwt.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "tables.num",
+          "type": "INT",
+          "required": true,
+          "default_value": 1,
+          "importance": "HIGH",
+          "group": "Tables",
+          "order_in_group": 1,
+          "display_name": "Number of tables",
+          "documentation": "The number of tables to fetch data from. This value should be less than or equal to 5.",
+          "recommended_values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 5
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 1,
+            "group_name": "Tables"
+          }
+        },
+        {
+          "name": "behavior.on.error",
+          "type": "STRING",
+          "required": false,
+          "default_value": "FAIL",
+          "importance": "LOW",
+          "group": "Behavior on error",
+          "order_in_group": 1,
+          "display_name": "Behavior On Errors",
+          "documentation": "The error handling behavior setting for handling error response from HTTP requests. Valid values are `FAIL` or `IGNORE`.",
+          "recommended_values": [
+            "FAIL",
+            "IGNORE"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 1,
+            "visibility": true,
+            "group_name": "Behavior on error"
+          }
+        },
+        {
+          "name": "retry.backoff.policy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "EXPONENTIAL_WITH_JITTER",
+          "importance": "MEDIUM",
+          "group": "Retry configurations",
+          "order_in_group": 1,
+          "display_name": "Retry Backoff Policy",
+          "documentation": "The backoff policy to use for retry attempts. Valid values are `CONSTANT_VALUE` or `EXPONENTIAL_WITH_JITTER`.",
+          "recommended_values": [
+            "CONSTANT_VALUE",
+            "EXPONENTIAL_WITH_JITTER"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 1,
+            "advanced": true,
+            "group_name": "Retry configurations"
+          }
+        },
+        {
+          "name": "retry.backoff.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": 3000,
+          "importance": "MEDIUM",
+          "group": "Retry configurations",
+          "order_in_group": 2,
+          "display_name": "Retry Backoff (ms)",
+          "documentation": "The initial wait time in milliseconds after an error before a retry attempt is made. Subsequent backoff attempts can be a constant value or exponential with jitter (set via the `retry.backoff.policy` parameter). Jitter adds randomness to the exponential backoff algorithm to prevent synchronized retries.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 100
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 3,
+            "advanced": true,
+            "group_name": "Retry configurations"
+          }
+        },
+        {
+          "name": "retry.on.status.codes",
+          "type": "STRING",
+          "required": false,
+          "default_value": "400-",
+          "importance": "MEDIUM",
+          "group": "Retry configurations",
+          "order_in_group": 3,
+          "display_name": "Retry HTTP Status Codes",
+          "documentation": "A comma-separated list of HTTP status codes or a range of codes to retry on. Ranges are specified with a starting code and an optional ending code. The range boundaries are inclusive. For instance, \"400-\" includes all codes greater than or equal to 400, and \"400-500\" includes codes from 400 to 500, including 500 itself. Multiple ranges and single codes can be combined for fine-grained control over retry behavior. For example, \"404, 408, 500-\" will retry on 404 NOT FOUND, 408 REQUEST TIMEOUT, and all 5xx error codes. Note that certain status codes, such as unauthorized, timeouts, and too many requests, will always prompt a retry.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 4,
+            "advanced": true,
+            "group_name": "Retry configurations"
+          }
+        },
+        {
+          "name": "max.retries",
+          "type": "INT",
+          "required": false,
+          "default_value": 3,
+          "importance": "MEDIUM",
+          "group": "Retry configurations",
+          "order_in_group": 4,
+          "display_name": "Maximum Retries",
+          "documentation": "The maximum number of retries on errors before a task is failed.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 5,
+            "advanced": true,
+            "group_name": "Retry configurations"
+          }
+        },
+        {
+          "name": "servicenow.ssl.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 19,
+          "display_name": "SSL Enabled",
+          "documentation": "Determine whether the connection to the endpoint should use SSL.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 19,
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.keystorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Authentication",
+          "order_in_group": 20,
+          "display_name": "Key Store",
+          "documentation": "The key store containing the server certificate.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 20,
+            "inputType": "CREDENTIALS_FILE",
+            "secretType": "BINARY",
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 21,
+          "display_name": "Keystore Password",
+          "documentation": "The store password for the key store file.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 21,
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.key.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 22,
+          "display_name": "Key Password",
+          "documentation": "The password for the private key in the key store file.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 22,
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.truststorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 23,
+          "display_name": "Trust Store",
+          "documentation": "The trust store containing a server CA certificate.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 23,
+            "inputType": "CREDENTIALS_FILE",
+            "secretType": "BINARY",
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.truststore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication",
+          "order_in_group": 24,
+          "display_name": "Trust Store Password",
+          "documentation": "The trust store password containing a server CA certificate.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 24,
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "servicenow.ssl.protocol",
+          "type": "STRING",
+          "required": false,
+          "default_value": "TLSv1.3",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 25,
+          "display_name": "SSL Protocol",
+          "documentation": "The protocol to use for SSL connections.",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "advanced": false,
+            "order_in_page": 25,
+            "visibility": "servicenow.ssl.enabled==true",
+            "group_name": "Authentication"
+          }
+        },
+        {
+          "name": "table1.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 1 configurations",
+          "order_in_group": 1,
+          "display_name": "Table",
+          "validators": [
+            {
+              "name": "servicenow.table.exists",
+              "arguments": {
+                "curr.table.num": 1
+              }
+            }
+          ],
+          "documentation": "The table name, combined with the ServiceNow Instance URL, will form the complete HTTP(S) URL. This path can be templated to include offset information.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 1,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.topic",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 1 configurations",
+          "order_in_group": 2,
+          "display_name": "Topic",
+          "documentation": "Specify the topic to which data will be pushed for this table.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 2,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations",
+            "topic_config_for_acls": "true"
+          }
+        },
+        {
+          "name": "table1.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "20000",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 50000
+              }
+            }
+          ],
+          "documentation": "Size of the batch of records to be fetched from the ServiceNow table. Note that Basic and Standard Clusters may experience throughput limitations, even with a higher batch size.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 4,
+            "visibility": "tables.num>=1",
+            "advanced": false,
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.start.timestamp",
+          "type": "STRING",
+          "required": false,
+          "default_value": "1970-01-01 00:00:00",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 5,
+          "display_name": "Start Time in UTC (yyyy-MM-dd HH:mm:ss)",
+          "documentation": "Time to start fetching all updates/creation. Defaults to `1970-01-01 00:00:00`. Note that the time is in UTC and requires format: `yyyy-MM-dd HH:mm:ss`.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp",
+              "arguments": {
+                "date.format": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 5,
+            "visibility": "tables.num>=1",
+            "advanced": false,
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "sys_updated_on",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 6,
+          "display_name": "Timestamp Field",
+          "documentation": "Timestamp Field to be used for pagination.",
+          "recommended_values": [
+            "sys_updated_on",
+            "sys_created_on"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 6,
+            "visibility": "tables.num>=1",
+            "advanced": false,
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.pagination.query",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 1 configurations",
+          "order_in_group": 7,
+          "display_name": "Pagination Query",
+          "documentation": "The query to be used for pagination on the table can be templated with offset information - `${offset}`. Note that all other table-related configurations will be ignored if this is configured. It defaults to a timestamp-based pagination query. An example query is `closed_at>=${offset}^ORDERBYclosed_at`, where `${offset}` refers to the pagination query offset field - `closed_at`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 7,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.pagination.query.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 1 configurations",
+          "order_in_group": 8,
+          "display_name": "Pagination Query Field",
+          "documentation": "Offset field if pagination query is used.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 8,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.display.value",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Table - 1 configurations",
+          "order_in_group": 9,
+          "display_name": "Display Values",
+          "documentation": "Specify whether to display values for the ServiceNow table records.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 9,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.allowlisted.fields",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 1 configurations",
+          "order_in_group": 10,
+          "display_name": "Allowlisted Fields",
+          "documentation": "A comma-separated list of fields that should be included in the Kafka record. The list must necessarily include the selected timestamp field (either `sys_updated_on` or `sys_created_on`) and the `sys_id` field. It defaults to all fields from the response.",
+          "dependents": [
+            "table1.timestamp.field"
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp.field",
+              "arguments": {
+                "default.value": "sys_updated_on"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 10,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "2000",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 11,
+          "display_name": "Request Interval ms",
+          "documentation": "The time in milliseconds to wait between consecutive requests.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 2000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 11,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.exclude.reference.link",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 12,
+          "display_name": "Exclude Reference Links",
+          "documentation": "Indicates whether to exclude Table API links for reference fields. By default, it includes all the Table API links.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 12,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.query.category",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 13,
+          "display_name": "Query Category",
+          "documentation": "Name of the category to use for queries.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 13,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.count.records",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 14,
+          "display_name": "Count Records",
+          "documentation": "Indicates if a ``SELECT COUNT(*)`` query will run to retrieve the row count on the table. Setting it to ``true`` enables this query.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 14,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.query.domain",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 15,
+          "display_name": "Query Domain",
+          "documentation": "Indicates whether to restrict the record search to the domains that are accessible to the logged in user . If set to ``true``, it excludes the records from domains that the current logged in user can't access.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 15,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table1.suppress.pagination.header",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 1 configurations",
+          "order_in_group": 11,
+          "display_name": "Suppress Pagination Header",
+          "documentation": "Indicates whether to remove the Link header from the response. The Link header provides various URLs to relative pages in the record set which you can use to paginate the returned record set.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 16,
+            "visibility": "tables.num>=1",
+            "group_name": "Table - 1 configurations"
+          }
+        },
+        {
+          "name": "table2.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 2 configurations",
+          "order_in_group": 1,
+          "display_name": "Table",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "servicenow.table.exists",
+              "arguments": {
+                "curr.table.num": 2
+              }
+            }
+          ],
+          "documentation": "The table name, combined with the ServiceNow Instance URL, will form the complete HTTP(S) URL. This path can be templated to include offset information.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 18,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.topic",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 2 configurations",
+          "order_in_group": 2,
+          "display_name": "Topic",
+          "docs_hidden": "true",
+          "documentation": "Specify the topic to which data will be pushed for this table.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 19,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations",
+            "topic_config_for_acls": "true"
+          }
+        },
+        {
+          "name": "table2.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "20000",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 50000
+              }
+            }
+          ],
+          "documentation": "Size of the batch of records to be fetched from the ServiceNow table. Note that Basic and Standard Clusters may experience throughput limitations, even with a higher batch size.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 21,
+            "visibility": "tables.num>=2",
+            "advanced": false,
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.start.timestamp",
+          "type": "STRING",
+          "required": false,
+          "default_value": "1970-01-01 00:00:00",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 5,
+          "display_name": "Start Time in UTC (yyyy-MM-dd HH:mm:ss)",
+          "docs_hidden": "true",
+          "documentation": "Time to start fetching all updates/creation. Defaults to `1970-01-01 00:00:00`. Note that the time is in UTC and requires format: `yyyy-MM-dd HH:mm:ss`.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp",
+              "arguments": {
+                "date.format": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 22,
+            "visibility": "tables.num>=2",
+            "advanced": false,
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "sys_updated_on",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 6,
+          "display_name": "Timestamp Field",
+          "docs_hidden": "true",
+          "documentation": "Timestamp Field to be used for pagination.",
+          "recommended_values": [
+            "sys_updated_on",
+            "sys_created_on"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 23,
+            "visibility": "tables.num>=2",
+            "advanced": false,
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.pagination.query",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 2 configurations",
+          "order_in_group": 7,
+          "display_name": "Pagination Query",
+          "docs_hidden": "true",
+          "documentation": "The query to be used for pagination on the table can be templated with offset information - `${offset}`. Note that all other table-related configurations will be ignored if this is configured. It defaults to a timestamp-based pagination query. An example query is `closed_at>=${offset}^ORDERBYclosed_at`, where `${offset}` refers to the pagination query offset field - `closed_at`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 24,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.pagination.query.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 2 configurations",
+          "order_in_group": 8,
+          "display_name": "Pagination Query Field",
+          "docs_hidden": "true",
+          "documentation": "Offset field if pagination query is used.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 25,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.display.value",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Table - 2 configurations",
+          "order_in_group": 9,
+          "display_name": "Display Values",
+          "docs_hidden": "true",
+          "documentation": "Specify whether to display values for the ServiceNow table records.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 26,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.allowlisted.fields",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 2 configurations",
+          "order_in_group": 10,
+          "display_name": "Allowlisted Fields",
+          "docs_hidden": "true",
+          "documentation": "A comma-separated list of fields that should be included in the Kafka record. The list must necessarily include the selected timestamp field (either `sys_updated_on` or `sys_created_on`) and the `sys_id` field. It defaults to all fields from the response.",
+          "dependents": [
+            "table2.timestamp.field"
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp.field",
+              "arguments": {
+                "default.value": "sys_updated_on"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 27,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "2000",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 11,
+          "display_name": "Request Interval ms",
+          "docs_hidden": "true",
+          "documentation": "The time in milliseconds to wait between consecutive requests.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 2000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 28,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.exclude.reference.link",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 12,
+          "display_name": "Exclude Reference Links",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to exclude Table API links for reference fields. By default, it includes all the Table API links.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 29,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.query.category",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 13,
+          "display_name": "Query Category",
+          "docs_hidden": "true",
+          "documentation": "Name of the category to use for queries.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 30,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.count.records",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 14,
+          "display_name": "Count Records",
+          "docs_hidden": "true",
+          "documentation": "Indicates if a ``SELECT COUNT(*)`` query will run to retrieve the row count on the table. Setting it to ``true`` enables this query.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 31,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.query.domain",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 15,
+          "display_name": "Query Domain",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to restrict the record search to the domains that are accessible to the logged in user . If set to ``true``, it excludes the records from domains that the current logged in user can't access.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 32,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table2.suppress.pagination.header",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 2 configurations",
+          "order_in_group": 11,
+          "display_name": "Suppress Pagination Header",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to remove the Link header from the response. The Link header provides various URLs to relative pages in the record set which you can use to paginate the returned record set.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 33,
+            "visibility": "tables.num>=2",
+            "group_name": "Table - 2 configurations"
+          }
+        },
+        {
+          "name": "table3.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 3 configurations",
+          "order_in_group": 1,
+          "display_name": "Table",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "servicenow.table.exists",
+              "arguments": {
+                "curr.table.num": 3
+              }
+            }
+          ],
+          "documentation": "The table name, combined with the ServiceNow Instance URL, will form the complete HTTP(S) URL. This path can be templated to include offset information.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 35,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.topic",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 3 configurations",
+          "order_in_group": 2,
+          "display_name": "Topic",
+          "docs_hidden": "true",
+          "documentation": "Specify the topic to which data will be pushed for this table.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 36,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations",
+            "topic_config_for_acls": "true"
+          }
+        },
+        {
+          "name": "table3.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "20000",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 50000
+              }
+            }
+          ],
+          "documentation": "Size of the batch of records to be fetched from the ServiceNow table. Note that Basic and Standard Clusters may experience throughput limitations, even with a higher batch size.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 38,
+            "visibility": "tables.num>=3",
+            "advanced": false,
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.start.timestamp",
+          "type": "STRING",
+          "required": false,
+          "default_value": "1970-01-01 00:00:00",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 5,
+          "display_name": "Start Time in UTC (yyyy-MM-dd HH:mm:ss)",
+          "docs_hidden": "true",
+          "documentation": "Time to start fetching all updates/creation. Defaults to `1970-01-01 00:00:00`. Note that the time is in UTC and requires format: `yyyy-MM-dd HH:mm:ss`.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp",
+              "arguments": {
+                "date.format": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 39,
+            "visibility": "tables.num>=3",
+            "advanced": false,
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "sys_updated_on",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 6,
+          "display_name": "Timestamp Field",
+          "docs_hidden": "true",
+          "documentation": "Timestamp Field to be used for pagination.",
+          "recommended_values": [
+            "sys_updated_on",
+            "sys_created_on"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 40,
+            "visibility": "tables.num>=3",
+            "advanced": false,
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.pagination.query",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 3 configurations",
+          "order_in_group": 7,
+          "display_name": "Pagination Query",
+          "docs_hidden": "true",
+          "documentation": "The query to be used for pagination on the table can be templated with offset information - `${offset}`. Note that all other table-related configurations will be ignored if this is configured. It defaults to a timestamp-based pagination query. An example query is `closed_at>=${offset}^ORDERBYclosed_at`, where `${offset}` refers to the pagination query offset field - `closed_at`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 41,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.pagination.query.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 3 configurations",
+          "order_in_group": 8,
+          "display_name": "Pagination Query Field",
+          "docs_hidden": "true",
+          "documentation": "Offset field if pagination query is used.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 42,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.display.value",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Table - 3 configurations",
+          "order_in_group": 9,
+          "display_name": "Display Values",
+          "docs_hidden": "true",
+          "documentation": "Specify whether to display values for the ServiceNow table records.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 43,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.allowlisted.fields",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 3 configurations",
+          "order_in_group": 10,
+          "display_name": "Allowlisted Fields",
+          "docs_hidden": "true",
+          "documentation": "A comma-separated list of fields that should be included in the Kafka record. The list must necessarily include the selected timestamp field (either `sys_updated_on` or `sys_created_on`) and the `sys_id` field. It defaults to all fields from the response.",
+          "dependents": [
+            "table3.timestamp.field"
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp.field",
+              "arguments": {
+                "default.value": "sys_updated_on"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 44,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "2000",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 11,
+          "display_name": "Request Interval ms",
+          "docs_hidden": "true",
+          "documentation": "The time in milliseconds to wait between consecutive requests.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 2000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 45,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.exclude.reference.link",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 12,
+          "display_name": "Exclude Reference Links",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to exclude Table API links for reference fields. By default, it includes all the Table API links.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 46,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.query.category",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 13,
+          "display_name": "Query Category",
+          "docs_hidden": "true",
+          "documentation": "Name of the category to use for queries.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 47,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.count.records",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 14,
+          "display_name": "Count Records",
+          "docs_hidden": "true",
+          "documentation": "Indicates if a ``SELECT COUNT(*)`` query will run to retrieve the row count on the table. Setting it to ``true`` enables this query.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 48,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.query.domain",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 15,
+          "display_name": "Query Domain",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to restrict the record search to the domains that are accessible to the logged in user . If set to ``true``, it excludes the records from domains that the current logged in user can't access.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 49,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table3.suppress.pagination.header",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 3 configurations",
+          "order_in_group": 11,
+          "display_name": "Suppress Pagination Header",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to remove the Link header from the response. The Link header provides various URLs to relative pages in the record set which you can use to paginate the returned record set.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 50,
+            "visibility": "tables.num>=3",
+            "group_name": "Table - 3 configurations"
+          }
+        },
+        {
+          "name": "table4.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 4 configurations",
+          "order_in_group": 1,
+          "display_name": "Table",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "servicenow.table.exists",
+              "arguments": {
+                "curr.table.num": 4
+              }
+            }
+          ],
+          "documentation": "The table name, combined with the ServiceNow Instance URL, will form the complete HTTP(S) URL. This path can be templated to include offset information.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 52,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.topic",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 4 configurations",
+          "order_in_group": 2,
+          "display_name": "Topic",
+          "docs_hidden": "true",
+          "documentation": "Specify the topic to which data will be pushed for this table.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 53,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations",
+            "topic_config_for_acls": "true"
+          }
+        },
+        {
+          "name": "table4.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "20000",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 50000
+              }
+            }
+          ],
+          "documentation": "Size of the batch of records to be fetched from the ServiceNow table. Note that Basic and Standard Clusters may experience throughput limitations, even with a higher batch size.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 55,
+            "visibility": "tables.num>=4",
+            "advanced": false,
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.start.timestamp",
+          "type": "STRING",
+          "required": false,
+          "default_value": "1970-01-01 00:00:00",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 5,
+          "display_name": "Start Time in UTC (yyyy-MM-dd HH:mm:ss)",
+          "docs_hidden": "true",
+          "documentation": "Time to start fetching all updates/creation. Defaults to `1970-01-01 00:00:00`. Note that the time is in UTC and requires format: `yyyy-MM-dd HH:mm:ss`.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp",
+              "arguments": {
+                "date.format": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 56,
+            "visibility": "tables.num>=4",
+            "advanced": false,
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "sys_updated_on",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 6,
+          "display_name": "Timestamp Field",
+          "docs_hidden": "true",
+          "documentation": "Timestamp Field to be used for pagination.",
+          "recommended_values": [
+            "sys_updated_on",
+            "sys_created_on"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 57,
+            "visibility": "tables.num>=4",
+            "advanced": false,
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.pagination.query",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 4 configurations",
+          "order_in_group": 7,
+          "display_name": "Pagination Query",
+          "docs_hidden": "true",
+          "documentation": "The query to be used for pagination on the table can be templated with offset information - `${offset}`. Note that all other table-related configurations will be ignored if this is configured. It defaults to a timestamp-based pagination query. An example query is `closed_at>=${offset}^ORDERBYclosed_at`, where `${offset}` refers to the pagination query offset field - `closed_at`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 58,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.pagination.query.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 4 configurations",
+          "order_in_group": 8,
+          "display_name": "Pagination Query Field",
+          "docs_hidden": "true",
+          "documentation": "Offset field if pagination query is used.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 59,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.display.value",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Table - 4 configurations",
+          "order_in_group": 9,
+          "display_name": "Display Values",
+          "docs_hidden": "true",
+          "documentation": "Specify whether to display values for the ServiceNow table records.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 60,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.allowlisted.fields",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 4 configurations",
+          "order_in_group": 10,
+          "display_name": "Allowlisted Fields",
+          "docs_hidden": "true",
+          "documentation": "A comma-separated list of fields that should be included in the Kafka record. The list must necessarily include the selected timestamp field (either `sys_updated_on` or `sys_created_on`) and the `sys_id` field. It defaults to all fields from the response.",
+          "dependents": [
+            "table4.timestamp.field"
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp.field",
+              "arguments": {
+                "default.value": "sys_updated_on"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 61,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "2000",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 11,
+          "display_name": "Request Interval ms",
+          "docs_hidden": "true",
+          "documentation": "The time in milliseconds to wait between consecutive requests.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 2000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 62,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.exclude.reference.link",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 12,
+          "display_name": "Exclude Reference Links",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to exclude Table API links for reference fields. By default, it includes all the Table API links.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 63,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.query.category",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 13,
+          "display_name": "Query Category",
+          "docs_hidden": "true",
+          "documentation": "Name of the category to use for queries.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 64,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.count.records",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 14,
+          "display_name": "Count Records",
+          "docs_hidden": "true",
+          "documentation": "Indicates if a ``SELECT COUNT(*)`` query will run to retrieve the row count on the table. Setting it to ``true`` enables this query.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 65,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.query.domain",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 15,
+          "display_name": "Query Domain",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to restrict the record search to the domains that are accessible to the logged in user . If set to ``true``, it excludes the records from domains that the current logged in user can't access.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 66,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table4.suppress.pagination.header",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 4 configurations",
+          "order_in_group": 11,
+          "display_name": "Suppress Pagination Header",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to remove the Link header from the response. The Link header provides various URLs to relative pages in the record set which you can use to paginate the returned record set.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 67,
+            "visibility": "tables.num>=4",
+            "group_name": "Table - 4 configurations"
+          }
+        },
+        {
+          "name": "table5.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 5 configurations",
+          "order_in_group": 1,
+          "display_name": "Table",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "servicenow.table.exists",
+              "arguments": {
+                "curr.table.num": 5
+              }
+            }
+          ],
+          "documentation": "The table name, combined with the ServiceNow Instance URL, will form the complete HTTP(S) URL. This path can be templated to include offset information.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 69,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.topic",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Table - 5 configurations",
+          "order_in_group": 2,
+          "display_name": "Topic",
+          "docs_hidden": "true",
+          "documentation": "Specify the topic to which data will be pushed for this table.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 70,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations",
+            "topic_config_for_acls": "true"
+          }
+        },
+        {
+          "name": "table5.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "20000",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "docs_hidden": "true",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 50000
+              }
+            }
+          ],
+          "documentation": "Size of the batch of records to be fetched from the ServiceNow table. Note that Basic and Standard Clusters may experience throughput limitations, even with a higher batch size.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 72,
+            "visibility": "tables.num>=5",
+            "advanced": false,
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.start.timestamp",
+          "type": "STRING",
+          "required": false,
+          "default_value": "1970-01-01 00:00:00",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 5,
+          "display_name": "Start Time in UTC (yyyy-MM-dd HH:mm:ss)",
+          "docs_hidden": "true",
+          "documentation": "Time to start fetching all updates/creation. Defaults to `1970-01-01 00:00:00`. Note that the time is in UTC and requires format: `yyyy-MM-dd HH:mm:ss`.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp",
+              "arguments": {
+                "date.format": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 73,
+            "visibility": "tables.num>=5",
+            "advanced": false,
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "sys_updated_on",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 6,
+          "display_name": "Timestamp Field",
+          "docs_hidden": "true",
+          "documentation": "Timestamp Field to be used for pagination.",
+          "recommended_values": [
+            "sys_updated_on",
+            "sys_created_on"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 74,
+            "visibility": "tables.num>=5",
+            "advanced": false,
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.pagination.query",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 5 configurations",
+          "order_in_group": 7,
+          "display_name": "Pagination Query",
+          "docs_hidden": "true",
+          "documentation": "The query to be used for pagination on the table can be templated with offset information - `${offset}`. Note that all other table-related configurations will be ignored if this is configured. It defaults to a timestamp-based pagination query. An example query is `closed_at>=${offset}^ORDERBYclosed_at`, where `${offset}` refers to the pagination query offset field - `closed_at`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 75,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.pagination.query.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 5 configurations",
+          "order_in_group": 8,
+          "display_name": "Pagination Query Field",
+          "docs_hidden": "true",
+          "documentation": "Offset field if pagination query is used.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 76,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.display.value",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Table - 5 configurations",
+          "order_in_group": 9,
+          "display_name": "Display Values",
+          "docs_hidden": "true",
+          "documentation": "Specify whether to display values for the ServiceNow table records.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 77,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.allowlisted.fields",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "Table - 5 configurations",
+          "order_in_group": 10,
+          "display_name": "Allowlisted Fields",
+          "docs_hidden": "true",
+          "documentation": "A comma-separated list of fields that should be included in the Kafka record. The list must necessarily include the selected timestamp field (either `sys_updated_on` or `sys_created_on`) and the `sys_id` field. It defaults to all fields from the response.",
+          "dependents": [
+            "table5.timestamp.field"
+          ],
+          "validators": [
+            {
+              "name": "validate.timestamp.field",
+              "arguments": {
+                "default.value": "sys_updated_on"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 78,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "2000",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 11,
+          "display_name": "Request Interval ms",
+          "docs_hidden": "true",
+          "documentation": "The time in milliseconds to wait between consecutive requests.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 2000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 79,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.exclude.reference.link",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 12,
+          "display_name": "Exclude Reference Links",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to exclude Table API links for reference fields. By default, it includes all the Table API links.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 80,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.query.category",
+          "type": "STRING",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 13,
+          "display_name": "Query Category",
+          "docs_hidden": "true",
+          "documentation": "Name of the category to use for queries.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 81,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.count.records",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 14,
+          "display_name": "Count Records",
+          "docs_hidden": "true",
+          "documentation": "Indicates if a ``SELECT COUNT(*)`` query will run to retrieve the row count on the table. Setting it to ``true`` enables this query.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 82,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.query.domain",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 15,
+          "display_name": "Query Domain",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to restrict the record search to the domains that are accessible to the logged in user . If set to ``true``, it excludes the records from domains that the current logged in user can't access.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 83,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        },
+        {
+          "name": "table5.suppress.pagination.header",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Table - 5 configurations",
+          "order_in_group": 11,
+          "display_name": "Suppress Pagination Header",
+          "docs_hidden": "true",
+          "documentation": "Indicates whether to remove the Link header from the response. The Link header provides various URLs to relative pages in the record set which you can use to paginate the returned record set.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 84,
+            "visibility": "tables.num>=5",
+            "group_name": "Table - 5 configurations"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "apis.num",
+          "value": "${tables.num}"
+        },
+        {
+          "name": "max.apis.num",
+          "value": "5"
+        },
+        {
+          "name": "http.api.base.url",
+          "value": "${servicenow.url}"
+        },
+        {
+          "name": "behavior.on.error"
+        },
+        {
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "max.execution.timeout.ms"
+        },
+        {
+          "name": "auth.type"
+        },
+        {
+          "name": "connection.user"
+        },
+        {
+          "name": "connection.password"
+        },
+        {
+          "name": "https.ssl.enabled",
+          "value": "${servicenow.ssl.enabled}"
+        },
+        {
+          "name": "https.ssl.protocol",
+          "value": "${servicenow.ssl.protocol}"
+        },
+        {
+          "name": "https.ssl.keystore.location",
+          "value": "${servicenow.ssl.keystorefile}"
+        },
+        {
+          "name": "https.ssl.keystore.password",
+          "value": "${servicenow.ssl.keystore.password}"
+        },
+        {
+          "name": "https.ssl.key.password",
+          "value": "${servicenow.ssl.key.password}"
+        },
+        {
+          "name": "https.ssl.truststore.location",
+          "value": "${servicenow.ssl.truststorefile}"
+        },
+        {
+          "name": "https.ssl.truststore.password",
+          "value": "${servicenow.ssl.truststore.password}"
+        },
+        {
+          "name": "add.error.to.trace",
+          "value": "true"
+        },
+        {
+          "name": "oauth2.token.url"
+        },
+        {
+          "name": "oauth2.client.id"
+        },
+        {
+          "name": "oauth2.client.secret"
+        },
+        {
+          "name": "oauth2.token.property"
+        },
+        {
+          "name": "oauth2.client.headers"
+        },
+        {
+          "name": "oauth2.client.header.separator"
+        },
+        {
+          "name": "oauth2.client.scope"
+        },
+        {
+          "name": "oauth2.client.auth.mode"
+        },
+        {
+          "name": "oauth2.jwt.enabled"
+        },
+        {
+          "name": "oauth2.jwt.keystore.path"
+        },
+        {
+          "name": "oauth2.jwt.keystore.password"
+        },
+        {
+          "name": "oauth2.jwt.keystore.type"
+        },
+        {
+          "name": "oauth2.jwt.claimset"
+        },
+        {
+          "name": "api1.topics",
+          "value": "${table1.topic}"
+        },
+        {
+          "name": "api1.http.api.path",
+          "switch": {
+            "table1.name": {
+              "DEFAULT": "/api/now/table/${table1.name}"
+            }
+          }
+        },
+        {
+          "name": "api1.http.initial.offset",
+          "value": "${table1.start.timestamp}"
+        },
+        {
+          "name": "api1.chaining.with.timestamp.mode",
+          "value": "true"
+        },
+        {
+          "name": "api1.http.offset.mode",
+          "value": "chaining"
+        },
+        {
+          "name": "api1.http.request.parameters",
+          "dynamic.mapper": {
+            "name": "servicenow.request.params.generator"
+          }
+        },
+        {
+          "name": "api1.http.response.data.json.pointer",
+          "value": "/result"
+        },
+        {
+          "name": "api1.http.offset.json.primary.key.pointer",
+          "switch": {
+            "table1.display.value": {
+              "true": "/sys_id/value",
+              "false": "/sys_id"
+            }
+          }
+        },
+        {
+          "name": "api1.http.offset.json.pointer",
+          "dynamic.mapper": {
+            "name": "servicenow.query.offset.pointer"
+          }
+        },
+        {
+          "name": "api1.http.request.headers",
+          "value": "Content-Type: application/json"
+        },
+        {
+          "name": "api1.request.interval.ms",
+          "value": "${table1.request.interval.ms}"
+        },
+        {
+          "name": "api1.http.request.headers.separator",
+          "value": "|"
+        },
+        {
+          "name": "api1.http.connect.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api1.http.request.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api1.http.request.parameters.separator",
+          "value": "&"
+        },
+        {
+          "name": "api1.max.retries",
+          "value": "${max.retries}"
+        },
+        {
+          "name": "api1.http.request.method",
+          "value": "GET"
+        },
+        {
+          "name": "api1.retry.backoff.ms",
+          "value": "${retry.backoff.ms}"
+        },
+        {
+          "name": "api1.retry.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api1.request.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api1.retry.on.status.codes",
+          "value": "${retry.on.status.codes}"
+        },
+        {
+          "name": "api1.validate.auth.creds",
+          "switch": {
+            "table1.name": {
+              "DEFAULT": "true"
+            }
+          }
+        },
+        {
+          "name": "api1.fail.on.response",
+          "value": "Instance Hibernating"
+        },
+        {
+          "name": "api2.topics",
+          "value": "${table2.topic}"
+        },
+        {
+          "name": "api2.http.api.path",
+          "switch": {
+            "table2.name": {
+              "DEFAULT": "/api/now/table/${table2.name}"
+            }
+          }
+        },
+        {
+          "name": "api2.http.initial.offset",
+          "value": "${table2.start.timestamp}"
+        },
+        {
+          "name": "api2.chaining.with.timestamp.mode",
+          "value": "true"
+        },
+        {
+          "name": "api2.http.offset.mode",
+          "value": "chaining"
+        },
+        {
+          "name": "api2.http.request.parameters",
+          "dynamic.mapper": {
+            "name": "servicenow.request.params.generator"
+          }
+        },
+        {
+          "name": "api2.http.response.data.json.pointer",
+          "value": "/result"
+        },
+        {
+          "name": "api2.http.offset.json.primary.key.pointer",
+          "switch": {
+            "table2.display.value": {
+              "true": "/sys_id/value",
+              "false": "/sys_id"
+            }
+          }
+        },
+        {
+          "name": "api2.http.offset.json.pointer",
+          "dynamic.mapper": {
+            "name": "servicenow.query.offset.pointer"
+          }
+        },
+        {
+          "name": "api2.http.request.headers",
+          "value": "Content-Type: application/json"
+        },
+        {
+          "name": "api2.request.interval.ms",
+          "value": "${table2.request.interval.ms}"
+        },
+        {
+          "name": "api2.http.request.headers.separator",
+          "value": "|"
+        },
+        {
+          "name": "api2.http.connect.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api2.http.request.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api2.http.request.parameters.separator",
+          "value": "&"
+        },
+        {
+          "name": "api2.max.retries",
+          "value": "${max.retries}"
+        },
+        {
+          "name": "api2.http.request.method",
+          "value": "GET"
+        },
+        {
+          "name": "api2.retry.backoff.ms",
+          "value": "${retry.backoff.ms}"
+        },
+        {
+          "name": "api2.retry.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api2.request.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api2.retry.on.status.codes",
+          "value": "${retry.on.status.codes}"
+        },
+        {
+          "name": "api2.validate.auth.creds",
+          "switch": {
+            "table2.name": {
+              "DEFAULT": "true"
+            }
+          }
+        },
+        {
+          "name": "api2.fail.on.response",
+          "value": "Instance Hibernating"
+        },
+        {
+          "name": "api3.topics",
+          "value": "${table3.topic}"
+        },
+        {
+          "name": "api3.http.api.path",
+          "switch": {
+            "table3.name": {
+              "DEFAULT": "/api/now/table/${table3.name}"
+            }
+          }
+        },
+        {
+          "name": "api3.http.initial.offset",
+          "value": "${table3.start.timestamp}"
+        },
+        {
+          "name": "api3.chaining.with.timestamp.mode",
+          "value": "true"
+        },
+        {
+          "name": "api3.http.offset.mode",
+          "value": "chaining"
+        },
+        {
+          "name": "api3.http.request.parameters",
+          "dynamic.mapper": {
+            "name": "servicenow.request.params.generator"
+          }
+        },
+        {
+          "name": "api3.http.response.data.json.pointer",
+          "value": "/result"
+        },
+        {
+          "name": "api3.http.offset.json.primary.key.pointer",
+          "switch": {
+            "table3.display.value": {
+              "true": "/sys_id/value",
+              "false": "/sys_id"
+            }
+          }
+        },
+        {
+          "name": "api3.http.offset.json.pointer",
+          "dynamic.mapper": {
+            "name": "servicenow.query.offset.pointer"
+          }
+        },
+        {
+          "name": "api3.http.request.headers",
+          "value": "Content-Type: application/json"
+        },
+        {
+          "name": "api3.request.interval.ms",
+          "value": "${table3.request.interval.ms}"
+        },
+        {
+          "name": "api3.http.request.headers.separator",
+          "value": "|"
+        },
+        {
+          "name": "api3.http.connect.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api3.http.request.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api3.http.request.parameters.separator",
+          "value": "&"
+        },
+        {
+          "name": "api3.max.retries",
+          "value": "${max.retries}"
+        },
+        {
+          "name": "api3.http.request.method",
+          "value": "GET"
+        },
+        {
+          "name": "api3.retry.backoff.ms",
+          "value": "${retry.backoff.ms}"
+        },
+        {
+          "name": "api3.retry.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api3.request.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api3.retry.on.status.codes",
+          "value": "${retry.on.status.codes}"
+        },
+        {
+          "name": "api3.validate.auth.creds",
+          "switch": {
+            "table3.name": {
+              "DEFAULT": "true"
+            }
+          }
+        },
+        {
+          "name": "api3.fail.on.response",
+          "value": "Instance Hibernating"
+        },
+        {
+          "name": "api4.topics",
+          "value": "${table4.topic}"
+        },
+        {
+          "name": "api4.http.api.path",
+          "switch": {
+            "table4.name": {
+              "DEFAULT": "/api/now/table/${table4.name}"
+            }
+          }
+        },
+        {
+          "name": "api4.http.initial.offset",
+          "value": "${table4.start.timestamp}"
+        },
+        {
+          "name": "api4.chaining.with.timestamp.mode",
+          "value": "true"
+        },
+        {
+          "name": "api4.http.offset.mode",
+          "value": "chaining"
+        },
+        {
+          "name": "api4.http.request.parameters",
+          "dynamic.mapper": {
+            "name": "servicenow.request.params.generator"
+          }
+        },
+        {
+          "name": "api4.http.response.data.json.pointer",
+          "value": "/result"
+        },
+        {
+          "name": "api4.http.offset.json.primary.key.pointer",
+          "switch": {
+            "table4.display.value": {
+              "true": "/sys_id/value",
+              "false": "/sys_id"
+            }
+          }
+        },
+        {
+          "name": "api4.http.offset.json.pointer",
+          "dynamic.mapper": {
+            "name": "servicenow.query.offset.pointer"
+          }
+        },
+        {
+          "name": "api4.http.request.headers",
+          "value": "Content-Type: application/json"
+        },
+        {
+          "name": "api4.request.interval.ms",
+          "value": "${table4.request.interval.ms}"
+        },
+        {
+          "name": "api4.http.request.headers.separator",
+          "value": "|"
+        },
+        {
+          "name": "api4.http.connect.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api4.http.request.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api4.http.request.parameters.separator",
+          "value": "&"
+        },
+        {
+          "name": "api4.max.retries",
+          "value": "${max.retries}"
+        },
+        {
+          "name": "api4.http.request.method",
+          "value": "GET"
+        },
+        {
+          "name": "api4.retry.backoff.ms",
+          "value": "${retry.backoff.ms}"
+        },
+        {
+          "name": "api4.retry.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api4.request.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api4.retry.on.status.codes",
+          "value": "${retry.on.status.codes}"
+        },
+        {
+          "name": "api4.validate.auth.creds",
+          "switch": {
+            "table4.name": {
+              "DEFAULT": "true"
+            }
+          }
+        },
+        {
+          "name": "api4.fail.on.response",
+          "value": "Instance Hibernating"
+        },
+        {
+          "name": "api5.topics",
+          "value": "${table5.topic}"
+        },
+        {
+          "name": "api5.http.api.path",
+          "switch": {
+            "table5.name": {
+              "DEFAULT": "/api/now/table/${table5.name}"
+            }
+          }
+        },
+        {
+          "name": "api5.http.initial.offset",
+          "value": "${table5.start.timestamp}"
+        },
+        {
+          "name": "api5.chaining.with.timestamp.mode",
+          "value": "true"
+        },
+        {
+          "name": "api5.http.offset.mode",
+          "value": "chaining"
+        },
+        {
+          "name": "api5.http.request.parameters",
+          "dynamic.mapper": {
+            "name": "servicenow.request.params.generator"
+          }
+        },
+        {
+          "name": "api5.http.response.data.json.pointer",
+          "value": "/result"
+        },
+        {
+          "name": "api5.http.offset.json.primary.key.pointer",
+          "switch": {
+            "table5.display.value": {
+              "true": "/sys_id/value",
+              "false": "/sys_id"
+            }
+          }
+        },
+        {
+          "name": "api5.http.offset.json.pointer",
+          "dynamic.mapper": {
+            "name": "servicenow.query.offset.pointer"
+          }
+        },
+        {
+          "name": "api5.http.request.headers",
+          "value": "Content-Type: application/json"
+        },
+        {
+          "name": "api5.request.interval.ms",
+          "value": "${table5.request.interval.ms}"
+        },
+        {
+          "name": "api5.http.request.headers.separator",
+          "value": "|"
+        },
+        {
+          "name": "api5.http.connect.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api5.http.request.timeout.ms",
+          "value": 30000
+        },
+        {
+          "name": "api5.http.request.parameters.separator",
+          "value": "&"
+        },
+        {
+          "name": "api5.max.retries",
+          "value": "${max.retries}"
+        },
+        {
+          "name": "api5.http.request.method",
+          "value": "GET"
+        },
+        {
+          "name": "api5.retry.backoff.ms",
+          "value": "${retry.backoff.ms}"
+        },
+        {
+          "name": "api5.retry.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api5.request.backoff.policy",
+          "value": "${retry.backoff.policy}"
+        },
+        {
+          "name": "api5.retry.on.status.codes",
+          "value": "${retry.on.status.codes}"
+        },
+        {
+          "name": "api5.validate.auth.creds",
+          "switch": {
+            "table5.name": {
+              "DEFAULT": "true"
+            }
+          }
+        },
+        {
+          "name": "api5.fail.on.response",
+          "value": "Instance Hibernating"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${servicenow.url}"
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class",
+          "metadata": {
+            "page": "REVIEW_AND_LAUNCH",
+            "order_in_page": 1,
+            "change_after_launch": false
+          }
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector.",
+          "metadata": {
+            "page": "REVIEW_AND_LAUNCH",
+            "order_in_page": 2,
+            "change_after_launch": false
+          },
+          "validators": [
+            {
+              "name": "common.length",
+              "arguments": {
+                "length": 64
+              }
+            }
+          ]
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "SIZING",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==KAFKA_API_KEY"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials.sanity"
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
+          }
+        },
+        {
+          "name": "kafka.service.account.api.key",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.api.secret",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.region",
+          "type": "STRING",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.endpoint",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "internal": true,
+          "validators": [
+            {
+              "name": "common.regex",
+              "arguments": {
+                "pattern": "^.*://.*$"
+              }
+            }
+          ]
+        },
+        {
+          "name": "kafka.user.id",
+          "type": "INT",
+          "required": false,
+          "internal": true,
+          "importance": "MEDIUM"
+        },
+        {
+          "name": "cloud.environment",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.cloud",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.dedicated",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "valid.kafka.api.key",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.oauth.token",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.logical.cluster.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connect.connector_cross_region.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.regional.connectivity.enabled",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.validity.check",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
+          "type": "STRING",
+          "required": false,
+          "default_value": "SKIP",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.fips.provider",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "default_value_provider": {
+            "name": "defaultvalue.fips.provider"
+          },
+          "importance": "HIGH",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "common-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials",
+              "arguments": {
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
+          }
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "kafka.auth.mode==KAFKA_API_KEY"
+              },
+              "priority": "HIGHEST"
+            },
+            {
+              "name": "kafka.credentials.sanity"
+            },
+            {
+              "name": "kafka.credentials",
+              "arguments": {
+                "ssl.endpoint.identification.algorithm": "https",
+                "sasl.mechanism": "PLAIN",
+                "request.timeout.ms": "60000",
+                "retry.backoff.ms": "500",
+                "security.protocol": "SASL_SSL"
+              }
+            }
+          ],
+          "dependents": [
+            "kafka.api.key"
+          ],
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
+          }
+        },
+        {
+          "name": "datapreview.schemas.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "display_name": "Show schemas in data preview request output",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 4,
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
+          "metadata": {
+            "page": "KAFKA_CREDENTIALS",
+            "order_in_page": 2,
+            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
+          }
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "none",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "producer.override.linger.ms",
+          "type": "LONG",
+          "required": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "producer.override.linger.ms",
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          },
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 100,
+                "max": 1000
+              }
+            }
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topic.creation.default.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "topic.creation.default.partitions",
+          "value": "1"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "producer.override.max.request.size",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971610",
+              "false": "8388698"
+            }
+          }
+        },
+        {
+          "name": "topic.creation.default.max.message.bytes",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971520",
+              "false": "8388608"
+            }
+          }
+        },
+        {
+          "name": "datapreview.schemas.enable"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.linger.ms"
+        }
+      ]
+    },
+    {
+      "template_id": "csfle-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csfle.enabled",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 1,
+          "docs_hidden": true,
+          "display_name": "Enable Client-Side Field Level Encryption",
+          "documentation": "Determines whether the connector honours CSFLE rules or not",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "csfle.configs.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "group_name": "Data encryption",
+            "group_description": "Enable client-side encryption for the data that is stored in Confluent Cloud. Encryption rule must be setup for the data to be encrypted. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
+            "order_in_page": 10,
+            "visibility": "output.data.format==AVRO,JSON_SR,PROTOBUF"
+          }
+        },
+        {
+          "name": "sr.service.account.id",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 2,
+          "docs_hidden": true,
+          "display_name": "Schema Registry Service Account",
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
+          "validators": [
+            {
+              "name": "common.conditional.required",
+              "arguments": {
+                "condition": "csfle.enabled==true"
+              },
+              "priority": "HIGHEST"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "visibility": "csfle.enabled==true && output.data.format==AVRO,JSON_SR,PROTOBUF",
+            "group_name": "Data encryption",
+            "order_in_page": 11
+          }
+        },
+        {
+          "name": "csfle.configs.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.enabled": {
+              "true": "ERROR"
+            }
+          }
+        },
+        {
+          "name": "value.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.enabled": {
+              "true": "ERROR"
+            }
+          }
+        },
+        {
+          "name": "key.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "key.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "http-network-restrictions-common",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connection.disallow.private.ips",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "connection.disallow.cidr.ranges",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "connection.allow.cidr.ranges",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "connection.disallow.class.e.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.local.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.private.ips"
+        },
+        {
+          "name": "connection.disallow.cidr.ranges"
+        },
+        {
+          "name": "connection.allow.cidr.ranges"
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.registry.url",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "validators": [
+            {
+              "name": "schema.context.name.exist.check",
+              "priority": "LOWER"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 1
+          }
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "reporter",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": [
+        {
+          "name": "reporter.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.producer.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.producer.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "reporter.admin.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.admin.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.admin.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "reporter.result.topic.name",
+          "value": "success-${connector}"
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "value": "error-${connector}"
+        },
+        {
+          "name": "reporter.admin.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "source-connector-schema-enabled-output-data-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "AVRO",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 2,
+            "group_name": "Output messages"
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "value.converter",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "value": "${schema.registry.url}"
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "value": "USER_INFO"
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "auth.type",
+    "behavior.on.error",
+    "connection.password",
+    "connection.user",
+    "connector.class",
+    "csfle.enabled",
+    "datapreview.schemas.enable",
+    "kafka.api.key",
+    "kafka.api.secret",
+    "kafka.auth.mode",
+    "kafka.service.account.id",
+    "max.retries",
+    "name",
+    "oauth2.client.auth.mode",
+    "oauth2.client.header.separator",
+    "oauth2.client.headers",
+    "oauth2.client.id",
+    "oauth2.client.scope",
+    "oauth2.client.secret",
+    "oauth2.jwt.claimset",
+    "oauth2.jwt.enabled",
+    "oauth2.jwt.keystore.password",
+    "oauth2.jwt.keystore.path",
+    "oauth2.jwt.keystore.type",
+    "oauth2.token.property",
+    "oauth2.token.url",
+    "output.data.format",
+    "retry.backoff.ms",
+    "retry.backoff.policy",
+    "retry.on.status.codes",
+    "schema.context.name",
+    "servicenow.ssl.enabled",
+    "servicenow.ssl.key.password",
+    "servicenow.ssl.keystore.password",
+    "servicenow.ssl.keystorefile",
+    "servicenow.ssl.protocol",
+    "servicenow.ssl.truststore.password",
+    "servicenow.ssl.truststorefile",
+    "servicenow.url",
+    "sr.service.account.id",
+    "table1.allowlisted.fields",
+    "table1.batch.size",
+    "table1.count.records",
+    "table1.display.value",
+    "table1.exclude.reference.link",
+    "table1.name",
+    "table1.pagination.query",
+    "table1.pagination.query.field",
+    "table1.query.category",
+    "table1.query.domain",
+    "table1.request.interval.ms",
+    "table1.start.timestamp",
+    "table1.suppress.pagination.header",
+    "table1.timestamp.field",
+    "table1.topic",
+    "table2.allowlisted.fields",
+    "table2.batch.size",
+    "table2.count.records",
+    "table2.display.value",
+    "table2.exclude.reference.link",
+    "table2.name",
+    "table2.pagination.query",
+    "table2.pagination.query.field",
+    "table2.query.category",
+    "table2.query.domain",
+    "table2.request.interval.ms",
+    "table2.start.timestamp",
+    "table2.suppress.pagination.header",
+    "table2.timestamp.field",
+    "table2.topic",
+    "table3.allowlisted.fields",
+    "table3.batch.size",
+    "table3.count.records",
+    "table3.display.value",
+    "table3.exclude.reference.link",
+    "table3.name",
+    "table3.pagination.query",
+    "table3.pagination.query.field",
+    "table3.query.category",
+    "table3.query.domain",
+    "table3.request.interval.ms",
+    "table3.start.timestamp",
+    "table3.suppress.pagination.header",
+    "table3.timestamp.field",
+    "table3.topic",
+    "table4.allowlisted.fields",
+    "table4.batch.size",
+    "table4.count.records",
+    "table4.display.value",
+    "table4.exclude.reference.link",
+    "table4.name",
+    "table4.pagination.query",
+    "table4.pagination.query.field",
+    "table4.query.category",
+    "table4.query.domain",
+    "table4.request.interval.ms",
+    "table4.start.timestamp",
+    "table4.suppress.pagination.header",
+    "table4.timestamp.field",
+    "table4.topic",
+    "table5.allowlisted.fields",
+    "table5.batch.size",
+    "table5.count.records",
+    "table5.display.value",
+    "table5.exclude.reference.link",
+    "table5.name",
+    "table5.pagination.query",
+    "table5.pagination.query.field",
+    "table5.query.category",
+    "table5.query.domain",
+    "table5.request.interval.ms",
+    "table5.start.timestamp",
+    "table5.suppress.pagination.header",
+    "table5.timestamp.field",
+    "table5.topic",
+    "tables.num",
+    "tasks.max"
+  ],
+  "all_connector_configs": [
+    {
+      "name": "apis.num",
+      "value": "${tables.num}"
+    },
+    {
+      "name": "http.api.base.url",
+      "value": "${servicenow.url}"
+    },
+    {
+      "name": "consumer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "https.ssl.enabled",
+      "value": "${servicenow.ssl.enabled}"
+    },
+    {
+      "name": "https.ssl.protocol",
+      "value": "${servicenow.ssl.protocol}"
+    },
+    {
+      "name": "https.ssl.keystore.location",
+      "value": "${servicenow.ssl.keystorefile}"
+    },
+    {
+      "name": "https.ssl.keystore.password",
+      "value": "${servicenow.ssl.keystore.password}"
+    },
+    {
+      "name": "https.ssl.key.password",
+      "value": "${servicenow.ssl.key.password}"
+    },
+    {
+      "name": "https.ssl.truststore.location",
+      "value": "${servicenow.ssl.truststorefile}"
+    },
+    {
+      "name": "https.ssl.truststore.password",
+      "value": "${servicenow.ssl.truststore.password}"
+    },
+    {
+      "name": "api1.topics",
+      "value": "${table1.topic}"
+    },
+    {
+      "name": "api1.http.api.path",
+      "switch": {
+        "table1.name": {
+          "DEFAULT": "/api/now/table/${table1.name}"
+        }
+      }
+    },
+    {
+      "name": "api1.http.initial.offset",
+      "value": "${table1.start.timestamp}"
+    },
+    {
+      "name": "api1.request.interval.ms",
+      "value": "${table1.request.interval.ms}"
+    },
+    {
+      "name": "api1.max.retries",
+      "value": "${max.retries}"
+    },
+    {
+      "name": "api1.retry.backoff.ms",
+      "value": "${retry.backoff.ms}"
+    },
+    {
+      "name": "api1.retry.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api1.request.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api1.retry.on.status.codes",
+      "value": "${retry.on.status.codes}"
+    },
+    {
+      "name": "api2.topics",
+      "value": "${table2.topic}"
+    },
+    {
+      "name": "api2.http.api.path",
+      "switch": {
+        "table2.name": {
+          "DEFAULT": "/api/now/table/${table2.name}"
+        }
+      }
+    },
+    {
+      "name": "api2.http.initial.offset",
+      "value": "${table2.start.timestamp}"
+    },
+    {
+      "name": "api2.request.interval.ms",
+      "value": "${table2.request.interval.ms}"
+    },
+    {
+      "name": "api2.max.retries",
+      "value": "${max.retries}"
+    },
+    {
+      "name": "api2.retry.backoff.ms",
+      "value": "${retry.backoff.ms}"
+    },
+    {
+      "name": "api2.retry.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api2.request.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api2.retry.on.status.codes",
+      "value": "${retry.on.status.codes}"
+    },
+    {
+      "name": "api3.topics",
+      "value": "${table3.topic}"
+    },
+    {
+      "name": "api3.http.api.path",
+      "switch": {
+        "table3.name": {
+          "DEFAULT": "/api/now/table/${table3.name}"
+        }
+      }
+    },
+    {
+      "name": "api3.http.initial.offset",
+      "value": "${table3.start.timestamp}"
+    },
+    {
+      "name": "api3.request.interval.ms",
+      "value": "${table3.request.interval.ms}"
+    },
+    {
+      "name": "api3.max.retries",
+      "value": "${max.retries}"
+    },
+    {
+      "name": "api3.retry.backoff.ms",
+      "value": "${retry.backoff.ms}"
+    },
+    {
+      "name": "api3.retry.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api3.request.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api3.retry.on.status.codes",
+      "value": "${retry.on.status.codes}"
+    },
+    {
+      "name": "api4.topics",
+      "value": "${table4.topic}"
+    },
+    {
+      "name": "api4.http.api.path",
+      "switch": {
+        "table4.name": {
+          "DEFAULT": "/api/now/table/${table4.name}"
+        }
+      }
+    },
+    {
+      "name": "api4.http.initial.offset",
+      "value": "${table4.start.timestamp}"
+    },
+    {
+      "name": "api4.request.interval.ms",
+      "value": "${table4.request.interval.ms}"
+    },
+    {
+      "name": "api4.max.retries",
+      "value": "${max.retries}"
+    },
+    {
+      "name": "api4.retry.backoff.ms",
+      "value": "${retry.backoff.ms}"
+    },
+    {
+      "name": "api4.retry.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api4.request.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api4.retry.on.status.codes",
+      "value": "${retry.on.status.codes}"
+    },
+    {
+      "name": "api5.topics",
+      "value": "${table5.topic}"
+    },
+    {
+      "name": "api5.http.api.path",
+      "switch": {
+        "table5.name": {
+          "DEFAULT": "/api/now/table/${table5.name}"
+        }
+      }
+    },
+    {
+      "name": "api5.http.initial.offset",
+      "value": "${table5.start.timestamp}"
+    },
+    {
+      "name": "api5.request.interval.ms",
+      "value": "${table5.request.interval.ms}"
+    },
+    {
+      "name": "api5.max.retries",
+      "value": "${max.retries}"
+    },
+    {
+      "name": "api5.retry.backoff.ms",
+      "value": "${retry.backoff.ms}"
+    },
+    {
+      "name": "api5.retry.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api5.request.backoff.policy",
+      "value": "${retry.backoff.policy}"
+    },
+    {
+      "name": "api5.retry.on.status.codes",
+      "value": "${retry.on.status.codes}"
+    },
+    {
+      "name": "connector.endpoint",
+      "value": "${servicenow.url}"
+    },
+    {
+      "name": "consumer.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "producer.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "admin.override.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "producer.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "consumer.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "admin.override.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "reporter.bootstrap.servers",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+          "UNSET": "${kafka.endpoint}",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+        }
+      }
+    },
+    {
+      "name": "reporter.producer.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "reporter.admin.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "reporter.result.topic.name",
+      "value": "success-${connector}"
+    },
+    {
+      "name": "reporter.error.topic.name",
+      "value": "error-${connector}"
+    },
+    {
+      "name": "reporter.admin.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "reporter.producer.confluent.lkc.id",
+      "switch": {
+        "connect.metadata_property.kafka.itsl.embed.lkc": {
+          "SKIP": "",
+          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+        }
+      }
+    },
+    {
+      "name": "value.converter.schema.registry.url",
+      "value": "${schema.registry.url}"
+    },
+    {
+      "name": "value.converter.basic.auth.user.info",
+      "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+    }
+  ],
+  "config_defs_not_used_as_connector_names": [
+    "connector.class",
+    "kafka.api.key",
+    "kafka.api.secret",
+    "kafka.auth.mode",
+    "kafka.service.account.id",
+    "max.retries",
+    "name",
+    "output.data.format",
+    "retry.backoff.ms",
+    "retry.backoff.policy",
+    "retry.on.status.codes",
+    "schema.context.name",
+    "servicenow.ssl.enabled",
+    "servicenow.ssl.key.password",
+    "servicenow.ssl.keystore.password",
+    "servicenow.ssl.keystorefile",
+    "servicenow.ssl.protocol",
+    "servicenow.ssl.truststore.password",
+    "servicenow.ssl.truststorefile",
+    "servicenow.url",
+    "sr.service.account.id",
+    "table1.allowlisted.fields",
+    "table1.batch.size",
+    "table1.count.records",
+    "table1.display.value",
+    "table1.exclude.reference.link",
+    "table1.name",
+    "table1.pagination.query",
+    "table1.pagination.query.field",
+    "table1.query.category",
+    "table1.query.domain",
+    "table1.request.interval.ms",
+    "table1.start.timestamp",
+    "table1.suppress.pagination.header",
+    "table1.timestamp.field",
+    "table1.topic",
+    "table2.allowlisted.fields",
+    "table2.batch.size",
+    "table2.count.records",
+    "table2.display.value",
+    "table2.exclude.reference.link",
+    "table2.name",
+    "table2.pagination.query",
+    "table2.pagination.query.field",
+    "table2.query.category",
+    "table2.query.domain",
+    "table2.request.interval.ms",
+    "table2.start.timestamp",
+    "table2.suppress.pagination.header",
+    "table2.timestamp.field",
+    "table2.topic",
+    "table3.allowlisted.fields",
+    "table3.batch.size",
+    "table3.count.records",
+    "table3.display.value",
+    "table3.exclude.reference.link",
+    "table3.name",
+    "table3.pagination.query",
+    "table3.pagination.query.field",
+    "table3.query.category",
+    "table3.query.domain",
+    "table3.request.interval.ms",
+    "table3.start.timestamp",
+    "table3.suppress.pagination.header",
+    "table3.timestamp.field",
+    "table3.topic",
+    "table4.allowlisted.fields",
+    "table4.batch.size",
+    "table4.count.records",
+    "table4.display.value",
+    "table4.exclude.reference.link",
+    "table4.name",
+    "table4.pagination.query",
+    "table4.pagination.query.field",
+    "table4.query.category",
+    "table4.query.domain",
+    "table4.request.interval.ms",
+    "table4.start.timestamp",
+    "table4.suppress.pagination.header",
+    "table4.timestamp.field",
+    "table4.topic",
+    "table5.allowlisted.fields",
+    "table5.batch.size",
+    "table5.count.records",
+    "table5.display.value",
+    "table5.exclude.reference.link",
+    "table5.name",
+    "table5.pagination.query",
+    "table5.pagination.query.field",
+    "table5.query.category",
+    "table5.query.domain",
+    "table5.request.interval.ms",
+    "table5.start.timestamp",
+    "table5.suppress.pagination.header",
+    "table5.timestamp.field",
+    "table5.topic",
+    "tables.num"
+  ]
+}

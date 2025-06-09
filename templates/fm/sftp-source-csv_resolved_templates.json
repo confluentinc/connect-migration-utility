@@ -1,0 +1,823 @@
+{
+  "templates": [
+    {
+      "template_id": "sftp-source-csv",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csv.skip.lines",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 1,
+          "default_value": 0,
+          "display_name": "Skip lines",
+          "documentation": "Number of lines to skip in the beginning of the file.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 1,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.separator.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 2,
+          "default_value": 44,
+          "display_name": "Separator character",
+          "documentation": "The character that separates each field in the form of an integer. Typically in a CSV this is a ,(44) character. A TSV would use a tab(9) character. If `csv.separator.char` is defined as a null(0), then the RFC 4180 parser must be utilized by default. This is the equivalent of `csv.rfc.4180.parser.enabled = true`.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 2,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.quote.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 3,
+          "default_value": 34,
+          "display_name": "Quote character",
+          "documentation": "The character that is used to quote a field. Typically in a CSV this is a \"(34) character. This typically happens when the csv.separator.char character is within the data.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 3,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.escape.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 4,
+          "default_value": 92,
+          "display_name": "Escape character",
+          "documentation": "The character as an integer to use when a special character is encountered. The default escape character is typically a \\(92)",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 4,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.strict.quotes",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 5,
+          "default_value": "false",
+          "display_name": "Strict quotes",
+          "documentation": "Sets the strict quotes setting - if true, characters outside the quotes are ignored.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 5,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.ignore.leading.whitespace",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 6,
+          "display_name": "Ignore leading whitespace",
+          "documentation": "Sets the ignore leading whitespace setting - if true, white space in front of a quote in a field is ignored.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 6,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.ignore.quotations",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Ignore quotations",
+          "documentation": "Sets the ignore quotations mode - if true, quotations are ignored.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 7,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.keep.carriage.return",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 8,
+          "default_value": "false",
+          "display_name": "Preserve carriage return?",
+          "documentation": "Flag to determine if the carriage return at the end of the line should be maintained. ",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 8,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.null.field.indicator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "NEITHER",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 9,
+          "display_name": "Null field indicator",
+          "documentation": "Indicator to determine how the CSV Reader can determine if a field is null. Valid values are EMPTY_SEPARATORS, EMPTY_QUOTES, BOTH, NEITHER. For more information see http://opencsv.sourceforge.net/apidocs/com/opencsv/enums/CSVReaderNullFieldIndicator.html.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 9,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.first.row.as.header",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "CSV Parsing",
+          "order_in_group": 10,
+          "display_name": "Treat first row as header.",
+          "documentation": "Flag to indicate if the fist row of data contains the header of the file. If true the position of the columns will be determined by the first row to the CSV. The column position will be inferred from the position of the schema supplied in `value.schema`. If set to true the number of columns must be greater than or equal to the number of fields in the schema.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 10,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "csv.file.charset",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UTF-8",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 11,
+          "display_name": "File character set.",
+          "documentation": "Character set to read wth file with.",
+          "recommender": {
+            "name": "character.encoding"
+          },
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 11,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          }
+        },
+        {
+          "name": "ui.csv.pre.validate.file.enabled",
+          "type": "STRING",
+          "required": false,
+          "default_value": "NO",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 12,
+          "display_name": "Pre-validate the CSV file before processing file records.",
+          "documentation": "Flag to enable validating the integrity of all records in the CSV file before processing any of its records.  For example, if any of the records have a linefeed within an unquoted field, which would incorrectly break the record at that point, then the entire fil will  be considered erroneous and no records from that file will be processed.  The failed file would be moved to the configured error path.  Important: If the number of records in a file is larger than the configured batch size, then portions of the file may be retrieved from the sftp server by the connector more than once.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 12,
+            "advanced": true,
+            "visibility": "input.file.parser.format==CSV"
+          },
+          "recommended_values": [
+            "YES",
+            "NO"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "producer.override.bootstrap.servers",
+          "value": "${kafka.endpoint}"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "value": "${kafka.endpoint}"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "kafka.topic"
+        },
+        {
+          "name": "csv.skip.lines"
+        },
+        {
+          "name": "csv.separator.char"
+        },
+        {
+          "name": "csv.quote.char"
+        },
+        {
+          "name": "csv.escape.char"
+        },
+        {
+          "name": "csv.strict.quotes"
+        },
+        {
+          "name": "csv.ignore.leading.whitespace"
+        },
+        {
+          "name": "csv.ignore.quotations"
+        },
+        {
+          "name": "csv.keep.carriage.return"
+        },
+        {
+          "name": "csv.verify.reader",
+          "value": "true"
+        },
+        {
+          "name": "csv.null.field.indicator"
+        },
+        {
+          "name": "csv.first.row.as.header"
+        },
+        {
+          "name": "csv.file.charset"
+        },
+        {
+          "name": "csv.case.sensitive.field.names"
+        },
+        {
+          "name": "csv.rfc.4180.parser.enabled"
+        },
+        {
+          "name": "csv.pre.validate.file.enabled",
+          "switch": {
+            "ui.csv.pre.validate.file.enabled": {
+              "YES": "true",
+              "NO": "false"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "csv.escape.char",
+    "csv.file.charset",
+    "csv.first.row.as.header",
+    "csv.ignore.leading.whitespace",
+    "csv.ignore.quotations",
+    "csv.keep.carriage.return",
+    "csv.null.field.indicator",
+    "csv.quote.char",
+    "csv.separator.char",
+    "csv.skip.lines",
+    "csv.strict.quotes",
+    "ui.csv.pre.validate.file.enabled"
+  ],
+  "all_connector_configs": [
+    {
+      "name": "producer.override.bootstrap.servers",
+      "value": "${kafka.endpoint}"
+    },
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.bootstrap.servers",
+      "value": "${kafka.endpoint}"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    }
+  ],
+  "config_defs_not_used_as_connector_names": [
+    "ui.csv.pre.validate.file.enabled"
+  ]
+}

@@ -1,0 +1,1244 @@
+{
+  "templates": [
+    {
+      "template_id": "common-debezium-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "SIZING",
+            "order_in_page": 1,
+            "group_name": "Number of tasks for this connector"
+          }
+        },
+        {
+          "name": "database.hostname",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 1,
+          "display_name": "Database hostname",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "validators": [
+            {
+              "name": "debezium.database.hostname"
+            }
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 1,
+            "group_name": "How should we connect to your database?"
+          }
+        },
+        {
+          "name": "database.port",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 2,
+          "display_name": "Database port",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0,
+                "max": 65535
+              }
+            }
+          ],
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 2,
+            "group_name": "How should we connect to your database?"
+          }
+        },
+        {
+          "name": "database.user",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 3,
+          "display_name": "Database username",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 3,
+            "group_name": "How should we connect to your database?"
+          }
+        },
+        {
+          "name": "database.password",
+          "type": "PASSWORD",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 4,
+          "display_name": "Database password",
+          "metadata": {
+            "page": "AUTHENTICATION",
+            "order_in_page": 4,
+            "group_name": "How should we connect to your database?"
+          }
+        },
+        {
+          "name": "database.server.name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 6,
+          "display_name": "Database server name",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "order_in_page": 2,
+            "group_name": "How should we connect to your database?"
+          }
+        },
+        {
+          "name": "table.whitelist",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "internal": true,
+          "group": "Database details",
+          "order_in_group": -1,
+          "documentation": "Same as `table.include.list`, kept as hidden for backwards-compatibility of existing user_configs",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "table.include.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 1,
+          "display_name": "Tables included",
+          "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be monitored. Any table not included in this config property is excluded from monitoring. Each identifier is in the form ``schemaName.tableName``. By default the connector monitors every non-system table in each monitored schema. May not be used with \"Table excluded\".",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ],
+          "validators": [
+            {
+              "name": "jdbc.table.include.list"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 3,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "table.blacklist",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "internal": true,
+          "group": "Database details",
+          "order_in_group": -1,
+          "documentation": "Same as `table.exclude.list`, kept as hidden for backwards-compatibility of existing user_configs",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "table.exclude.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 2,
+          "display_name": "Tables excluded",
+          "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be excluded from monitoring. Any table not included in this config property is monitored. Each identifier is in the form ``schemaName.tableName``. May not be used with \"Table included\".",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 4,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "snapshot.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "initial",
+          "importance": "LOW",
+          "group": "Database details",
+          "order_in_group": 3,
+          "display_name": "Snapshot mode",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 5,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "tombstones.on.delete",
+          "type": "STRING",
+          "required": false,
+          "default_value": "true",
+          "importance": "HIGH",
+          "group": "Database details",
+          "order_in_group": 4,
+          "display_name": "Tombstones on delete",
+          "documentation": "Controls whether a tombstone event should be generated after a delete event. When set to ``true``, the delete operations are represented by a delete event and a subsequent tombstone event. When set to ``false``, only a delete event is sent. Emitting the tombstone event (the default behavior) allows Kafka to completely delete all events pertaining to the given key, once the source record got deleted.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 6,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "column.exclude.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 5,
+          "display_name": "Columns Excluded",
+          "documentation": "Regular expressions matching columns to exclude from change events",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 7,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "poll.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "1000",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 1,
+          "display_name": "Poll interval (ms)",
+          "documentation": "Positive integer value that specifies the number of milliseconds the connector should wait during each iteration for new change events to appear. Defaults to 1000 milliseconds, or 1 second.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 8,
+            "group_name": "Connection details"
+          }
+        },
+        {
+          "name": "max.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "1000",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "Max batch size",
+          "documentation": "Positive integer value that specifies the maximum size of each batch of events that should be processed during each iteration of this connector.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 1,
+                "max": 5000
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 9,
+            "group_name": "Connection details"
+          }
+        },
+        {
+          "name": "event.processing.failure.handling.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "fail",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 3,
+          "display_name": "Event processing failure handling mode",
+          "documentation": "Specifies how the connector should react to exceptions during processing of binlog events.",
+          "recommended_values": [
+            "fail",
+            "skip",
+            "warn"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 10,
+            "group_name": "Connection details"
+          }
+        },
+        {
+          "name": "heartbeat.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 4,
+          "display_name": "Heartbeat interval (ms)",
+          "documentation": "Controls how frequently the connector sends heartbeat messages to a Kafka topic. The behavior of default value 0 is that the connector does not send heartbeat messages.",
+          "validators": [
+            {
+              "name": "common.range",
+              "arguments": {
+                "min": 0
+              }
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 11,
+            "group_name": "Connection details"
+          }
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Output Kafka record value format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON",
+            "JSON_SR",
+            "PROTOBUF"
+          ],
+          "validators": [
+            {
+              "name": "sr.integration"
+            }
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": false,
+            "order_in_page": 1
+          }
+        },
+        {
+          "name": "after.state.only",
+          "type": "STRING",
+          "required": false,
+          "default_value": "true",
+          "importance": "LOW",
+          "group": "Output messages",
+          "order_in_group": 2,
+          "display_name": "After-state only",
+          "documentation": "Controls whether the generated Kafka record should contain only the state after applying change events.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 12,
+            "group_name": "Output messages"
+          }
+        },
+        {
+          "name": "provide.transaction.metadata",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Connector details",
+          "order_in_group": 1,
+          "display_name": "Provide transaction metadata",
+          "documentation": "Stores transaction metadata information in a dedicated topic and enables the transaction metadata extraction together with event counting.",
+          "recommended_values": [
+            "true",
+            "false"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 13,
+            "group_name": "Connector details"
+          }
+        },
+        {
+          "name": "decimal.handling.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "precise",
+          "importance": "MEDIUM",
+          "group": "Connector details",
+          "order_in_group": 2,
+          "display_name": "Decimal handling mode",
+          "documentation": "Specifies how DECIMAL and NUMERIC columns should be represented in change events, including: 'precise' (the default) uses java.math.BigDecimal to represent values, which are encoded in the change events using a binary representation and Kafka Connect's 'org.apache.kafka.connect.data.Decimal' type; 'string' uses string to represent values; 'double' represents values using Java's 'double', which may not offer the precision but will be far easier to use in consumers.",
+          "recommended_values": [
+            "double",
+            "precise",
+            "string"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 14,
+            "group_name": "Connector details"
+          }
+        },
+        {
+          "name": "binary.handling.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "bytes",
+          "importance": "LOW",
+          "group": "Connector details",
+          "order_in_group": 3,
+          "display_name": "Binary handling mode",
+          "documentation": "Specifies how binary (blob, binary, etc.) columns should be represented in change events, including: 'bytes' (the default) represents binary data as byte array; 'base64' represents binary data as base64-encoded string; 'hex' represents binary data as hex-encoded (base16) string.",
+          "recommended_values": [
+            "bytes",
+            "base64",
+            "hex"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 15,
+            "group_name": "Connector details"
+          }
+        },
+        {
+          "name": "time.precision.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "adaptive",
+          "importance": "MEDIUM",
+          "group": "Connector details",
+          "order_in_group": 4,
+          "display_name": "Time precision mode",
+          "documentation": "Time, date, and timestamps can be represented with different kinds of precisions, including: 'adaptive' (the default) bases the precision of time, date, and timestamp values on the database column's precision; 'adaptive_time_microseconds' like 'adaptive' mode, but TIME fields always use microseconds precision; 'connect' always represents time, date, and timestamp values using Kafka Connect's built-in representations for Time, Date, and Timestamp, which uses millisecond precision regardless of the database columns' precision.",
+          "recommended_values": [
+            "adaptive",
+            "adaptive_time_microseconds",
+            "connect"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 16,
+            "group_name": "Connector details"
+          }
+        },
+        {
+          "name": "datatype.propagate.source.type",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Database details",
+          "order_in_group": 4,
+          "display_name": "Propagate Source Types by Data Type",
+          "documentation": "A comma-separated list of regular expressions matching the database-specific data type names that adds the data type's original type and original length as parameters to the corresponding field schemas in the emitted change records.",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 17,
+            "group_name": "Database details"
+          }
+        },
+        {
+          "name": "cleanup.policy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "delete",
+          "importance": "MEDIUM",
+          "group": "Connector details",
+          "order_in_group": 5,
+          "display_name": "Topic cleanup policy",
+          "documentation": "Set the topic cleanup policy",
+          "recommended_values": [
+            "compact",
+            "delete"
+          ],
+          "validators": [
+            {
+              "name": "common.is.recommended.value"
+            }
+          ],
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "order_in_page": 18,
+            "group_name": "Connector details"
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "database.hostname"
+        },
+        {
+          "name": "database.port"
+        },
+        {
+          "name": "database.user"
+        },
+        {
+          "name": "database.password"
+        },
+        {
+          "name": "database.server.name"
+        },
+        {
+          "name": "table.include.list"
+        },
+        {
+          "name": "table.exclude.list"
+        },
+        {
+          "name": "table.whitelist"
+        },
+        {
+          "name": "table.blacklist"
+        },
+        {
+          "name": "snapshot.mode"
+        },
+        {
+          "name": "column.exclude.list"
+        },
+        {
+          "name": "tombstones.on.delete"
+        },
+        {
+          "name": "poll.interval.ms"
+        },
+        {
+          "name": "max.batch.size"
+        },
+        {
+          "name": "event.processing.failure.handling.mode"
+        },
+        {
+          "name": "heartbeat.interval.ms"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "transforms",
+          "switch": {
+            "after.state.only": {
+              "true": "unwrap",
+              "false": ""
+            }
+          }
+        },
+        {
+          "name": "transforms.unwrap.type",
+          "switch": {
+            "after.state.only": {
+              "true": "io.debezium.transforms.ExtractNewRecordState",
+              "false": ""
+            }
+          }
+        },
+        {
+          "name": "transforms.unwrap.drop.tombstones",
+          "switch": {
+            "after.state.only": {
+              "true": "false",
+              "false": ""
+            }
+          }
+        },
+        {
+          "name": "transforms.unwrap.delete.handling.mode",
+          "switch": {
+            "after.state.only": {
+              "true": "rewrite",
+              "false": ""
+            }
+          }
+        },
+        {
+          "name": "provide.transaction.metadata"
+        },
+        {
+          "name": "decimal.handling.mode"
+        },
+        {
+          "name": "binary.handling.mode"
+        },
+        {
+          "name": "time.precision.mode"
+        },
+        {
+          "name": "datatype.propagate.source.type"
+        },
+        {
+          "name": "topic.creation.default.cleanup.policy",
+          "value": "${cleanup.policy}"
+        },
+        {
+          "name": "max.queue.size.in.bytes",
+          "value": "209716100"
+        },
+        {
+          "name": "custom.metric.tags",
+          "value": "connector={{.logicalClusterId}},version=v1"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${database.hostname}"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors.",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": true,
+            "group_name": "Auto-restart policy"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs",
+            "additional.visible": "true"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions",
+          "metadata": {
+            "page": "CONFIGURATION",
+            "advanced": "true",
+            "group_name": "Additional Configs"
+          }
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ],
+          "metadata": {
+            "group_name": "Additional Configs",
+            "page": "CONFIGURATION",
+            "advanced": true
+          }
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ],
+  "all_config_def_names": [
+    "after.state.only",
+    "binary.handling.mode",
+    "cleanup.policy",
+    "column.exclude.list",
+    "database.hostname",
+    "database.password",
+    "database.port",
+    "database.server.name",
+    "database.user",
+    "datatype.propagate.source.type",
+    "decimal.handling.mode",
+    "event.processing.failure.handling.mode",
+    "heartbeat.interval.ms",
+    "max.batch.size",
+    "output.data.format",
+    "poll.interval.ms",
+    "provide.transaction.metadata",
+    "snapshot.mode",
+    "table.exclude.list",
+    "table.include.list",
+    "tasks.max",
+    "time.precision.mode",
+    "tombstones.on.delete"
+  ],
+  "all_connector_configs": [
+    {
+      "name": "producer.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "admin.override.sasl.jaas.config",
+      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+    },
+    {
+      "name": "topic.creation.default.cleanup.policy",
+      "value": "${cleanup.policy}"
+    },
+    {
+      "name": "custom.metric.tags",
+      "value": "connector={{.logicalClusterId}},version=v1"
+    },
+    {
+      "name": "connector.endpoint",
+      "value": "${database.hostname}"
+    }
+  ],
+  "config_defs_not_used_as_connector_names": [
+    "after.state.only",
+    "cleanup.policy",
+    "output.data.format",
+    "tasks.max"
+  ]
+}
