@@ -5,6 +5,8 @@ from typing import Dict, Any, List, Optional
 import re
 from datetime import datetime
 from semantic_matcher import SemanticMatcher, Property
+import base64
+import requests
 
 class ConnectorComparator:
     def __init__(self, input_file: Path, output_dir: Path, sm_template_dir: Path = None, fm_template_dir: Path = None):
@@ -78,6 +80,101 @@ class ConnectorComparator:
                 }
             }
         }
+
+    def encode_to_base64(input_string):
+        # Convert the input string to bytes
+        byte_data = input_string.encode('utf-8')
+        # Encode the bytes to base64
+        base64_bytes = base64.b64encode(byte_data)
+        # Convert the base64 bytes back to string
+        base64_string = base64_bytes.decode('utf-8')
+        return base64_string
+
+    def extract_transforms_config(config_dict):
+        # Extract all keys starting with "transforms"
+        return {k: v for k, v in config_dict.items() if k.startswith("transforms")}
+
+    def extract_recommended_transform_types(response_json):
+        configs = response_json.get("configs", [])
+        for config in configs:
+            value = config.get("value", {})
+            if value.get("name") == "transforms.transform_0.type":
+                return value.get("recommended_values", [])
+        return []
+
+    def get_FM_SMT(self, plugin_type) -> set[str]:
+        env_id = "env-yodk3k"
+        lkc_id = "lkc-nww1j6"
+        bearer_token = "G42O4SU5RQG5QP4T:xAqK3hQ9RZdss2zEr7G3St0Hviv+WnPAao+Ni3cay+n6TNfChmE/o36tZSuJv0ER"
+
+        url = (
+            f"https://confluent.cloud/api/internal/accounts/env-yodk3k/clusters/lkc-nww1j6/connector-plugins/DatagenSource/config/validate"
+        )
+        params = {
+            "extra_fields": "configs/metadata,configs/internal"
+        }
+        data = {
+            "transforms": "transform_0",
+            "connector.class": plugin_type
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {encode_to_base64(bearer_token)}"
+        }
+        response = requests.put(url, params=params, json=data, headers=headers)
+        response.raise_for_status()
+        recommended_values = extract_recommended_transform_types(response.json())
+        return recommended_values
+
+    def get_transforms_config(self, config: Dict[str, Any], plugin_type: str) -> Dict[str, Dict[str, Any]]:
+
+        fm_smt = get_FM_SMT(plugin_type)
+
+        return classify_transform_configs_with_full_chain(config, fm_smt)
+
+    def classify_transform_configs_with_full_chain(
+        config: Dict[str, Any],
+        allowed_transform_types: set
+    ) -> Dict[str, Dict[str, Any]]:
+        result: Dict[str, Dict[str, Any]] = {
+            'allowed': {},
+            'disallowed': {}
+        }
+
+        transform_chain = config.get("transforms", "")
+        aliases = [alias.strip() for alias in transform_chain.split(",") if alias.strip()]
+
+        allowed_aliases = []
+        disallowed_aliases = []
+
+        for alias in aliases:
+            type_key = f"transforms.{alias}.type"
+            transform_type = config.get(type_key)
+
+            if not transform_type:
+                disallowed_aliases.append(alias)
+                for k, v in config.items():
+                    if k.startswith(f"transforms.{alias}."):
+                        result['disallowed'][k] = v
+                continue
+
+            if transform_type in allowed_transform_types:
+                allowed_aliases.append(alias)
+                for k, v in config.items():
+                    if k.startswith(f"transforms.{alias}."):
+                        result['allowed'][k] = v
+            else:
+                disallowed_aliases.append(alias)
+                for k, v in config.items():
+                    if k.startswith(f"transforms.{alias}."):
+                        result['disallowed'][k] = v
+
+        if allowed_aliases:
+            result['allowed']["transforms"] = ", ".join(allowed_aliases)
+        if disallowed_aliases:
+            result['disallowed']["transforms"] = ", ".join(disallowed_aliases)
+
+        return result
 
     def _build_connector_class_mapping(self) -> Dict[str, Dict[str, List[str]]]:
         """Build mapping of connector.class to template paths"""
@@ -359,6 +456,7 @@ class ConnectorComparator:
             
             # Get required properties from FM template
             required_props = self._get_required_properties(fm_template)
+            plugin_type = fm_template.get('template_id', {})
             
             # First handle required properties
             for prop_name, prop_info in required_props.items():
@@ -379,7 +477,13 @@ class ConnectorComparator:
                     error_msg = f"Required property '{prop_name}' needs a value but none was provided in input config or default value"
                     mapping_errors.append(error_msg)
                     self.logger.error(error_msg)
-            
+            transforms_data = get_transforms_config(config, plugin_type)
+            mapped_config.update(transforms_data['allowed'])
+            for key, value in transforms_data['disallowed'].items():
+                if key.endswith(".type"):
+                    alias = key.split(".")[1]
+                    error_msg = f"Transform not allowed in Cloud '{alias}:{value}'. Potentially Custom SMT can be used."
+                    mapping_errors.append(error_msg)
             # Then map properties that exist in the input config
             for sm_prop_name, sm_prop_value in config.items():
                 try:
