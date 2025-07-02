@@ -21,9 +21,10 @@ def setup_logging(output_dir: Path):
 def main():
     parser = argparse.ArgumentParser(description="Connector Migration Tool")
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs')
-    parser.add_argument('--worker-urls-file', type=str, help='Path to file containing worker URLs')
     parser.add_argument('--config-file', type=str, help='Path to JSON file containing connector configurations')
     parser.add_argument('--redact', action='store_true', help='Redact sensitive configurations')
+    parser.add_argument('--sensitive-file', type=str, help='Path to file containing sensitive config keys')
+    parser.add_argument('--worker-config-file', type=str, help='Path to file containing additional worker configs (key=value)')
     parser.add_argument('--output-dir', type=str, default='output', help='Output directory for all files')
     
     # Confluent Cloud credentials for FM transforms (optional)
@@ -66,7 +67,9 @@ def main():
                 worker_urls=args.worker_urls,
                 worker_urls_file=args.worker_urls_file,
                 redact=args.redact,
-                output_dir=output_dir
+                output_dir=output_dir,
+                sensitive_file=args.sensitive_file,
+                worker_config_file=args.worker_config_file
             )
             connectors_json = discovery.discover_and_save()
             logger.info(f"Connector discovery completed. Configs saved to {connectors_json}")
