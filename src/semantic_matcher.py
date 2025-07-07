@@ -95,11 +95,11 @@ class SemanticMatcher:
             if embedding is not None:
                 self.fm_embeddings[prop_name] = embedding
 
-    def find_best_match(self, sm_property: Dict[str, Any], fm_properties: Dict[str, Any], semantic_threshold: float = 0.7) -> Optional[MatchResult]:
+    def find_best_match(self, sm_property: Dict[str, Any], fm_properties: Dict[str, Any], semantic_threshold: float = 0.85) -> Optional[MatchResult]:
         """
         Find the best matching FM property for a given SM property using the following strategy:
         1. First check for exact name matches
-        2. If no exact match found, perform semantic matching
+        2. If no exact match found, perform semantic matching with stricter validation
         """
         # Step 1: Check for exact name matches
         if sm_property['name'] in fm_properties:
@@ -117,6 +117,18 @@ class SemanticMatcher:
             # Skip properties that should only be matched exactly
             if fm_prop_info.get('metadata', {}).get('direct_match', False):
                 continue
+            
+            # Solution 3: Add minimum length difference check to avoid mapping longer properties to shorter ones
+            sm_name = sm_property['name']
+            fm_name = fm_prop_name
+            
+            # Calculate length difference
+            length_diff = abs(len(sm_name) - len(fm_name))
+            max_length = max(len(sm_name), len(fm_name))
+            
+            # If the length difference is more than 30% of the longer property name, skip this match
+            if max_length > 0 and (length_diff / max_length) > 0.3:
+                continue
                 
             # Calculate similarity
             similarity = calculate_similarity(sm_property, Property(
@@ -132,10 +144,14 @@ class SemanticMatcher:
         
         if best_match and best_score >= semantic_threshold:
             fm_prop_name, fm_prop_info = best_match
+            logger.debug(f"Semantic match found: '{sm_property['name']}' -> '{fm_prop_name}' (score: {best_score:.3f})")
             return MatchResult(
                 matched_fm_property=fm_prop_info,
                 similarity_score=best_score,
                 match_type='semantic'
             )
+        
+        if best_match:
+            logger.debug(f"Semantic match rejected: '{sm_property['name']}' -> '{best_match[0]}' (score: {best_score:.3f}, threshold: {semantic_threshold})")
         
         return None 

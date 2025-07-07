@@ -28,6 +28,7 @@
         {
           "name": "database.server.name",
           "required": true,
+          "order_in_group": 5,
           "documentation": "The logical name of the MySQL server cluster. This logical name forms a namespace and is used in all Kafka topic names and Kafka Connect schema names. The logical name is also used for the namespaces of the corresponding Avro schema, if Avro data format is used. Kafka topics must (and will be) created with the prefix ``database.server.name``. Only alphanumeric characters, underscores, hyphens and dots are allowed."
         },
         {
@@ -37,6 +38,7 @@
           "default_value": "preferred",
           "importance": "LOW",
           "group": "How should we connect to your database?",
+          "order_in_group": 6,
           "display_name": "SSL mode",
           "documentation": "What SSL mode should we use to connect to your database. The default `preferred` option establishes an encrypted connection if the server supports secure connections. If the server does not support secure connections, it falls back to an unencrypted connection. The `required` option establishes an encrypted connection or fails if one cannot be made for any reason.",
           "recommended_values": [
@@ -45,41 +47,14 @@
           ]
         },
         {
-          "name": "database.whitelist",
-          "type": "LIST",
-          "required": false,
-          "importance": "LOW",
-          "internal": true,
-          "group": "Database details",
-          "documentation": "Same as `database.include.list`. This property is hidden and supports backward-compatibility for existing user configurations.",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
           "name": "database.include.list",
           "type": "LIST",
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
+          "order_in_group": 1,
           "display_name": "Databases included",
           "documentation": "An optional comma-separated list of strings that match database names to be monitored. Any database name not included in the list is excluded from monitoring. By default all databases are monitored. May not be used with database.exclude.list.",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "database.blacklist",
-          "type": "LIST",
-          "required": false,
-          "importance": "LOW",
-          "internal": true,
-          "group": "Database details",
-          "documentation": "Same as `database.exclude.list`. This property is hidden and supports backward-compatibility for existing user configurations.",
           "sanitizers": [
             {
               "name": "trim.list"
@@ -92,6 +67,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
+          "order_in_group": 2,
           "display_name": "Databases excluded",
           "documentation": "An optional comma-separated list of strings that match database names to be excluded from monitoring. Any database name not included in the list is monitored. May not be used with database.include.list.",
           "sanitizers": [
@@ -106,6 +82,7 @@
           "required": false,
           "importance": "LOW",
           "group": "Database details",
+          "order_in_group": 3,
           "display_name": "Connection timezone",
           "documentation": "The value must be a valid ZoneId.",
           "recommender": {
@@ -113,16 +90,19 @@
           }
         },
         {
-          "name": "table.include.list"
+          "name": "table.include.list",
+          "order_in_group": 3
         },
         {
-          "name": "table.exclude.list"
+          "name": "table.exclude.list",
+          "order_in_group": 4
         },
         {
           "name": "key.converter.reference.subject.name.strategy",
           "type": "STRING",
           "importance": "HIGH",
           "group": "Output messages",
+          "order_in_group": 4,
           "display_name": "Key Converter Reference Subject Name Strategy",
           "default_value": "DefaultReferenceSubjectNameStrategy",
           "documentation": "Set the subject reference name strategy for key. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
@@ -136,6 +116,7 @@
         },
         {
           "name": "snapshot.mode",
+          "order_in_group": 5,
           "documentation": "Specifies the criteria for running a snapshot when the connector starts. The default setting is `initial` and specifies that the connector can run a snapshot only when no offsets have been recorded for the logical server name. The `when_needed` option specifies that the connector run a snapshot upon startup whenever necessary; typically when no offsets are available, or when a previously recorded offset specifies a binlog location or GTID that is not available in the server. The `never` option specifies that the connect should never use snapshots and that when the connector starts with a logical server name, the connector should read from the beginning of the binlog. Use the `never` option with care, as it is only valid when the binlog is guaranteed to contain the entire history of the database. The `schema_only` option performs a snapshot of the schemas and not the data. This setting is useful when you do not need the topics to contain a consistent snapshot of the data but need them to have only the changes since the connector was started. The `schema_only_recovery` option  is a recovery setting for a connector that has already been capturing changes. When you restart the connector, this setting enables recovery of a corrupted or lost database history topic. You might set it periodically to \"clean up\" a database history topic that has been growing unexpectedly. Database history topics require infinite retention.",
           "recommended_values": [
             "initial",
@@ -152,6 +133,7 @@
           "default_value": "minimal",
           "importance": "LOW",
           "group": "Database details",
+          "order_in_group": 6,
           "display_name": "Snapshot locking mode",
           "documentation": "Controls how long the connector holds onto the global read lock while it is performing a snapshot. The default is `minimal`, which means the connector holds the global read lock (and thus prevents any updates) for just the initial portion of the snapshot, while the database schemas and other metadata are being read. The remaining work in a snapshot involves selecting all rows from each table. This is accomplished using a REPEATABLE READ transaction, even when the lock is no longer held and other operations are updating the database. However, in some cases it may be desirable to block all writes for the entire duration of the snapshot. In this situation, set this property to `extended`. Using a value of `none` prevents the connector from acquiring any table locks during the snapshot process. While this setting is allowed with all snapshot modes, it is safe to use if and only if no schema changes are happening while the snapshot is running.",
           "recommended_values": [
@@ -163,10 +145,12 @@
         },
         {
           "name": "column.exclude.list",
-          "required": false
+          "required": false,
+          "order_in_group": 8
         },
         {
-          "name": "tombstones.on.delete"
+          "name": "tombstones.on.delete",
+          "order_in_group": 7
         },
         {
           "name": "database.history.skip.unparseable.ddl",
@@ -175,6 +159,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Connection details",
+          "order_in_group": 5,
           "display_name": "Skip unparseable DDL",
           "documentation": "A Boolean value that specifies whether the connector should ignore malformed or unknown database statements (`true`), or stop processing so a human can fix the issue (`false`). Defaults to `false`. Consider setting this to `true` to ignore unparseable statements.",
           "recommended_values": [
@@ -189,6 +174,7 @@
           "default_value": "fail",
           "importance": "MEDIUM",
           "group": "Connection details",
+          "order_in_group": 6,
           "display_name": "Event deserialization failure handling mode",
           "documentation": "Specifies how the connector should react to exceptions during deserialization of binlog events.",
           "recommended_values": [
@@ -204,6 +190,7 @@
           "default_value": "fail",
           "importance": "MEDIUM",
           "group": "Connection details",
+          "order_in_group": 7,
           "display_name": "Inconsistent schema handling mode",
           "documentation": "Specifies how the connector should react to binlog events that belong to a table missing from internal schema representation.",
           "recommended_values": [
@@ -219,6 +206,7 @@
           "default_value": "connect",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 4,
           "display_name": "Time precision mode",
           "documentation": "Time, date, and timestamps can be represented with different kinds of precisions, including: 'adaptive_time_microseconds' TIME fields always use microseconds precision; 'connect' (the default) always represents time, date, and timestamp values using Kafka Connect's built-in representations for Time, Date, and Timestamp, which uses millisecond precision regardless of the database columns' precision.",
           "recommended_values": [
@@ -233,6 +221,7 @@
           "default_value": "long",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 6,
           "display_name": "BigInt Unsigned handling mode",
           "documentation": "Specifies how BIGINT UNSIGNED columns should be represented in change events.",
           "recommended_values": [
@@ -247,6 +236,7 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 7,
           "display_name": "Enable time adjuster",
           "documentation": "Specifies if the year value conversion is adjusted by the connector or delegated to the database.",
           "recommended_values": [
@@ -270,8 +260,9 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Connector details",
+          "order_in_group": 8,
           "display_name": "Store only captured tables DDL",
-          "documentation": "A Boolean value that specifies whether the connector records schema structures from all tables in a schema or database, or only from tables that are designated for capture. Defaults to `false`. \n`false` - During a database snapshot, the connector records the schema data for all non-system tables in the database, including tables that are not designated for capture. It’s best to retain the default setting. If you later decide to capture changes from tables that you did not originally designate for capture, the connector can easily begin to capture data from those tables, because their schema structure is already stored in the schema history topic. \n`true` - During a database snapshot, the connector records the table schemas only for the tables from which Debezium captures change events. If you change the default value, and you later configure the connector to capture data from other tables in the database, the connector lacks the schema information that it requires to capture change events from the tables.",
+          "documentation": "A Boolean value that specifies whether the connector records schema structures from all tables in a schema or database, or only from tables that are designated for capture. Defaults to `false`. \n`false` - During a database snapshot, the connector records the schema data for all non-system tables in the database, including tables that are not designated for capture. It\u2019s best to retain the default setting. If you later decide to capture changes from tables that you did not originally designate for capture, the connector can easily begin to capture data from those tables, because their schema structure is already stored in the schema history topic. \n`true` - During a database snapshot, the connector records the table schemas only for the tables from which Debezium captures change events. If you change the default value, and you later configure the connector to capture data from other tables in the database, the connector lacks the schema information that it requires to capture change events from the tables.",
           "recommended_values": [
             "true",
             "false"
@@ -279,10 +270,6 @@
         }
       ],
       "connector_configs": [
-        {
-          "name": "database.history.kafka.topic",
-          "value": "dbhistory.${database.server.name}.{{.logicalClusterId}}"
-        },
         {
           "name": "database.history.kafka.bootstrap.servers",
           "switch": {
@@ -385,20 +372,12 @@
           }
         },
         {
-          "name": "database.history.producer.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "database.history.producer.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "database.history.producer.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "database.history.consumer.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "database.history.consumer.security.protocol",
@@ -488,6 +467,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
+          "order_in_group": 1,
           "display_name": "Tasks",
           "documentation": "Maximum number of tasks for the connector."
         },
@@ -497,6 +477,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
+          "order_in_group": 1,
           "display_name": "Database hostname",
           "sanitizers": [
             {
@@ -510,6 +491,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
+          "order_in_group": 2,
           "display_name": "Database port",
           "sanitizers": [
             {
@@ -523,6 +505,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
+          "order_in_group": 3,
           "display_name": "Database username"
         },
         {
@@ -531,6 +514,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
+          "order_in_group": 4,
           "display_name": "Database password"
         },
         {
@@ -539,24 +523,11 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
+          "order_in_group": 6,
           "display_name": "Database server name",
           "sanitizers": [
             {
               "name": "trim"
-            }
-          ]
-        },
-        {
-          "name": "table.whitelist",
-          "type": "LIST",
-          "required": false,
-          "importance": "LOW",
-          "internal": true,
-          "group": "Database details",
-          "documentation": "Same as `table.include.list`, kept as hidden for backwards-compatibility of existing user_configs",
-          "sanitizers": [
-            {
-              "name": "trim.list"
             }
           ]
         },
@@ -566,22 +537,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
+          "order_in_group": 1,
           "display_name": "Tables included",
           "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be monitored. Any table not included in this config property is excluded from monitoring. Each identifier is in the form ``schemaName.tableName``. By default the connector monitors every non-system table in each monitored schema. May not be used with \"Table excluded\".",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "table.blacklist",
-          "type": "LIST",
-          "required": false,
-          "importance": "LOW",
-          "internal": true,
-          "group": "Database details",
-          "documentation": "Same as `table.exclude.list`, kept as hidden for backwards-compatibility of existing user_configs",
           "sanitizers": [
             {
               "name": "trim.list"
@@ -594,6 +552,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
+          "order_in_group": 2,
           "display_name": "Tables excluded",
           "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be excluded from monitoring. Any table not included in this config property is monitored. Each identifier is in the form ``schemaName.tableName``. May not be used with \"Table included\".",
           "sanitizers": [
@@ -609,6 +568,7 @@
           "default_value": "initial",
           "importance": "LOW",
           "group": "Database details",
+          "order_in_group": 3,
           "display_name": "Snapshot mode"
         },
         {
@@ -618,6 +578,7 @@
           "default_value": "true",
           "importance": "HIGH",
           "group": "Database details",
+          "order_in_group": 4,
           "display_name": "Tombstones on delete",
           "documentation": "Controls whether a tombstone event should be generated after a delete event. When set to ``true``, the delete operations are represented by a delete event and a subsequent tombstone event. When set to ``false``, only a delete event is sent. Emitting the tombstone event (the default behavior) allows Kafka to completely delete all events pertaining to the given key, once the source record got deleted.",
           "recommended_values": [
@@ -631,6 +592,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
+          "order_in_group": 5,
           "display_name": "Columns Excluded",
           "documentation": "Regular expressions matching columns to exclude from change events",
           "sanitizers": [
@@ -646,6 +608,7 @@
           "default_value": "1000",
           "importance": "LOW",
           "group": "Connection details",
+          "order_in_group": 1,
           "display_name": "Poll interval (ms)",
           "documentation": "Positive integer value that specifies the number of milliseconds the connector should wait during each iteration for new change events to appear. Defaults to 1000 milliseconds, or 1 second."
         },
@@ -656,6 +619,7 @@
           "default_value": "1000",
           "importance": "LOW",
           "group": "Connection details",
+          "order_in_group": 2,
           "display_name": "Max batch size",
           "documentation": "Positive integer value that specifies the maximum size of each batch of events that should be processed during each iteration of this connector."
         },
@@ -666,6 +630,7 @@
           "default_value": "fail",
           "importance": "LOW",
           "group": "Connection details",
+          "order_in_group": 3,
           "display_name": "Event processing failure handling mode",
           "documentation": "Specifies how the connector should react to exceptions during processing of binlog events.",
           "recommended_values": [
@@ -681,6 +646,7 @@
           "default_value": "0",
           "importance": "LOW",
           "group": "Connection details",
+          "order_in_group": 4,
           "display_name": "Heartbeat interval (ms)",
           "documentation": "Controls how frequently the connector sends heartbeat messages to a Kafka topic. The behavior of default value 0 is that the connector does not send heartbeat messages."
         },
@@ -690,6 +656,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "Output messages",
+          "order_in_group": 1,
           "display_name": "Output Kafka record value format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -709,6 +676,7 @@
           "default_value": "true",
           "importance": "LOW",
           "group": "Output messages",
+          "order_in_group": 2,
           "display_name": "After-state only",
           "documentation": "Controls whether the generated Kafka record should contain only the state after applying change events.",
           "recommended_values": [
@@ -723,6 +691,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Connector details",
+          "order_in_group": 1,
           "display_name": "Provide transaction metadata",
           "documentation": "Stores transaction metadata information in a dedicated topic and enables the transaction metadata extraction together with event counting.",
           "recommended_values": [
@@ -737,6 +706,7 @@
           "default_value": "precise",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 2,
           "display_name": "Decimal handling mode",
           "documentation": "Specifies how DECIMAL and NUMERIC columns should be represented in change events, including: 'precise' (the default) uses java.math.BigDecimal to represent values, which are encoded in the change events using a binary representation and Kafka Connect's 'org.apache.kafka.connect.data.Decimal' type; 'string' uses string to represent values; 'double' represents values using Java's 'double', which may not offer the precision but will be far easier to use in consumers.",
           "recommended_values": [
@@ -752,6 +722,7 @@
           "default_value": "bytes",
           "importance": "LOW",
           "group": "Connector details",
+          "order_in_group": 3,
           "display_name": "Binary handling mode",
           "documentation": "Specifies how binary (blob, binary, etc.) columns should be represented in change events, including: 'bytes' (the default) represents binary data as byte array; 'base64' represents binary data as base64-encoded string; 'hex' represents binary data as hex-encoded (base16) string.",
           "recommended_values": [
@@ -767,6 +738,7 @@
           "default_value": "adaptive",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 4,
           "display_name": "Time precision mode",
           "documentation": "Time, date, and timestamps can be represented with different kinds of precisions, including: 'adaptive' (the default) bases the precision of time, date, and timestamp values on the database column's precision; 'adaptive_time_microseconds' like 'adaptive' mode, but TIME fields always use microseconds precision; 'connect' always represents time, date, and timestamp values using Kafka Connect's built-in representations for Time, Date, and Timestamp, which uses millisecond precision regardless of the database columns' precision.",
           "recommended_values": [
@@ -781,6 +753,7 @@
           "required": false,
           "importance": "LOW",
           "group": "Database details",
+          "order_in_group": 4,
           "display_name": "Propagate Source Types by Data Type",
           "documentation": "A comma-separated list of regular expressions matching the database-specific data type names that adds the data type's original type and original length as parameters to the corresponding field schemas in the emitted change records.",
           "sanitizers": [
@@ -796,6 +769,7 @@
           "default_value": "delete",
           "importance": "MEDIUM",
           "group": "Connector details",
+          "order_in_group": 5,
           "display_name": "Topic cleanup policy",
           "documentation": "Set the topic cleanup policy",
           "recommended_values": [
@@ -854,20 +828,12 @@
           "name": "heartbeat.interval.ms"
         },
         {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -937,10 +903,6 @@
           "value": "209716100"
         },
         {
-          "name": "custom.metric.tags",
-          "value": "connector={{.logicalClusterId}},version=v1"
-        },
-        {
           "name": "connector.endpoint",
           "value": "${database.hostname}"
         }
@@ -966,6 +928,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
+          "order_in_group": 1,
           "display_name": "Connector class"
         },
         {
@@ -974,6 +937,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
+          "order_in_group": 2,
           "display_name": "Connector name",
           "documentation": "Sets a name for your connector."
         },
@@ -983,6 +947,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
+          "order_in_group": 1,
           "display_name": "Tasks",
           "documentation": "Maximum number of tasks for the connector."
         },
@@ -993,6 +958,7 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
@@ -1006,117 +972,9 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
           "display_name": "Kafka API Key",
           "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
-        },
-        {
-          "name": "kafka.service.account.api.key",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.api.secret",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.region",
-          "type": "STRING",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.endpoint",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.user.id",
-          "type": "INT",
-          "required": false,
-          "internal": true,
-          "importance": "MEDIUM"
-        },
-        {
-          "name": "cloud.environment",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.cloud",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.dedicated",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "valid.kafka.api.key",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.oauth.token",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.logical.cluster.id",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connect.connector_cross_region.enable",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.regional.connectivity.enabled",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.key",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.secret",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.validity.check",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
         }
       ],
       "connector_configs": [
@@ -1152,318 +1010,8 @@
     {
       "template_id": "common-kafka-connectivity",
       "abstract": true,
-      "config_defs": [
-        {
-          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
-          "type": "STRING",
-          "required": false,
-          "default_value": "SKIP",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.fips.provider",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "default_value_provider": {
-            "name": "defaultvalue.fips.provider"
-          },
-          "importance": "HIGH",
-          "internal": true
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "consumer.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "producer.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "admin.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        }
-      ]
+      "config_defs": [],
+      "connector_configs": []
     },
     {
       "template_id": "common-source",
@@ -1475,6 +1023,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
           "display_name": "Kafka Service Account",
           "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
@@ -1484,6 +1033,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
           "dependents": [
@@ -1498,6 +1048,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 4,
           "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
@@ -1558,20 +1109,12 @@
           "name": "datapreview.schemas.enable"
         },
         {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -1591,15 +1134,10 @@
       "abstract": true,
       "config_defs": [
         {
-          "name": "schema.registry.url",
-          "type": "STRING",
-          "importance": "MEDIUM",
-          "internal": true
-        },
-        {
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
+          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
@@ -1622,6 +1160,7 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
+          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1717,16 +1256,6 @@
           }
         },
         {
-          "name": "value.converter.basic.auth.user.info",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-            }
-          }
-        },
-        {
           "name": "value.converter.ignore.default.for.nullables"
         },
         {
@@ -1748,6 +1277,7 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
+          "order_in_group": 2,
           "display_name": "Output Kafka record key format",
           "alias": "key.format",
           "documentation": "Sets the output Kafka record key format. Valid entries are AVRO, JSON_SR, PROTOBUF, STRING or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1803,16 +1333,6 @@
               "PROTOBUF": "USER_INFO"
             }
           }
-        },
-        {
-          "name": "key.converter.basic.auth.user.info",
-          "switch": {
-            "output.key.format": {
-              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-            }
-          }
         }
       ]
     },
@@ -1827,6 +1347,7 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
+          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
           "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
@@ -2164,220 +1685,6 @@
           "name": "header.converter"
         }
       ]
-    }
-  ],
-  "all_config_def_names": [
-    "after.state.only",
-    "bigint.unsigned.handling.mode",
-    "binary.handling.mode",
-    "cleanup.policy",
-    "column.exclude.list",
-    "connector.class",
-    "database.connectionTimeZone",
-    "database.exclude.list",
-    "database.history.skip.unparseable.ddl",
-    "database.history.store.only.captured.tables.ddl",
-    "database.hostname",
-    "database.include.list",
-    "database.password",
-    "database.port",
-    "database.server.name",
-    "database.ssl.mode",
-    "database.user",
-    "datapreview.schemas.enable",
-    "datatype.propagate.source.type",
-    "decimal.handling.mode",
-    "enable.time.adjuster",
-    "event.deserialization.failure.handling.mode",
-    "event.processing.failure.handling.mode",
-    "heartbeat.interval.ms",
-    "inconsistent.schema.handling.mode",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "key.converter.reference.subject.name.strategy",
-    "max.batch.size",
-    "name",
-    "output.data.format",
-    "output.key.format",
-    "poll.interval.ms",
-    "provide.transaction.metadata",
-    "schema.context.name",
-    "signal.data.collection",
-    "snapshot.locking.mode",
-    "snapshot.mode",
-    "table.exclude.list",
-    "table.include.list",
-    "tasks.max",
-    "time.precision.mode",
-    "tombstones.on.delete"
-  ],
-  "all_connector_configs": [
-    {
-      "name": "database.history.kafka.topic",
-      "value": "dbhistory.${database.server.name}.{{.logicalClusterId}}"
-    },
-    {
-      "name": "database.history.kafka.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "database.history.consumer.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "database.history.producer.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "database.history.producer.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "database.history.consumer.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "database.server.id",
-      "value": "{{.numericClusterId}}"
-    },
-    {
-      "name": "producer.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "admin.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "topic.creation.default.cleanup.policy",
-      "value": "${cleanup.policy}"
-    },
-    {
-      "name": "custom.metric.tags",
-      "value": "connector={{.logicalClusterId}},version=v1"
-    },
-    {
-      "name": "connector.endpoint",
-      "value": "${database.hostname}"
-    },
-    {
-      "name": "consumer.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "admin.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "consumer.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "admin.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "admin.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "value.converter.schema.registry.url",
-      "switch": {
-        "output.data.format": {
-          "AVRO": "${schema.registry.url}",
-          "JSON_SR": "${schema.registry.url}",
-          "PROTOBUF": "${schema.registry.url}"
-        }
-      }
-    },
-    {
-      "name": "value.converter.basic.auth.user.info",
-      "switch": {
-        "output.data.format": {
-          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        }
-      }
-    },
-    {
-      "name": "key.converter.schema.registry.url",
-      "switch": {
-        "output.key.format": {
-          "AVRO": "${schema.registry.url}",
-          "JSON_SR": "${schema.registry.url}",
-          "PROTOBUF": "${schema.registry.url}"
-        }
-      }
-    },
-    {
-      "name": "key.converter.basic.auth.user.info",
-      "switch": {
-        "output.key.format": {
-          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        }
-      }
     }
   ]
 }

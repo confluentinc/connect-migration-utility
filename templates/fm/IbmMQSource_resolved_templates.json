@@ -11,6 +11,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 1,
           "display_name": "Username",
           "documentation": "The username to use when connecting to IBM MQ."
         },
@@ -20,6 +21,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 2,
           "display_name": "Password",
           "documentation": "The password to use when connecting to IBM MQ."
         },
@@ -30,6 +32,7 @@
           "default_value": "single",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 3,
           "display_name": "MQ configuration mode",
           "documentation": "The mode in connector is to configure single mq instance or multiple for HA/DR support",
           "recommended_values": [
@@ -43,6 +46,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 4,
           "display_name": "IBM MQ broker host",
           "documentation": "IBM MQ broker host"
         },
@@ -53,6 +57,7 @@
           "default_value": 1414,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 5,
           "display_name": "IBM MQ broker port",
           "documentation": "IBM MQ broker port"
         },
@@ -62,6 +67,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 6,
           "display_name": "IBM MQ connection list",
           "documentation": "For IBM's HA/DR support with multiple MQ instances, enter hosts as comma-separated values, e.g., host1:port1, host2:port2."
         },
@@ -71,6 +77,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 7,
           "display_name": "Queue Manager",
           "documentation": "The name of the queue manager."
         },
@@ -80,6 +87,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 8,
           "display_name": "Channel",
           "documentation": "The channel for client connections.",
           "default_value": ""
@@ -91,6 +99,7 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 9,
           "display_name": "SSL Cipher Suite",
           "documentation": "The CipherSuite for SSL connections."
         },
@@ -100,6 +109,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 10,
           "display_name": "SSL FIPS Required",
           "documentation": "Whether SSL FIPS is required."
         },
@@ -110,6 +120,7 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
+          "order_in_group": 11,
           "display_name": "SSL Peer Name",
           "documentation": "Sets a distinguished name (DN) pattern. If sslCipherSuite is set, this pattern can ensure that the correct queue manager is used. The connection attempt fails if the distinguished name provided by the queue manager does not match this pattern."
         },
@@ -126,6 +137,7 @@
           ],
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 1,
           "display_name": "TLS Protocol",
           "documentation": "The TLS protocol version for secure connections to IBM MQ. The default is ``TLSv1.2``, which should be fine for most cases, though the actual set of allowed values will depend on the JVM. Recent JVMs support ``TLSv1.3`` and ``TLSv1.2``, ``TLSv1.1`` and ``TLS``. Older JVMs may support ``SSL``, ``SSLv2`` and ``SSLv3``, but these versions are disabled due to known security vulnerabilities."
         },
@@ -136,6 +148,7 @@
           "default_value": "JKS",
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 2,
           "display_name": "TLS Keystore Type",
           "documentation": "The file format of the key store file. This is required only when using secure TLS communication with IBM MQ. For MQ on Cloud queue managers of version 9.2.1 revision 2 and above, TLS is enabled by default"
         },
@@ -145,6 +158,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 3,
           "display_name": "TLS Keystore file",
           "documentation": "The key store file. This is required only when using secure TLS communication with IBM MQ.",
           "sanitizers": [
@@ -159,6 +173,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 4,
           "display_name": "TLS Keystore Password",
           "documentation": "The store password for the key store file. This is optional for client and only needed if ``TLS Keystore file`` is configured."
         },
@@ -168,6 +183,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 5,
           "display_name": "TLS Key Password",
           "documentation": "The password of the private key used for secure TLS communication with IBM MQ."
         },
@@ -178,6 +194,7 @@
           "default_value": "JKS",
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 6,
           "display_name": "TLS Truststore Type",
           "documentation": "The file format of the trust store file. This is required when using TLS and secure communication with IBM MQ."
         },
@@ -187,6 +204,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 7,
           "display_name": "TLS Truststore file",
           "documentation": "The trust store file. This is required only when using secure TLS communication with IBM MQ.",
           "sanitizers": [
@@ -201,6 +219,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 8,
           "display_name": "TLS Truststore Password",
           "documentation": "The password for the trust store file. If a password is not set access to the truststore is still available, but integrity checking is disabled. This is required only when using secure TLS communication with IBM MQ."
         },
@@ -211,6 +230,7 @@
           "default_value": "SunX509",
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 9,
           "display_name": "TLS KeyManager Algorithm",
           "documentation": "The algorithm used by key manager factory for SSL connections. Default value is the key manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ."
         },
@@ -221,6 +241,7 @@
           "default_value": "PKIX",
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 10,
           "display_name": "TLS TrustManager Algorithm",
           "documentation": "The algorithm used by trust manager factory for SSL connections. Default value is the trust manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ."
         },
@@ -230,6 +251,7 @@
           "required": false,
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
+          "order_in_group": 11,
           "display_name": "TLS Secure Random Implementation",
           "documentation": "The SecureRandom PRNG implementation to use for SSL cryptography operations. By default, tries PKCS11 implementation first. If PKCS11 is not supported, iterates through the provider and returns the first working implementation. This is required only when using secure TLS communication with IBM MQ."
         },
@@ -239,6 +261,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Session",
+          "order_in_group": 1,
           "display_name": "Destination Name",
           "documentation": "The name of the JMS destination (queue or topic) to read from."
         },
@@ -249,6 +272,7 @@
           "default_value": "queue",
           "importance": "HIGH",
           "group": "IBM MQ Session",
+          "order_in_group": 2,
           "display_name": "Destination Type",
           "documentation": "The type of JMS destination, which is either `queue` or `topic`.",
           "recommended_values": [
@@ -263,6 +287,7 @@
           "default_value": "2000",
           "importance": "HIGH",
           "group": "IBM MQ Session",
+          "order_in_group": 3,
           "display_name": "Max pending messages",
           "documentation": "The maximum number of messages per task that can be received from JMS brokers and produced to Kafka before the task acknowledges the JMS session/messages. If the task fails and is restarted, this is the maximum number of JMS messages the task may duplicate in Kafka."
         },
@@ -272,6 +297,7 @@
           "required": false,
           "importance": "LOW",
           "group": "IBM MQ Session",
+          "order_in_group": 4,
           "display_name": "Maximum time to wait for a single poll in milliseconds.",
           "documentation": "The maximum amount of time each task can build a batch. The batch is closed and sent to Kafka if not enough messages are read during the time allotted. This helps limit connector lag when the JMS queue/topic has a lower throughput."
         },
@@ -282,6 +308,7 @@
           "default_value": "UTF-8",
           "importance": "LOW",
           "group": "IBM MQ Session",
+          "order_in_group": 5,
           "display_name": "Character Encoding",
           "documentation": "The character encoding to use while receiving the message.",
           "recommender": {
@@ -294,6 +321,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "IBM MQ Session",
+          "order_in_group": 6,
           "display_name": "Durable Subscription",
           "documentation": "Whether the subscription of the connector tasks to a JMS topic is durable or not. Durable subscriptions require a subscription name to be set via ``jms.subscription.name``. "
         },
@@ -303,6 +331,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "IBM MQ Session",
+          "order_in_group": 7,
           "display_name": "Subscription Name",
           "documentation": "The name of the JMS subscription. Supported only in durable subscriptions (``jms.subscription.durable = true``) and is applicable only to JMS topics."
         },
@@ -312,6 +341,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Session",
+          "order_in_group": 8,
           "display_name": "Message Selector",
           "documentation": "The JMS message selector that should be applied to messages in the destination."
         },
@@ -322,15 +352,12 @@
           "default_value": "5000",
           "importance": "LOW",
           "group": "IBM MQ Session",
+          "order_in_group": 9,
           "display_name": "Initial Poll Wait Time (ms)",
           "documentation": "The initial amount of time in milliseconds to wait when polling for new messages before switching to a shorter poll interval. This helps reduce the number of empty poll attempts during startup or when the queue is empty."
         }
       ],
       "connector_configs": [
-        {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
         {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
@@ -338,10 +365,6 @@
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -494,6 +517,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
+          "order_in_group": 1,
           "display_name": "Connector class"
         },
         {
@@ -502,6 +526,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
+          "order_in_group": 2,
           "display_name": "Connector name",
           "documentation": "Sets a name for your connector."
         },
@@ -511,6 +536,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
+          "order_in_group": 1,
           "display_name": "Tasks",
           "documentation": "Maximum number of tasks for the connector."
         },
@@ -521,6 +547,7 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
@@ -534,117 +561,9 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
           "display_name": "Kafka API Key",
           "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
-        },
-        {
-          "name": "kafka.service.account.api.key",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.api.secret",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.region",
-          "type": "STRING",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.endpoint",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.user.id",
-          "type": "INT",
-          "required": false,
-          "internal": true,
-          "importance": "MEDIUM"
-        },
-        {
-          "name": "cloud.environment",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.cloud",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.dedicated",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "valid.kafka.api.key",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.oauth.token",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.logical.cluster.id",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connect.connector_cross_region.enable",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.regional.connectivity.enabled",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.key",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.secret",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.validity.check",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
         }
       ],
       "connector_configs": [
@@ -680,318 +599,8 @@
     {
       "template_id": "common-kafka-connectivity",
       "abstract": true,
-      "config_defs": [
-        {
-          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
-          "type": "STRING",
-          "required": false,
-          "default_value": "SKIP",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.fips.provider",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "default_value_provider": {
-            "name": "defaultvalue.fips.provider"
-          },
-          "importance": "HIGH",
-          "internal": true
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "consumer.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "producer.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.bootstrap.servers",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-              "UNSET": "${kafka.endpoint}",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.trustmanager.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "SECURED": "ConfluentTls",
-              "DEFAULT": "PKIX"
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.endpoint.identification.algorithm",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
-              "UNSECURED_PREPROD_ONLY": "",
-              "SECURED": "",
-              "DEFAULT": "https"
-            }
-          }
-        },
-        {
-          "name": "admin.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.security.providers",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.provider",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "BCJSSE",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.cipher.suites",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "admin.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "consumer.override.ssl.enabled.protocols",
-          "switch": {
-            "connect.fips.provider": {
-              "BCJSSE": "TLSv1.2,TLSv1.3",
-              "DEFAULT": null
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.lkc.id",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "",
-              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "producer.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "consumer.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.proxy.protocol.client.mode",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "PROXY",
-              "DEFAULT": "LOCAL"
-            }
-          }
-        },
-        {
-          "name": "admin.override.confluent.proxy.protocol.client.version",
-          "switch": {
-            "connect.metadata_property.kafka.itsl.embed.lkc": {
-              "SKIP": "NONE",
-              "DEFAULT": "V2"
-            }
-          }
-        }
-      ]
+      "config_defs": [],
+      "connector_configs": []
     },
     {
       "template_id": "kafka-topic-source",
@@ -1003,6 +612,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topic do you want to send data to?",
+          "order_in_group": 1,
           "display_name": "Topic name",
           "documentation": "Identifies the topic name to write the data to."
         }
@@ -1019,6 +629,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
           "display_name": "Kafka Service Account",
           "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
@@ -1028,6 +639,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
           "dependents": [
@@ -1042,6 +654,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
+          "order_in_group": 4,
           "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
@@ -1102,20 +715,12 @@
           "name": "datapreview.schemas.enable"
         },
         {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -1135,15 +740,10 @@
       "abstract": true,
       "config_defs": [
         {
-          "name": "schema.registry.url",
-          "type": "STRING",
-          "importance": "MEDIUM",
-          "internal": true
-        },
-        {
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
+          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
@@ -1166,6 +766,7 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
+          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1261,16 +862,6 @@
           }
         },
         {
-          "name": "value.converter.basic.auth.user.info",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-            }
-          }
-        },
-        {
           "name": "value.converter.ignore.default.for.nullables"
         },
         {
@@ -1291,6 +882,7 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "CSFLE",
+          "order_in_group": 1,
           "docs_hidden": true,
           "display_name": "Enable Client-Side Field Level Encryption",
           "documentation": "Determines whether the connector honours CSFLE rules or not",
@@ -1300,9 +892,6 @@
               "arguments": {
                 "config": "csfle.configs.visible",
                 "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
               }
             }
           ]
@@ -1312,17 +901,10 @@
           "type": "STRING",
           "importance": "HIGH",
           "group": "CSFLE",
+          "order_in_group": 2,
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
           "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
-        },
-        {
-          "name": "csfle.configs.visible",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "false",
-          "internal": true
         }
       ],
       "connector_configs": [
@@ -1408,6 +990,7 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
+          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
           "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
@@ -1745,148 +1328,6 @@
           "name": "header.converter"
         }
       ]
-    }
-  ],
-  "all_config_def_names": [
-    "character.encoding",
-    "connector.class",
-    "csfle.enabled",
-    "datapreview.schemas.enable",
-    "initial.poll.wait.time.ms",
-    "jms.destination.name",
-    "jms.destination.type",
-    "jms.message.selector",
-    "jms.subscription.durable",
-    "jms.subscription.name",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "kafka.topic",
-    "max.pending.messages",
-    "max.poll.duration",
-    "mq.channel",
-    "mq.configuration.mode",
-    "mq.connection.list",
-    "mq.hostname",
-    "mq.password",
-    "mq.port",
-    "mq.queue.manager",
-    "mq.ssl.cipher.suite",
-    "mq.ssl.fips.required",
-    "mq.ssl.peer.name",
-    "mq.tls.key.password",
-    "mq.tls.keymanager.algorithm",
-    "mq.tls.keystore.location",
-    "mq.tls.keystore.password",
-    "mq.tls.keystore.type",
-    "mq.tls.protocol",
-    "mq.tls.secure.random.implementation",
-    "mq.tls.trustmanager.algorithm",
-    "mq.tls.truststore.location",
-    "mq.tls.truststore.password",
-    "mq.tls.truststore.type",
-    "mq.username",
-    "name",
-    "output.data.format",
-    "schema.context.name",
-    "sr.service.account.id",
-    "tasks.max"
-  ],
-  "all_connector_configs": [
-    {
-      "name": "producer.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "admin.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "connector.endpoint",
-      "value": "${mq.hostname}"
-    },
-    {
-      "name": "consumer.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "admin.override.bootstrap.servers",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.bootstrap.servers": {
-          "UNSET": "${kafka.endpoint}",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "consumer.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "admin.override.confluent.lkc.id",
-      "switch": {
-        "connect.metadata_property.kafka.itsl.embed.lkc": {
-          "SKIP": "",
-          "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
-        }
-      }
-    },
-    {
-      "name": "producer.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "admin.override.sasl.jaas.config",
-      "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-    },
-    {
-      "name": "value.converter.schema.registry.url",
-      "switch": {
-        "output.data.format": {
-          "AVRO": "${schema.registry.url}",
-          "JSON_SR": "${schema.registry.url}",
-          "PROTOBUF": "${schema.registry.url}"
-        }
-      }
-    },
-    {
-      "name": "value.converter.basic.auth.user.info",
-      "switch": {
-        "output.data.format": {
-          "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-          "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        }
-      }
     }
   ]
 }

@@ -1,0 +1,1439 @@
+{
+  "templates": [
+    {
+      "template_id": "DataScienceBigQuerySink",
+      "connector_type": "SINK",
+      "connector.class": "com.wepay.kafka.connect.bigquery.BigQuerySinkConnector",
+      "config_defs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "input.data.format",
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, OPENX_METRICS_PROTOBUF, OPENCENSUS_PROTOBUF, OTEL_PROTOBUF, OTEL_TRACE_PROTOBUF, CLOUDEVENT_PROTOBUF or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, or PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "OPENX_METRICS_PROTOBUF",
+            "OPENCENSUS_PROTOBUF",
+            "OTEL_PROTOBUF",
+            "OTEL_TRACE_PROTOBUF",
+            "CLOUDEVENT_PROTOBUF",
+            "JSON"
+          ]
+        },
+        {
+          "name": "partitioning.type",
+          "type": "STRING",
+          "required": true,
+          "default_value": "TIMESTAMP_COLUMN",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 5,
+          "display_name": "Partitioning type",
+          "dependents": [
+            "timestamp.partition.field.name"
+          ],
+          "recommended_values": [
+            "NONE",
+            "INGESTION_TIME",
+            "RECORD_TIME",
+            "TIMESTAMP_COLUMN"
+          ]
+        },
+        {
+          "name": "convert.double.special.values",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "Connector configuration",
+          "order_in_group": 3,
+          "display_name": "Convert Double Special Values"
+        },
+        {
+          "name": "column.names",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 2,
+          "display_name": "List of Column Names"
+        },
+        {
+          "name": "resource.label.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 3,
+          "display_name": "Prefix for Resource Metrics"
+        },
+        {
+          "name": "metric.label.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 4,
+          "display_name": "Prefix for All Metrics"
+        },
+        {
+          "name": "metric.dimension",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 5,
+          "display_name": "Metric Dimension"
+        },
+        {
+          "name": "metric.attribute.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 6,
+          "display_name": "Prefix for Metric Attributes"
+        },
+        {
+          "name": "resource.attribute.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 7,
+          "display_name": "Prefix for Resource Attributes"
+        },
+        {
+          "name": "span.attribute.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 8,
+          "display_name": "Prefix for All Span Attributes"
+        },
+        {
+          "name": "cloudevent.data.class",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "Converter configuration",
+          "order_in_group": 9,
+          "display_name": "Data class for CloudEvent"
+        },
+        {
+          "name": "transforms",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Transform",
+          "order_in_group": 1,
+          "display_name": "Type of Transformation"
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "OPENX_METRICS_PROTOBUF": "io.confluent.connect.openx.OpenXMetricsConverter",
+              "OPENCENSUS_PROTOBUF": "io.confluent.connect.protobuf.opencensus.OpencensusProtobufConverter",
+              "OTEL_PROTOBUF": "io.confluent.connect.opentelemetry.OpenTelemetryMetricsConverter",
+              "OTEL_TRACE_PROTOBUF": "io.confluent.connect.opentelemetry.OpenTelemetryTraceConverter",
+              "CLOUDEVENT_PROTOBUF": "io.confluent.connect.cloudevent.CloudEventProtobufConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.column.names",
+          "switch": {
+            "input.data.format": {
+              "OPENX_METRICS_PROTOBUF": "${column.names}",
+              "OPENCENSUS_PROTOBUF": "${column.names}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.metric.dimension",
+          "switch": {
+            "input.data.format": {
+              "OPENX_METRICS_PROTOBUF": "${metric.dimension}",
+              "OPENCENSUS_PROTOBUF": "${metric.dimension}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.resource.label.prefix",
+          "switch": {
+            "input.data.format": {
+              "OPENCENSUS_PROTOBUF": "${resource.label.prefix}",
+              "OTEL_PROTOBUF": "${resource.label.prefix}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.metric.label.prefix",
+          "switch": {
+            "input.data.format": {
+              "OPENCENSUS_PROTOBUF": "${metric.label.prefix}",
+              "OTEL_PROTOBUF": "${metric.label.prefix}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.resource.attribute.prefix",
+          "switch": {
+            "input.data.format": {
+              "OPENX_METRICS_PROTOBUF": "${resource.attribute.prefix}",
+              "OPENCENSUS_PROTOBUF": "${resource.attribute.prefix}",
+              "OTEL_PROTOBUF": "${resource.attribute.prefix}",
+              "OTEL_TRACE_PROTOBUF": "${resource.attribute.prefix}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.metric.attribute.prefix",
+          "switch": {
+            "input.data.format": {
+              "OPENX_METRICS_PROTOBUF": "${metric.attribute.prefix}",
+              "OPENCENSUS_PROTOBUF": "${metric.attribute.prefix}",
+              "OTEL_PROTOBUF": "${metric.attribute.prefix}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.span.attribute.prefix",
+          "switch": {
+            "input.data.format": {
+              "OTEL_TRACE_PROTOBUF": "${span.attribute.prefix}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.cloudevent.data.class",
+          "switch": {
+            "input.data.format": {
+              "CLOUDEVENT_PROTOBUF": "${cloudevent.data.class}"
+            }
+          }
+        },
+        {
+          "name": "convertDoubleSpecialValues",
+          "value": "${convert.double.special.values}"
+        },
+        {
+          "name": "transforms"
+        },
+        {
+          "name": "transforms.requireMapTransform.type",
+          "value": null
+        },
+        {
+          "name": "runtimeProvider",
+          "value": "Confluent Cloud"
+        }
+      ]
+    },
+    {
+      "template_id": "BigQuerySink",
+      "connector_type": "SINK",
+      "connector.class": "com.wepay.kafka.connect.bigquery.BigQuerySinkConnector",
+      "config_defs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "input.key.format",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record key format",
+          "default_value": "BYTES",
+          "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF, or STRING. Note that you must have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "BYTES",
+            "JSON",
+            "JSON_SR",
+            "PROTOBUF",
+            "STRING"
+          ]
+        },
+        {
+          "name": "input.data.format",
+          "order_in_group": 2,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, and JSON. Note that you must have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, or PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ]
+        },
+        {
+          "name": "keyfile",
+          "type": "PASSWORD",
+          "required": true,
+          "importance": "HIGH",
+          "group": "GCP credentials",
+          "order_in_group": 1,
+          "display_name": "GCP credentials file",
+          "documentation": "GCP service account JSON file with write permissions for BigQuery.",
+          "sanitizers": [
+            {
+              "name": "gcp.credentials.sanitize"
+            }
+          ]
+        },
+        {
+          "name": "project",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "BigQuery details",
+          "order_in_group": 1,
+          "display_name": "GCP Project ID",
+          "documentation": "GCP Project ID where BigQuery is located."
+        },
+        {
+          "name": "datasets",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "BigQuery details",
+          "order_in_group": 2,
+          "display_name": "Dataset",
+          "documentation": "Name for the BigQuery dataset that Kafka topics write to.",
+          "dependents": [
+            "project"
+          ]
+        },
+        {
+          "name": "auto.create.tables",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 3,
+          "display_name": "Auto create tables",
+          "documentation": "Designates whether or not to automatically create BigQuery tables. Note: Supports AVRO, JSON_SR, and PROTOBUF message format only.",
+          "dependents": [
+            "input.data.format"
+          ],
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "auto.update.schemas",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 4,
+          "display_name": "Auto update schemas",
+          "documentation": "Designates whether or not to automatically update BigQuery schemas. New fields in record schemas must be nullable. Note: Supports AVRO, JSON_SR, and PROTOBUF message format only.",
+          "dependents": [
+            "input.data.format"
+          ],
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "sanitize.topics",
+          "type": "STRING",
+          "required": false,
+          "default_value": "true",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 5,
+          "display_name": "Sanitize topics",
+          "documentation": "Designates whether to automatically sanitize topic names before using them as table names in BigQuery. If not enabled, topic names are used as table names.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "sanitize.field.names",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 6,
+          "display_name": "Sanitize field names",
+          "documentation": "Whether to automatically sanitize field names before using them as field names in BigQuery. BigQuery specifies that field names can only contain letters, numbers, and underscores. The sanitizer replaces invalid symbols with underscores. If the field name starts with a digit, the sanitizer adds an underscore in front of field name. Caution: Key duplication errors can occur if different fields are named a.b and a_b, for instance. After being sanitized, field names a.b and a_b will have same value.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "partitioning.type",
+          "type": "STRING",
+          "required": true,
+          "default_value": "INGESTION_TIME",
+          "importance": "HIGH",
+          "group": "SQL/DDL Support",
+          "order_in_group": 1,
+          "display_name": "Partitioning type",
+          "documentation": "The partitioning type to use.\nNONE: The connector relies only on how the existing tables are set up. If the Auto create tables property is enabled, the connector creates non-partitioned tables.\nINGESTION_TIME: Existing tables must be partitioned by ingestion time. The connector writes to the partition for the current wall clock time. If the Auto create tables property is enabled, the connector creates tables partitioned by ingestion time.\nRECORD_TIME: Existing tables must be partitioned by ingestion time. The connector writes to the partition based on the Kafka record timestamp. If the Auto create tables property is enabled, the connector creates tables partitioned by ingestion time. The only supported ``time.partitioning.type`` value for RECORD_TIME is DAY.\nTIMESTAMP_COLUMN: The connector relies only on how the existing tables are set up. If the Auto create tables property is enabled, the connector creates tables partitioned by the ``timestamp.partition.field.name`` used.",
+          "dependents": [
+            "timestamp.partition.field.name"
+          ],
+          "recommended_values": [
+            "NONE",
+            "INGESTION_TIME",
+            "RECORD_TIME",
+            "TIMESTAMP_COLUMN"
+          ]
+        },
+        {
+          "name": "topic2table.map",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "default_value": "",
+          "group": "SQL/DDL Support",
+          "order_in_group": 2,
+          "display_name": "Kafka Topic to BigQuery Table Map",
+          "documentation": "Map of topics to tables (optional). The required format is comma-separated tuples. For example, <topic-1>:<table-1>,<topic-2>:<table-2>,... Note that a topic name must not be modified using a regex SMT while using this option. Note that if this property is used, ``sanitize.topics`` is ignored. Also, if the topic-to-table map doesn\u2019t contain the topic for a record, the connector creates a table with the same name as the topic name."
+        },
+        {
+          "name": "time.partitioning.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "DAY",
+          "importance": "LOW",
+          "group": "SQL/DDL Support",
+          "order_in_group": 7,
+          "display_name": "Time partitioning type",
+          "documentation": "The time partitioning type to use when creating new tables for ``partitioning.type`` INGESTION_TIME, RECORD_TIME or TIMESTAMP_COLUMN. Existing tables are not altered to use this partitioning type.",
+          "recommended_values": [
+            "NONE",
+            "HOUR",
+            "DAY",
+            "MONTH",
+            "YEAR"
+          ]
+        },
+        {
+          "name": "timestamp.partition.field.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "SQL/DDL Support",
+          "order_in_group": 8,
+          "display_name": "Timestamp partition field name",
+          "documentation": "The name of the field in the value that contains the timestamp to partition by in BigQuery. This enable timestamp partitioning for tables. The connector ignores this property if ``partitioning.type`` is not TIMESTAMP_COLUMN or if ``auto.create.tables`` is false."
+        },
+        {
+          "name": "allow.schema.unionization",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "SQL/DDL Support",
+          "order_in_group": 9,
+          "display_name": "Allow schema unionization",
+          "documentation": "If enabled, when performing schema updates, record schemas are combined with the current schema of the BigQuery table. This can be useful if there are Kafka records with schemas that are missing fields that correspond to columns already present in the BigQuery table schema. Note that when this is enabled, unrelated records could be produced to a topic consumed by the connector. The reason for this is instead of failing on invalid data, the connector appends the field for the unrelated record schema to the BigQuery table schema.",
+          "dependents": [
+            "input.data.format"
+          ],
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "all.bq.fields.nullable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "SQL/DDL Support",
+          "order_in_group": 10,
+          "display_name": "All BigQuery fields nullable",
+          "documentation": "If true, no fields in any produced BigQuery schema are required. All non-nullable Avro fields are translated as NULLABLE (or REPEATED, if arrays).",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "convert.double.special.values",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "SQL/DDL Support",
+          "order_in_group": 11,
+          "display_name": "Convert double special values",
+          "documentation": "Designates whether +Infinity is converted to Double.MAX_VALUE and whether -Infinity and NaN are converted to Double.MIN_VALUE to ensure successful delivery to BigQuery.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "project"
+        },
+        {
+          "name": "defaultDataset",
+          "value": "${datasets}"
+        },
+        {
+          "name": "keySource",
+          "value": "JSON"
+        },
+        {
+          "name": "transforms",
+          "value": "requireMapTransform"
+        },
+        {
+          "name": "transforms.requireMapTransform.type",
+          "value": "io.confluent.cctransforms.RequireMapTransform"
+        },
+        {
+          "name": "autoCreateTables",
+          "value": "${auto.create.tables}"
+        },
+        {
+          "name": "allowNewBigQueryFields",
+          "switch": {
+            "auto.update.schemas": {
+              "true": "true",
+              "DEFAULT": "false"
+            }
+          }
+        },
+        {
+          "name": "allBQFieldsNullable",
+          "value": "${all.bq.fields.nullable}"
+        },
+        {
+          "name": "convertDoubleSpecialValues",
+          "value": "${convert.double.special.values}"
+        },
+        {
+          "name": "allowBigQueryRequiredFieldRelaxation",
+          "switch": {
+            "auto.update.schemas": {
+              "true": "true",
+              "DEFAULT": "false"
+            }
+          }
+        },
+        {
+          "name": "allowSchemaUnionization",
+          "value": "${allow.schema.unionization}"
+        },
+        {
+          "name": "sanitizeTopics",
+          "value": "${sanitize.topics}"
+        },
+        {
+          "name": "sanitizeFieldNames",
+          "value": "${sanitize.field.names}"
+        },
+        {
+          "name": "bigQueryMessageTimePartitioning",
+          "switch": {
+            "partitioning.type": {
+              "RECORD_TIME": "true",
+              "DEFAULT": "false"
+            }
+          }
+        },
+        {
+          "name": "bigQueryPartitionDecorator",
+          "switch": {
+            "partitioning.type": {
+              "RECORD_TIME": "true",
+              "DEFAULT": "false"
+            }
+          }
+        },
+        {
+          "name": "timestampPartitionFieldName",
+          "switch": {
+            "partitioning.type": {
+              "TIMESTAMP_COLUMN": "${timestamp.partition.field.name}",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "timePartitioningType",
+          "switch": {
+            "partitioning.type": {
+              "NONE": "NONE",
+              "DEFAULT": "${time.partitioning.type}"
+            }
+          }
+        },
+        {
+          "name": "runtimeProvider",
+          "value": "Confluent Cloud"
+        },
+        {
+          "name": "topic2TableMap",
+          "value": "${topic2table.map}"
+        },
+        {
+          "name": "bigQueryRetry",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ]
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": []
+    },
+    {
+      "template_id": "common-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "all",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "input-data-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "input-key-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.key.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Input messages",
+          "order_in_group": 2,
+          "display_name": "Input Kafka record key format",
+          "alias": "key.format",
+          "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF, or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "BYTES",
+            "JSON",
+            "JSON_SR",
+            "PROTOBUF",
+            "STRING"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "key.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "key.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter."
+        },
+        {
+          "name": "key.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "key.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "key.converter",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "STRING": "org.apache.kafka.connect.storage.StringConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter"
+            }
+          }
+        },
+        {
+          "name": "key.converter.schemas.enable"
+        },
+        {
+          "name": "key.converter.schema.registry.url",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "key.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "key.converter.replace.null.with.default"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas"
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version"
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ]
+}

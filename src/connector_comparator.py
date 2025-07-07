@@ -9,7 +9,8 @@ import base64
 import requests
 
 class ConnectorComparator:
-    def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None):
+    def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None, 
+                 env_id: str = None, lkc_id: str = None, bearer_token: str = None):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
@@ -19,6 +20,19 @@ class ConnectorComparator:
         # Worker URLs for fetching SM templates
         self.worker_urls = worker_urls or []
         
+        # Confluent Cloud credentials for FM transforms (optional)
+        self.env_id = env_id
+        self.lkc_id = lkc_id
+        self.bearer_token = bearer_token
+        
+        # Log credential status (without exposing sensitive data)
+        if env_id and lkc_id and bearer_token:
+            self.logger.info(f"Confluent Cloud credentials provided: env_id={env_id}, lkc_id={lkc_id}, bearer_token=[HIDDEN]")
+        elif env_id or lkc_id or bearer_token:
+            self.logger.warning("Partial Confluent Cloud credentials provided - HTTP calls for FM transforms will be skipped")
+        else:
+            self.logger.info("No Confluent Cloud credentials provided - will use fallback FM transforms only")
+        
 
         
         # Load template files - hardcoded FM template directory
@@ -27,6 +41,9 @@ class ConnectorComparator:
         
         # Build connector.class to template mapping
         self.connector_class_to_template = self._build_connector_class_mapping()
+        
+        # Load combined FM transforms as fallback
+        self.fm_transforms_fallback = self._load_fm_transforms_fallback()
         
         # Database type mappings
         self.jdbc_database_types = {
@@ -75,6 +92,26 @@ class ConnectorComparator:
                 }
             }
         }
+        
+        # Static property mappings to prevent incorrect semantic matching
+        # These will be determined dynamically based on connector type (source vs sink)
+        self.static_property_mappings_source = {
+            'key.converter': 'output.key.format',
+            'value.converter': 'output.data.format'
+        }
+        
+        self.static_property_mappings_sink = {
+            'key.converter': 'input.key.format',
+            'value.converter': 'input.data.format'
+        }
+        
+        # Converter class to format reverse mappings
+        self.converter_to_format_mappings = {
+            'io.confluent.connect.avro.AvroConverter': 'AVRO',
+            'io.confluent.connect.json.JsonSchemaConverter': 'JSON_SR',
+            'io.confluent.connect.protobuf.ProtobufConverter': 'PROTOBUF',
+            'org.apache.kafka.connect.json.JsonConverter': 'JSON'
+        }
 
     def encode_to_base64(self, input_string):
         # Convert the input string to bytes
@@ -98,9 +135,9 @@ class ConnectorComparator:
         return []
 
     def get_SM_template(self, connector_class: str) -> Dict[str, Any]:
-        """Fetch SM template for a connector class via HTTP PUT call to worker URLs"""
+        """Get SM template for a connector class - returns empty dict when no worker URLs provided"""
         if not self.worker_urls:
-            self.logger.error("No worker URLs provided for fetching SM templates")
+            self.logger.info(f"No worker URLs provided - skipping SM template fetch for {connector_class}")
             return {}
         
         # Try each worker URL until we get a successful response
@@ -130,29 +167,58 @@ class ConnectorComparator:
         self.logger.error(f"Failed to fetch SM template for {connector_class} from any worker URL")
         return {}
 
-    def get_FM_SMT(self, plugin_type) -> set[str]:
-        env_id = "env-yodk3k"
-        lkc_id = "lkc-nww1j6"
-        bearer_token = "G42O4SU5RQG5QP4T:xAqK3hQ9RZdss2zEr7G3St0Hviv+WnPAao+Ni3cay+n6TNfChmE/o36tZSuJv0ER"
+    def _load_fm_transforms_fallback(self) -> Dict[str, List[str]]:
+        """Load combined FM transforms from file as fallback"""
+        fallback_file = Path("fm_transforms_combined.json")
+        if fallback_file.exists():
+            try:
+                with open(fallback_file, 'r') as f:
+                    data = json.load(f)
+                self.logger.info(f"Loaded FM transforms fallback with {len(data)} template IDs")
+                return data
+            except Exception as e:
+                self.logger.warning(f"Failed to load FM transforms fallback: {str(e)}")
+        else:
+            self.logger.warning(f"FM transforms fallback file not found: {fallback_file}")
+        return {}
 
-        url = (
-            f"https://confluent.cloud/api/internal/accounts/env-yodk3k/clusters/lkc-nww1j6/connector-plugins/{plugin_type}/config/validate"
-        )
-        params = {
-            "extra_fields": "configs/metadata,configs/internal"
-        }
-        data = {
-            "transforms": "transform_0",
-            "connector.class": plugin_type
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {self.encode_to_base64(bearer_token)}"
-        }
-        response = requests.put(url, params=params, json=data, headers=headers)
-        response.raise_for_status()
-        recommended_values = self.extract_recommended_transform_types(response.json())
-        return recommended_values
+    def get_FM_SMT(self, plugin_type) -> set[str]:
+        # First try to get transforms via HTTP call if credentials are provided
+        if self.env_id and self.lkc_id and self.bearer_token:
+            try:
+                url = (
+                    f"https://confluent.cloud/api/internal/accounts/{self.env_id}/clusters/{self.lkc_id}/connector-plugins/{plugin_type}/config/validate"
+                )
+                params = {
+                    "extra_fields": "configs/metadata,configs/internal"
+                }
+                data = {
+                    "transforms": "transform_0",
+                    "connector.class": plugin_type
+                }
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
+                }
+                response = requests.put(url, params=params, json=data, headers=headers)
+                response.raise_for_status()
+                recommended_values = self.extract_recommended_transform_types(response.json())
+                if recommended_values:
+                    self.logger.info(f"Successfully fetched {len(recommended_values)} transforms for {plugin_type} via HTTP")
+                    return recommended_values
+            except Exception as e:
+                self.logger.warning(f"Failed to fetch FM transforms for {plugin_type} via HTTP: {str(e)}")
+        else:
+            self.logger.info(f"Skipping HTTP call for {plugin_type} - no Confluent Cloud credentials provided")
+        
+        # Fallback to local file
+        if plugin_type in self.fm_transforms_fallback:
+            transforms = self.fm_transforms_fallback[plugin_type]
+            self.logger.info(f"Using fallback transforms for {plugin_type}: {len(transforms)} transforms")
+            return set(transforms)
+        
+        self.logger.warning(f"No transforms found for {plugin_type} in HTTP call or fallback file")
+        return set()
 
     def get_transforms_config(self, config: Dict[str, Any], plugin_type: str) -> Dict[str, Dict[str, Any]]:
 
@@ -227,7 +293,7 @@ class ConnectorComparator:
         
         return mapping
 
-    def _find_fm_template_by_connector_class(self, connector_class: str, connector_name: str = None) -> Optional[str]:
+    def _find_fm_template_by_connector_class(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> Optional[str]:
         """Find FM template file that contains the specified connector.class"""
         if not self.fm_template_dir or not self.fm_template_dir.exists():
             self.logger.error(f"FM template directory does not exist: {self.fm_template_dir}")
@@ -287,8 +353,51 @@ class ConnectorComparator:
             self.logger.info(f"Using single FM template: {matching_templates[0]}")
             return matching_templates[0]
         else:
-            # Multiple templates found, ask user to pick
-            return self._get_user_template_selection(connector_class, template_info, connector_name)
+            # Multiple templates found - for JDBC connectors, auto-select based on connection URL
+            if connector_class in ['io.confluent.connect.jdbc.JdbcSourceConnector', 'io.confluent.connect.jdbc.JdbcSinkConnector'] and config:
+                return self._auto_select_jdbc_template(connector_class, template_info, config, connector_name)
+            else:
+                # For non-JDBC connectors, ask user to pick
+                return self._get_user_template_selection(connector_class, template_info, connector_name)
+
+    def _auto_select_jdbc_template(self, connector_class: str, template_info: List[Dict[str, str]], config: Dict[str, Any], connector_name: str = None) -> Optional[str]:
+        """Automatically select JDBC template based on connection URL"""
+        connector_display = f"{connector_name} ({connector_class})" if connector_name else connector_class
+        
+        # Get database type from connection URL
+        db_type = self._get_database_type(config)
+        self.logger.info(f"Detected database type: {db_type} for connector: {connector_display}")
+        
+        # Map database types to template names
+        db_to_template_mapping = {
+            'mysql': ['MySqlSource', 'MySqlSink'],
+            'postgresql': ['PostgresSource', 'PostgresSink'],
+            'oracle': ['OracleDatabaseSource', 'OracleDatabaseSink'],
+            'sqlserver': ['MicrosoftSqlServerSource', 'MicrosoftSqlServerSink']
+        }
+        
+        # Get expected template names for this database type
+        expected_templates = db_to_template_mapping.get(db_type, [])
+        
+        # Find matching template
+        for template in template_info:
+            template_id = template['template_id']
+            if template_id in expected_templates:
+                selected_path = template['path']
+                self.logger.info(f"Auto-selected JDBC template for {connector_display}: {template_id} (File: {template['filename']})")
+                return selected_path
+        
+        # If no exact match found, try partial matching
+        for template in template_info:
+            template_id = template['template_id'].lower()
+            if db_type in template_id:
+                selected_path = template['path']
+                self.logger.info(f"Auto-selected JDBC template (partial match) for {connector_display}: {template['template_id']} (File: {template['filename']})")
+                return selected_path
+        
+        # If still no match, fall back to user selection
+        self.logger.warning(f"Could not auto-select JDBC template for {connector_display} with database type {db_type}")
+        return self._get_user_template_selection(connector_class, template_info, connector_name)
 
     def _get_user_template_selection(self, connector_class: str, template_info: List[Dict[str, str]], connector_name: str = None) -> Optional[str]:
         """Ask user to select a template when multiple options are available"""
@@ -313,14 +422,18 @@ class ConnectorComparator:
             except ValueError:
                 print("Please enter a valid number")
 
-    def _get_templates_for_connector(self, connector_class: str, connector_name: str = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    def _get_templates_for_connector(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """Get SM and FM templates for a connector class"""
-        # Fetch SM template via HTTP
-        self.logger.info(f"Fetching SM template for {connector_class} via HTTP...")
-        sm_template = self.get_SM_template(connector_class)
+        # Fetch SM template via HTTP (if worker URLs provided)
+        if self.worker_urls:
+            self.logger.info(f"Fetching SM template for {connector_class} via HTTP...")
+            sm_template = self.get_SM_template(connector_class)
+        else:
+            self.logger.info(f"No worker URLs provided - skipping SM template fetch for {connector_class}")
+            sm_template = {}
         
         # Handle FM templates - find by connector.class
-        fm_template_path = self._find_fm_template_by_connector_class(connector_class, connector_name)
+        fm_template_path = self._find_fm_template_by_connector_class(connector_class, connector_name, config)
         if fm_template_path:
             try:
                 with open(fm_template_path, 'r') as f:
@@ -340,7 +453,10 @@ class ConnectorComparator:
         
         # Log template selection
         self.logger.info(f"Selected templates for {connector_class}:")
-        self.logger.info(f"  SM Template: Fetched via HTTP")
+        if self.worker_urls:
+            self.logger.info(f"  SM Template: Fetched via HTTP")
+        else:
+            self.logger.info(f"  SM Template: Not available (no worker URLs)")
         self.logger.info(f"  FM Template: {fm_template_path}")
         
         # Return templates
@@ -375,42 +491,49 @@ class ConnectorComparator:
         return 'unknown'
 
     def _parse_jdbc_url(self, url: str) -> Dict[str, str]:
-        """Parse JDBC URL to extract connection details from template-style URL"""
+        """Parse JDBC URL to extract connection details from real JDBC URLs"""
+        original_url = url
         url = url.lower()
         connection_info = {}
         
-        self.logger.debug(f"Parsing JDBC URL: {url}")
+        self.logger.debug(f"Parsing JDBC URL: {original_url}")
         
-        # Extract host
-        host_match = re.search(r'//(\${connection\.host}|[^:/]+)', url)
+        # Extract host - look for pattern like jdbc:postgresql://localhost:5432/dbname
+        host_match = re.search(r'jdbc:[^:]+://([^:/]+)', url)
         if host_match:
             host = host_match.group(1)
-            if host.startswith('${') and host.endswith('}'):
-                connection_info['host'] = host[2:-1]  # Remove ${ and }
-            else:
-                connection_info['host'] = host
+            connection_info['host'] = host
             self.logger.debug(f"Extracted host: {connection_info['host']}")
         
-        # Extract port
-        port_match = re.search(r':(\${connection\.port}|\d+)', url)
+        # Extract port - look for pattern like :5432/
+        port_match = re.search(r'://[^:]+:(\d+)', url)
         if port_match:
             port = port_match.group(1)
-            if port.startswith('${') and port.endswith('}'):
-                connection_info['port'] = port[2:-1]  # Remove ${ and }
-            else:
-                connection_info['port'] = port
+            connection_info['port'] = port
             self.logger.debug(f"Extracted port: {connection_info['port']}")
         
-        # Extract database name
-        db_match = re.search(r'/([^/?]+)(?:\?|$)', url)
+        # Extract database name - look for pattern like /dbname? or /dbname
+        db_match = re.search(r'://[^/]+/([^/?]+)', url)
         if db_match:
             db_name = db_match.group(1)
-            if db_name.startswith('${') and db_name.endswith('}'):
-                connection_info['db_name'] = db_name[2:-1]  # Remove ${ and }
-            else:
-                connection_info['db_name'] = db_name
+            connection_info['db_name'] = db_name
             self.logger.debug(f"Extracted db_name: {connection_info['db_name']}")
         
+        # Extract user from query parameters
+        user_match = re.search(r'[?&]user=([^&]+)', url)
+        if user_match:
+            user = user_match.group(1)
+            connection_info['user'] = user
+            self.logger.debug(f"Extracted user: {connection_info['user']}")
+        
+        # Extract password from query parameters
+        password_match = re.search(r'[?&]password=([^&]+)', url)
+        if password_match:
+            password = password_match.group(1)
+            connection_info['password'] = password
+            self.logger.debug(f"Extracted password: {connection_info['password']}")
+        
+        self.logger.debug(f"Final connection_info: {connection_info}")
         return connection_info
 
     def _map_jdbc_properties(self, config: Dict[str, Any], db_type: str) -> Dict[str, Any]:
@@ -420,6 +543,7 @@ class ConnectorComparator:
         # Get database-specific property mappings
         db_info = self.jdbc_database_types.get(db_type, {})
         property_mappings = db_info.get('property_mappings', {})
+        self.logger.debug(f"Property mappings for {db_type}: {property_mappings}")
         
         # Parse JDBC URL and map properties
         if 'connection.url' in config:
@@ -430,8 +554,11 @@ class ConnectorComparator:
             for fm_prop, jdbc_prop in property_mappings.items():
                 if jdbc_prop in connection_info:
                     mapped_config[fm_prop] = connection_info[jdbc_prop]
-                    self.logger.debug(f"Mapped {jdbc_prop} to {fm_prop}")
+                    self.logger.debug(f"Mapped {jdbc_prop} ({connection_info[jdbc_prop]}) to {fm_prop}")
+                else:
+                    self.logger.debug(f"JDBC property {jdbc_prop} not found in connection_info")
             
+            self.logger.debug(f"Final JDBC mapped config: {mapped_config}")
             return mapped_config
         
         return {}
@@ -450,6 +577,184 @@ class ConnectorComparator:
                             required_props[config_def['name']] = config_def
         
         return required_props
+
+    def _is_source_connector(self, fm_template: Dict[str, Any]) -> bool:
+        """Determine if a connector is a source or sink based on FM template connector_type"""
+        if not fm_template:
+            # Fallback to connector class name if no FM template
+            return True
+        
+        # Check for connector_type in the main template
+        if fm_template.get('connector_type'):
+            return fm_template['connector_type'] == 'SOURCE'
+        
+        # Check for connector_type in templates array
+        if 'templates' in fm_template:
+            for template in fm_template['templates']:
+                if template.get('connector_type'):
+                    return template['connector_type'] == 'SOURCE'
+        
+        # Fallback to connector class name if no connector_type found
+        connector_class = fm_template.get('connector.class', '')
+        if not connector_class and 'templates' in fm_template and len(fm_template['templates']) > 0:
+            connector_class = fm_template['templates'][0].get('connector.class', '')
+        
+        source_indicators = ['Source', 'CDC', 'XStream']
+        sink_indicators = ['Sink']
+        
+        # Check for source indicators
+        for indicator in source_indicators:
+            if indicator in connector_class:
+                return True
+        
+        # Check for sink indicators
+        for indicator in sink_indicators:
+            if indicator in connector_class:
+                return False
+        
+        # Default to source if no clear indicator (this is a fallback)
+        return True
+
+    def _create_direct_mappings_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, str]:
+        """Create direct property mappings from FM template connector_configs section"""
+        mappings = {}
+        
+        if not fm_template or 'templates' not in fm_template:
+            return mappings
+        
+        # Look through all templates for connector_configs
+        for template in fm_template['templates']:
+            if 'connector_configs' in template:
+                for config in template['connector_configs']:
+                    # If the config has a 'value' field, it's a direct mapping
+                    if 'value' in config:
+                        value = config['value']
+                        fm_property = config['name']
+                        
+                        # Handle template variables like ${cleanup.policy}
+                        if value.startswith('${') and value.endswith('}'):
+                            # Extract the property name from the template variable
+                            fm_property_name = value[2:-1]  # Remove ${ and }
+                            # SM property (fm_property) maps to FM property (fm_property_name)
+                            mappings[fm_property] = fm_property_name
+                        else:
+                            # Direct value mapping
+                            mappings[value] = fm_property
+                    # If the config has a 'switch' field, handle switch mappings
+                    elif 'switch' in config:
+                        fm_property = config['name']
+                        switch_config = config['switch']
+                        
+                        # Extract template variables from switch values
+                        for switch_key, switch_values in switch_config.items():
+                            if isinstance(switch_values, dict):
+                                for condition, switch_value in switch_values.items():
+                                    if isinstance(switch_value, str) and switch_value.startswith('${') and switch_value.endswith('}'):
+                                        # Extract the property name from the template variable
+                                        fm_property_name = switch_value[2:-1]  # Remove ${ and }
+                                        # SM property (fm_property) maps to FM property (fm_property_name)
+                                        mappings[fm_property] = fm_property_name
+                                        break  # Use the first template variable found
+                    # If no 'value' or 'switch' field, it's a direct name mapping (same name in SM and FM)
+                    else:
+                        fm_property = config['name']
+                        mappings[fm_property] = fm_property
+        
+        return mappings
+
+    def _map_using_template_direct_mappings(self, config: Dict[str, Any], fm_template: Dict[str, Any]) -> Dict[str, Any]:
+        """Map SM config to FM config using direct mappings from template"""
+        mapped_config = {}
+        mapping_errors = []
+        direct_mappings = self._create_direct_mappings_from_template(fm_template)
+        fixed_values = self._get_fixed_values_from_template(fm_template)
+        recommended_values = self._get_recommended_values_from_template(fm_template)
+        
+        self.logger.info(f"Created {len(direct_mappings)} direct mappings from template")
+        self.logger.info(f"Found {len(fixed_values)} fixed values from template")
+        self.logger.info(f"Found {len(recommended_values)} properties with recommended values")
+        
+        # Apply direct mappings (SM property -> FM property)
+        for sm_property, fm_property in direct_mappings.items():
+            if sm_property in config:
+                # Check if this FM property has a fixed value in template
+                if fm_property in fixed_values:
+                    template_value = fixed_values[fm_property]
+                    sm_value = config[sm_property]
+                    if str(sm_value) != str(template_value):
+                        # Use template's fixed value and add error
+                        mapped_config[fm_property] = template_value
+                        error_msg = f"Property '{sm_property}' value '{sm_value}' overridden by template fixed value '{template_value}' for '{fm_property}'"
+                        mapping_errors.append(error_msg)
+                        self.logger.warning(f"Fixed value override: {sm_property}='{sm_value}' -> {fm_property}='{template_value}'")
+                    else:
+                        # Values match, use SM value
+                        mapped_config[fm_property] = sm_value
+                        self.logger.info(f"Direct template mapping (values match): {sm_property} -> {fm_property}")
+                else:
+                    # No fixed value, use SM value
+                    sm_value = config[sm_property]
+                    mapped_config[fm_property] = sm_value
+                    
+                    # Validate against recommended values if available
+                    if fm_property in recommended_values:
+                        allowed_values = recommended_values[fm_property]
+                        if str(sm_value) not in allowed_values:
+                            error_msg = f"Property '{sm_property}' value '{sm_value}' is not in recommended values {allowed_values} for '{fm_property}'"
+                            mapping_errors.append(error_msg)
+                            self.logger.error(f"Value validation failed: {sm_property}='{sm_value}' not in {allowed_values}")
+                            # Don't map the property if value is invalid
+                            continue
+                        else:
+                            self.logger.info(f"Direct template mapping (validated): {sm_property} -> {fm_property}")
+                    else:
+                        self.logger.info(f"Direct template mapping: {sm_property} -> {fm_property}")
+        
+        # Also map properties that have the same name in both SM and FM
+        for sm_property, value in config.items():
+            if sm_property not in mapped_config and sm_property in direct_mappings.values():
+                mapped_config[sm_property] = value
+                self.logger.info(f"Same-name mapping: {sm_property}")
+        
+        return mapped_config, mapping_errors
+
+    def _get_fixed_values_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, str]:
+        """Extract fixed values from FM template connector_configs section"""
+        fixed_values = {}
+        
+        if not fm_template or 'templates' not in fm_template:
+            return fixed_values
+        
+        # Look through all templates for connector_configs
+        for template in fm_template['templates']:
+            if 'connector_configs' in template:
+                for config in template['connector_configs']:
+                    # If the config has a 'value' field that's not a template variable, it's a fixed value
+                    if 'value' in config:
+                        value = config['value']
+                        fm_property = config['name']
+                        
+                        # Skip template variables like ${cleanup.policy}
+                        if not (value.startswith('${') and value.endswith('}')):
+                            fixed_values[fm_property] = value
+        
+        return fixed_values
+
+    def _get_recommended_values_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, List[str]]:
+        """Extract recommended values from FM template config_defs section"""
+        recommended_values = {}
+        
+        if not fm_template or 'templates' not in fm_template:
+            return recommended_values
+        
+        # Look through all templates for config_defs
+        for template in fm_template['templates']:
+            if 'config_defs' in template:
+                for config_def in template['config_defs']:
+                    if 'recommended_values' in config_def:
+                        recommended_values[config_def['name']] = config_def['recommended_values']
+        
+        return recommended_values
 
     def _generate_fm_config(self, connector: Dict[str, Any]) -> Dict[str, Any]:
         """Generate FM configuration for a connector"""
@@ -470,7 +775,7 @@ class ConnectorComparator:
             }
         
         # Get templates based on connector class
-        sm_template, fm_template = self._get_templates_for_connector(connector_class, name)
+        sm_template, fm_template = self._get_templates_for_connector(connector_class, name, config)
         
         # Initialize mapped config with name
         mapped_config = {'name': name}
@@ -483,13 +788,21 @@ class ConnectorComparator:
         unmapped_configs = []
         
         # Map properties based on connector type
+        jdbc_mapped = {}
         if 'connection.url' in config and config['connection.url'].startswith('jdbc:'):
             connector_type = self._get_database_type(config)
             jdbc_mapped = self._map_jdbc_properties(config, connector_type)
             mapped_config.update(jdbc_mapped)
         
+        # Track all handled properties to avoid remapping
+        handled_properties = set(mapped_config.keys())
+        
+        # Also exclude connection.url from semantic matching since it's handled by JDBC parsing
+        if 'connection.url' in config:
+            handled_properties.add('connection.url')
+        
         # Apply template mappings if available
-        if sm_template and fm_template:
+        if fm_template:  # Only require FM template, SM template is optional
             self.logger.debug(f"Applying template mappings for {connector_class}")
             
             # Get required properties from FM template
@@ -509,7 +822,7 @@ class ConnectorComparator:
                 mapped_config['connector.class'] = plugin_type
                 self.logger.info(f"Updated connector.class to template_id: {plugin_type}")
             
-            # First handle required properties
+            # Instead of required property error logic, just try to map required properties if present
             for prop_name, prop_info in required_props.items():
                 # Skip connector.class and name as they're already handled
                 if prop_name in ['connector.class', 'name']:
@@ -518,16 +831,18 @@ class ConnectorComparator:
                 # Check if property is in input config
                 if prop_name in config:
                     mapped_config[prop_name] = config[prop_name]
+                    handled_properties.add(prop_name)
                     self.logger.info(f"Using input value for required property: {prop_name}")
+                # Check if property was mapped from JDBC URL
+                elif prop_name in jdbc_mapped:
+                    mapped_config[prop_name] = jdbc_mapped[prop_name]
+                    handled_properties.add(prop_name)
+                    self.logger.info(f"Using JDBC mapped value for required property: {prop_name}")
                 # Check if property has a default value
-                elif prop_info.get('default') is not None:
-                    mapped_config[prop_name] = prop_info['default']
+                elif prop_info.get('default_value') is not None:
+                    mapped_config[prop_name] = prop_info['default_value']
+                    handled_properties.add(prop_name)
                     self.logger.info(f"Using default value for required property: {prop_name}")
-                else:
-                    # Required property with no default value and not in input
-                    error_msg = f"Required property '{prop_name}' needs a value but none was provided in input config or default value"
-                    mapping_errors.append(error_msg)
-                    self.logger.error(error_msg)
             transforms_data = self.get_transforms_config(config, plugin_type)
             mapped_config.update(transforms_data['allowed'])
             for key, value in transforms_data['disallowed'].items():
@@ -535,6 +850,17 @@ class ConnectorComparator:
                     alias = key.split(".")[1]
                     error_msg = f"Transform not allowed in Cloud '{alias}:{value}'. Potentially Custom SMT can be used."
                     mapping_errors.append(error_msg)
+            # Step 1: Try direct mappings from template connector_configs first
+            direct_mapped, direct_mapping_errors = self._map_using_template_direct_mappings(config, fm_template)
+            for fm_prop_name, value in direct_mapped.items():
+                if fm_prop_name not in handled_properties:
+                    mapped_config[fm_prop_name] = value
+                    handled_properties.add(fm_prop_name)
+                    self.logger.info(f"Direct template mapping: {fm_prop_name}")
+            
+            # Add direct mapping errors to the main error list
+            mapping_errors.extend(direct_mapping_errors)
+            
             # Then map properties that exist in the input config
             for sm_prop_name, sm_prop_value in config.items():
                 try:
@@ -542,14 +868,18 @@ class ConnectorComparator:
                     if sm_prop_name in ['connector.class', 'name']:
                         continue
                     
-                    # Skip if we already handled this property as a required property
-                    if sm_prop_name in mapped_config:
+                    # Skip if we already handled this property as a required property or via JDBC mapping
+                    if sm_prop_name in handled_properties:
+                        continue
+                    
+                    # Skip transform properties as they are handled separately
+                    if sm_prop_name.startswith('transforms'):
                         continue
                     
                     self.logger.debug(f"\nProcessing property: {sm_prop_name}")
                     self.logger.debug(f"Property value: {sm_prop_value}")
                     
-                    # Step 1: Try exact name match first
+                    # Step 2: Try exact name match first
                     property_found = False
                     if 'templates' in fm_template:
                         for template in fm_template['templates']:
@@ -559,6 +889,7 @@ class ConnectorComparator:
                                     if config_def['name'] == sm_prop_name:
                                         # Direct match found
                                         mapped_config[sm_prop_name] = sm_prop_value
+                                        handled_properties.add(sm_prop_name)
                                         self.logger.info(f"Direct match found for property: {sm_prop_name}")
                                         property_found = True
                                         break
@@ -566,7 +897,29 @@ class ConnectorComparator:
                                 break
                     
                     if not property_found:
-                        # Step 2: Try semantic matching
+                        # Step 3: Check static mappings based on connector type
+                        is_source = self._is_source_connector(fm_template)
+                        static_mappings = self.static_property_mappings_source if is_source else self.static_property_mappings_sink
+                        
+                        if sm_prop_name in static_mappings:
+                            fm_prop_name = static_mappings[sm_prop_name]
+                            
+                            # Apply reverse value mapping for converter properties
+                            if sm_prop_name in ['key.converter', 'value.converter'] and sm_prop_value in self.converter_to_format_mappings:
+                                mapped_value = self.converter_to_format_mappings[sm_prop_value]
+                                mapped_config[fm_prop_name] = mapped_value
+                                connector_type = "source" if is_source else "sink"
+                                self.logger.info(f"Static mapping with value conversion ({connector_type}): {sm_prop_name}='{sm_prop_value}' -> {fm_prop_name}='{mapped_value}'")
+                            else:
+                                mapped_config[fm_prop_name] = sm_prop_value
+                                connector_type = "source" if is_source else "sink"
+                                self.logger.info(f"Static mapping found ({connector_type}): {sm_prop_name} -> {fm_prop_name}")
+                            
+                            handled_properties.add(fm_prop_name)
+                            property_found = True
+                    
+                    if not property_found:
+                        # Step 4: Try semantic matching
                         sm_prop = {
                             'name': sm_prop_name,
                             'description': sm_template.get('documentation', ''),
@@ -583,8 +936,8 @@ class ConnectorComparator:
                                     for config_def in template['config_defs']:
                                         fm_properties_dict[config_def['name']] = config_def
                         
-                        # Find best match using semantic matching
-                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict)
+                        # Find best match using semantic matching with higher threshold
+                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.85)
                         
                         if result and result.matched_fm_property:
                             # result.matched_fm_property is now a dictionary, so we need to get the property name
@@ -598,6 +951,7 @@ class ConnectorComparator:
                             
                             if fm_prop_name:
                                 mapped_config[fm_prop_name] = sm_prop_value
+                                handled_properties.add(fm_prop_name)
                                 self.logger.info(f"Successfully mapped {sm_prop_name} to {fm_prop_name} using {result.match_type} matching")
                             else:
                                 error_msg = f"Could not determine property name for matched property: {sm_prop_name}"
@@ -613,6 +967,14 @@ class ConnectorComparator:
                     error_msg = f"Error mapping {sm_prop_name}: {str(e)}"
                     mapping_errors.append(error_msg)
                     self.logger.error(f"Error mapping property '{sm_prop_name}': {e}")
+            # After all mapping, check for missing required properties
+            for prop_name, prop_info in required_props.items():
+                if prop_name in ['connector.class', 'name']:
+                    continue
+                if prop_name not in mapped_config:
+                    error_msg = f"Required property '{prop_name}' needs a value but none was provided in input config or default value"
+                    mapping_errors.append(error_msg)
+                    self.logger.error(error_msg)
         
         # Log summary of mapping results
         if unmapped_configs:
@@ -624,6 +986,7 @@ class ConnectorComparator:
         
         return {
             'name': name,
+            'sm_config': config,  # Include original SM config
             'config': mapped_config,
             'mapping_metadata': {
                 'mapping_date': datetime.now().isoformat(),
