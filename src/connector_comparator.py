@@ -124,7 +124,7 @@ class ConnectorComparator:
 
     def extract_transforms_config(config_dict):
         # Extract all keys starting with "transforms"
-        return {k: v for k, v in config_dict.items() if k.startswith("transforms")}
+        return {k: v for k, v in config_dict.items() if isinstance(k, str) and k.startswith("transforms")}
 
     def extract_recommended_transform_types(self, response_json):
         configs = response_json.get("configs", [])
@@ -134,42 +134,37 @@ class ConnectorComparator:
                 return value.get("recommended_values", [])
         return []
 
-    def get_SM_template(self, connector_class: str) -> Dict[str, Any]:
-        """Get SM template for a connector class - returns empty dict when no worker URLs provided"""
-        if not self.worker_urls:
-            self.logger.info(f"No worker URLs provided - skipping SM template fetch for {connector_class}")
+    def get_SM_template(self, connector_class: str, worker_url: str = None) -> Dict[str, Any]:
+        """Get SM template for a connector class using the specified worker URL"""
+        if not worker_url:
+            self.logger.info(f"No worker URL provided - skipping SM template fetch for {connector_class}")
             return {}
         
-        # Try each worker URL until we get a successful response
-        for worker_url in self.worker_urls:
-            try:
-                url = f"{worker_url}/connector-plugins/{connector_class}/config/validate"
-                data = {
-                    "connector.class": connector_class
-                }
-                headers = {
-                    "Content-Type": "application/json"
-                }
-                
-                self.logger.info(f"Fetching SM template for {connector_class} from {url}")
-                self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-                response = requests.put(url, json=data, headers=headers)
-                response.raise_for_status()
-                
-                template_data = response.json()
-                self.logger.info(f"Successfully fetched SM template for {connector_class} from {worker_url}")
-                return template_data
-                
-            except requests.exceptions.RequestException as e:
-                self.logger.warning(f"Failed to fetch SM template for {connector_class} from {worker_url}: {str(e)}")
-                continue
-        
-        self.logger.error(f"Failed to fetch SM template for {connector_class} from any worker URL")
-        return {}
+        try:
+            url = f"{worker_url}/connector-plugins/{connector_class}/config/validate"
+            data = {
+                "connector.class": connector_class
+            }
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            self.logger.info(f"Fetching SM template for {connector_class} from {url}")
+            self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
+            response = requests.put(url, json=data, headers=headers)
+            response.raise_for_status()
+            
+            template_data = response.json()
+            self.logger.info(f"Successfully fetched SM template for {connector_class} from {worker_url}")
+            return template_data
+            
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Failed to fetch SM template for {connector_class} from {worker_url}: {str(e)}")
+            return {}
 
     def _load_fm_transforms_fallback(self) -> Dict[str, List[str]]:
         """Load combined FM transforms from file as fallback"""
-        fallback_file = Path("fm_transforms_combined.json")
+        fallback_file = Path("fm_transforms_list.json")
         if fallback_file.exists():
             try:
                 with open(fallback_file, 'r') as f:
@@ -249,19 +244,19 @@ class ConnectorComparator:
             if not transform_type:
                 disallowed_aliases.append(alias)
                 for k, v in config.items():
-                    if k.startswith(f"transforms.{alias}."):
+                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
                         result['disallowed'][k] = v
                 continue
 
             if transform_type in allowed_transform_types:
                 allowed_aliases.append(alias)
                 for k, v in config.items():
-                    if k.startswith(f"transforms.{alias}."):
+                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
                         result['allowed'][k] = v
             else:
                 disallowed_aliases.append(alias)
                 for k, v in config.items():
-                    if k.startswith(f"transforms.{alias}."):
+                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
                         result['disallowed'][k] = v
 
         if allowed_aliases:
@@ -424,12 +419,21 @@ class ConnectorComparator:
 
     def _get_templates_for_connector(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """Get SM and FM templates for a connector class"""
-        # Fetch SM template via HTTP (if worker URLs provided)
-        if self.worker_urls:
-            self.logger.info(f"Fetching SM template for {connector_class} via HTTP...")
-            sm_template = self.get_SM_template(connector_class)
+        # Get worker URL from connector config if available
+        worker_url = None
+        if config and 'worker' in config:
+            worker_url = config['worker']
+            self.logger.info(f"Using worker URL from connector config: {worker_url}")
+        elif self.worker_urls and len(self.worker_urls) > 0:
+            worker_url = self.worker_urls[0]
+            self.logger.info(f"Using first worker URL from global list: {worker_url}")
+        
+        # Fetch SM template via HTTP (if worker URL available)
+        if worker_url:
+            self.logger.info(f"Fetching SM template for {connector_class} via HTTP from {worker_url}...")
+            sm_template = self.get_SM_template(connector_class, worker_url)
         else:
-            self.logger.info(f"No worker URLs provided - skipping SM template fetch for {connector_class}")
+            self.logger.info(f"No worker URL available - skipping SM template fetch for {connector_class}")
             sm_template = {}
         
         # Handle FM templates - find by connector.class
@@ -453,10 +457,10 @@ class ConnectorComparator:
         
         # Log template selection
         self.logger.info(f"Selected templates for {connector_class}:")
-        if self.worker_urls:
-            self.logger.info(f"  SM Template: Fetched via HTTP")
+        if worker_url:
+            self.logger.info(f"  SM Template: Fetched via HTTP from {worker_url}")
         else:
-            self.logger.info(f"  SM Template: Not available (no worker URLs)")
+            self.logger.info(f"  SM Template: Not available (no worker URL)")
         self.logger.info(f"  FM Template: {fm_template_path}")
         
         # Return templates
@@ -478,7 +482,7 @@ class ConnectorComparator:
     def _get_database_type(self, config: Dict[str, Any]) -> str:
         """Determine database type from JDBC connector config"""
         # Check connection URL
-        if 'connection.url' in config:
+        if 'connection.url' in config and isinstance(config['connection.url'], str):
             url = config['connection.url'].lower()
             for db_type, info in self.jdbc_database_types.items():
                 if any(pattern in url for pattern in info['url_patterns']):
@@ -546,7 +550,7 @@ class ConnectorComparator:
         self.logger.debug(f"Property mappings for {db_type}: {property_mappings}")
         
         # Parse JDBC URL and map properties
-        if 'connection.url' in config:
+        if 'connection.url' in config and isinstance(config['connection.url'], str) and config['connection.url'].startswith('jdbc:'):
             connection_info = self._parse_jdbc_url(config['connection.url'])
             
             # Map connection details to database-specific properties
@@ -573,7 +577,16 @@ class ConnectorComparator:
                 if 'config_defs' in template:
                     for config_def in template['config_defs']:
                         # Skip internal properties as they are handled by the Cloud platform
-                        if config_def.get('required', False) and not config_def.get('internal', False):
+                        # Check if required is explicitly set to "true" (string) or True (boolean)
+                        is_required = config_def.get('required', False)
+                        if isinstance(is_required, str):
+                            is_required = is_required.lower() == 'true'
+                        elif isinstance(is_required, bool):
+                            is_required = is_required
+                        else:
+                            is_required = False
+                            
+                        if is_required and not config_def.get('internal', False):
                             required_props[config_def['name']] = config_def
         
         return required_props
@@ -632,7 +645,7 @@ class ConnectorComparator:
                         fm_property = config['name']
                         
                         # Handle template variables like ${cleanup.policy}
-                        if value.startswith('${') and value.endswith('}'):
+                        if isinstance(value, str) and value.startswith('${') and value.endswith('}'):
                             # Extract the property name from the template variable
                             fm_property_name = value[2:-1]  # Remove ${ and }
                             # SM property (fm_property) maps to FM property (fm_property_name)
@@ -707,8 +720,6 @@ class ConnectorComparator:
                             continue
                         else:
                             self.logger.info(f"Direct template mapping (validated): {sm_property} -> {fm_property}")
-                    else:
-                        self.logger.info(f"Direct template mapping: {sm_property} -> {fm_property}")
         
         # Also map properties that have the same name in both SM and FM
         for sm_property, value in config.items():
@@ -735,7 +746,7 @@ class ConnectorComparator:
                         fm_property = config['name']
                         
                         # Skip template variables like ${cleanup.policy}
-                        if not (value.startswith('${') and value.endswith('}')):
+                        if not (isinstance(value, str) and value.startswith('${') and value.endswith('}')):
                             fixed_values[fm_property] = value
         
         return fixed_values
@@ -775,7 +786,12 @@ class ConnectorComparator:
             }
         
         # Get templates based on connector class
-        sm_template, fm_template = self._get_templates_for_connector(connector_class, name, config)
+        # Create a config dict that includes the worker URL for template fetching
+        config_with_worker = config.copy()
+        if 'worker' in connector:
+            config_with_worker['worker'] = connector['worker']
+        
+        sm_template, fm_template = self._get_templates_for_connector(connector_class, name, config_with_worker)
         
         # Initialize mapped config with name
         mapped_config = {'name': name}
@@ -789,7 +805,7 @@ class ConnectorComparator:
         
         # Map properties based on connector type
         jdbc_mapped = {}
-        if 'connection.url' in config and config['connection.url'].startswith('jdbc:'):
+        if 'connection.url' in config and isinstance(config['connection.url'], str) and config['connection.url'].startswith('jdbc:'):
             connector_type = self._get_database_type(config)
             jdbc_mapped = self._map_jdbc_properties(config, connector_type)
             mapped_config.update(jdbc_mapped)
@@ -873,7 +889,7 @@ class ConnectorComparator:
                         continue
                     
                     # Skip transform properties as they are handled separately
-                    if sm_prop_name.startswith('transforms'):
+                    if isinstance(sm_prop_name, str) and sm_prop_name.startswith('transforms'):
                         continue
                     
                     self.logger.debug(f"\nProcessing property: {sm_prop_name}")
@@ -887,10 +903,13 @@ class ConnectorComparator:
                             if 'config_defs' in template:
                                 for config_def in template['config_defs']:
                                     if config_def['name'] == sm_prop_name:
-                                        # Direct match found
-                                        mapped_config[sm_prop_name] = sm_prop_value
-                                        handled_properties.add(sm_prop_name)
-                                        self.logger.info(f"Direct match found for property: {sm_prop_name}")
+                                        # Direct match found - only map if not already handled
+                                        if sm_prop_name not in handled_properties:
+                                            mapped_config[sm_prop_name] = sm_prop_value
+                                            handled_properties.add(sm_prop_name)
+                                            self.logger.info(f"Direct match found for property: {sm_prop_name}")
+                                        else:
+                                            self.logger.debug(f"Skipping direct match for {sm_prop_name} as it is already mapped")
                                         property_found = True
                                         break
                             if property_found:
@@ -904,19 +923,24 @@ class ConnectorComparator:
                         if sm_prop_name in static_mappings:
                             fm_prop_name = static_mappings[sm_prop_name]
                             
-                            # Apply reverse value mapping for converter properties
-                            if sm_prop_name in ['key.converter', 'value.converter'] and sm_prop_value in self.converter_to_format_mappings:
-                                mapped_value = self.converter_to_format_mappings[sm_prop_value]
-                                mapped_config[fm_prop_name] = mapped_value
-                                connector_type = "source" if is_source else "sink"
-                                self.logger.info(f"Static mapping with value conversion ({connector_type}): {sm_prop_name}='{sm_prop_value}' -> {fm_prop_name}='{mapped_value}'")
+                            # Only map if the target property hasn't been handled yet
+                            if fm_prop_name not in handled_properties:
+                                # Apply reverse value mapping for converter properties
+                                if sm_prop_name in ['key.converter', 'value.converter'] and sm_prop_value in self.converter_to_format_mappings:
+                                    mapped_value = self.converter_to_format_mappings[sm_prop_value]
+                                    mapped_config[fm_prop_name] = mapped_value
+                                    connector_type = "source" if is_source else "sink"
+                                    self.logger.info(f"Static mapping with value conversion ({connector_type}): {sm_prop_name}='{sm_prop_value}' -> {fm_prop_name}='{mapped_value}'")
+                                else:
+                                    mapped_config[fm_prop_name] = sm_prop_value
+                                    connector_type = "source" if is_source else "sink"
+                                    self.logger.info(f"Static mapping found ({connector_type}): {sm_prop_name} -> {fm_prop_name}")
+                                
+                                handled_properties.add(fm_prop_name)
+                                property_found = True
                             else:
-                                mapped_config[fm_prop_name] = sm_prop_value
-                                connector_type = "source" if is_source else "sink"
-                                self.logger.info(f"Static mapping found ({connector_type}): {sm_prop_name} -> {fm_prop_name}")
-                            
-                            handled_properties.add(fm_prop_name)
-                            property_found = True
+                                self.logger.debug(f"Skipping static mapping for {sm_prop_name} -> {fm_prop_name} as {fm_prop_name} is already mapped")
+                                property_found = True
                     
                     if not property_found:
                         # Step 4: Try semantic matching
@@ -936,8 +960,8 @@ class ConnectorComparator:
                                     for config_def in template['config_defs']:
                                         fm_properties_dict[config_def['name']] = config_def
                         
-                        # Find best match using semantic matching with higher threshold
-                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.85)
+                        # Find best match using semantic matching with threshold
+                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.7)
                         
                         if result and result.matched_fm_property:
                             # result.matched_fm_property is now a dictionary, so we need to get the property name
@@ -949,17 +973,19 @@ class ConnectorComparator:
                                     fm_prop_name = prop_name
                                     break
                             
-                            if fm_prop_name:
+                            if fm_prop_name and fm_prop_name not in handled_properties:
                                 mapped_config[fm_prop_name] = sm_prop_value
                                 handled_properties.add(fm_prop_name)
                                 self.logger.info(f"Successfully mapped {sm_prop_name} to {fm_prop_name} using {result.match_type} matching")
+                            elif fm_prop_name in handled_properties:
+                                self.logger.debug(f"Skipping semantic mapping for {sm_prop_name} -> {fm_prop_name} as {fm_prop_name} is already mapped")
                             else:
                                 error_msg = f"Could not determine property name for matched property: {sm_prop_name}"
                                 mapping_errors.append(error_msg)
                                 unmapped_configs.append(sm_prop_name)
                                 self.logger.warning(f"Failed to map property '{sm_prop_name}' - could not determine property name")
                         else:
-                            error_msg = f"no FM Config found for {sm_prop_name}"
+                            error_msg = f"Config '{sm_prop_name}' not exposed for fully managed connector"
                             mapping_errors.append(error_msg)
                             unmapped_configs.append(sm_prop_name)
                             self.logger.warning(f"Failed to map property '{sm_prop_name}'")
@@ -976,22 +1002,52 @@ class ConnectorComparator:
                     mapping_errors.append(error_msg)
                     self.logger.error(error_msg)
         
+        # Filter mapped config to only include properties defined in config_defs
+        filtered_config = {}
+        filtered_out_properties = []
+        if fm_template and 'templates' in fm_template:
+            # Collect all config_def names from all templates
+            config_def_names = set()
+            for template in fm_template['templates']:
+                if 'config_defs' in template:
+                    for config_def in template['config_defs']:
+                        config_def_names.add(config_def['name'])
+            
+            # Only keep properties that are in config_defs, but exclude transform properties
+            for prop_name, prop_value in mapped_config.items():
+                # Transform properties are separate from config_defs and should always be included
+                if prop_name.startswith('transforms') or prop_name == 'transforms':
+                    filtered_config[prop_name] = prop_value
+                    self.logger.debug(f"Including transform property '{prop_name}' (not subject to config_defs filtering)")
+                elif prop_name in config_def_names:
+                    filtered_config[prop_name] = prop_value
+                else:
+                    filtered_out_properties.append(prop_name)
+                    error_msg = f"Config '{prop_name}' not exposed for fully managed connector"
+                    mapping_errors.append(error_msg)
+                    unmapped_configs.append(prop_name)
+                    self.logger.warning(error_msg)
+            
+            self.logger.info(f"Filtered config from {len(mapped_config)} to {len(filtered_config)} properties (only config_defs)")
+            if filtered_out_properties:
+                self.logger.warning(f"Filtered out {len(filtered_out_properties)} properties not in config_defs: {', '.join(filtered_out_properties)}")
+        else:
+            # If no FM template, keep all mapped config
+            filtered_config = mapped_config
+            self.logger.warning("No FM template available - keeping all mapped properties")
+        
         # Log summary of mapping results
         if unmapped_configs:
             self.logger.warning(f"Connector has {len(unmapped_configs)} unmapped configurations: {', '.join(unmapped_configs)}")
         else:
             self.logger.info("All configurations were successfully mapped")
         
-        self.logger.info(f"Mapping completed with {len(mapped_config)} properties mapped and {len(mapping_errors)} errors")
+        self.logger.info(f"Mapping completed with {len(filtered_config)} properties mapped and {len(mapping_errors)} errors")
         
         return {
             'name': name,
             'sm_config': config,  # Include original SM config
-            'config': mapped_config,
-            'mapping_metadata': {
-                'mapping_date': datetime.now().isoformat(),
-                'connector_class': connector_class
-            },
+            'config': filtered_config,
             'mapping_errors': mapping_errors,
             'unmapped_configs': unmapped_configs
         }
@@ -1000,12 +1056,39 @@ class ConnectorComparator:
         """Process all connectors and generate FM configurations"""
         # Read input file
         with open(self.input_file, 'r') as f:
-            connectors = json.load(f)
+            data = json.load(f)
+        
+        # Handle different input file structures
+        if isinstance(data, dict) and 'connectors' in data:
+            # Structure: {"connectors": {"connector_name": connector_data, ...}}
+            connectors_dict = data['connectors']
+            connectors = list(connectors_dict.values())
+        elif isinstance(data, list):
+            # Structure: [connector_data, ...]
+            connectors = data
+        else:
+            self.logger.error(f"Unexpected input file structure: {type(data)}")
+            return
+        
+        # Ensure connectors is a list
+        if not isinstance(connectors, list):
+            self.logger.error(f"Expected list of connectors, got {type(connectors)}")
+            return
         
         # Process each connector
         fm_configs = []
-        for connector in connectors:
+        for i, connector in enumerate(connectors):
             try:
+                # Handle case where connector might be a string or other type
+                if not isinstance(connector, dict):
+                    self.logger.error(f"Connector at index {i} is not a dictionary: {type(connector)}")
+                    continue
+                
+                # Ensure connector has required fields
+                if 'name' not in connector or 'config' not in connector:
+                    self.logger.error(f"Connector at index {i} missing required fields 'name' or 'config'")
+                    continue
+                
                 fm_config = self._generate_fm_config(connector)
                 fm_configs.append(fm_config)
                 
@@ -1017,7 +1100,8 @@ class ConnectorComparator:
                 self.logger.info(f"Saved FM config for {connector['name']} to {config_file}")
                 
             except Exception as e:
-                self.logger.error(f"Error processing connector {connector['name']}: {str(e)}")
+                connector_name = connector.get('name', f'connector_{i}') if isinstance(connector, dict) else f'connector_{i}'
+                self.logger.error(f"Error processing connector {connector_name}: {str(e)}")
         
         # Save all FM configs
         all_configs_file = self.output_dir / 'all_fm_configs.json'

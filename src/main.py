@@ -21,6 +21,7 @@ def setup_logging(output_dir: Path):
 def main():
     parser = argparse.ArgumentParser(description="Connector Migration Tool")
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs')
+    parser.add_argument('--worker-urls-file', type=str, help='Path to file containing worker URLs')
     parser.add_argument('--config-file', type=str, help='Path to JSON file containing connector configurations')
     parser.add_argument('--redact', action='store_true', help='Redact sensitive configurations')
     parser.add_argument('--sensitive-file', type=str, help='Path to file containing sensitive config keys')
@@ -65,7 +66,7 @@ def main():
             logger.info("Starting connector discovery...")
             discovery = ConfigDiscovery(
                 worker_urls=args.worker_urls,
-                worker_urls_file=args.worker_urls_file,
+                worker_urls_file=getattr(args, 'worker_urls_file', None),
                 redact=args.redact,
                 output_dir=output_dir,
                 sensitive_file=args.sensitive_file,
@@ -81,7 +82,7 @@ def main():
         worker_urls_list = []
         if args.worker_urls:
             worker_urls_list = [url.strip() for url in args.worker_urls.split(',')]
-        elif args.worker_urls_file:
+        elif hasattr(args, 'worker_urls_file') and args.worker_urls_file:
             with open(args.worker_urls_file, 'r') as f:
                 worker_urls_list = [line.strip() for line in f if line.strip()]
         

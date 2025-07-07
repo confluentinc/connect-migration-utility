@@ -321,7 +321,6 @@ class ConfigDiscovery:
                     'name': connector_name,
                     'worker': worker_url,
                     'type': connector_type,
-                    'tasks': tasks,
                     'config': config
                 })
 
