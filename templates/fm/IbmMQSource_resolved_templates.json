@@ -4,29 +4,6 @@
       "template_id": "IbmMQSource",
       "connector_type": "SOURCE",
       "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "kafka-topic-source",
-        "schema-registry",
-        "source-connector-output-data-format",
-        "csfle-source"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "Which topic do you want to send data to?",
-        "CSFLE",
-        "Schema Config",
-        "Output messages",
-        "IBM MQ Secure Connection",
-        "IBM MQ Session",
-        "Kafka",
-        "IBM MQ Connection",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "mq.username",
@@ -34,14 +11,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 1,
           "display_name": "Username",
-          "documentation": "The username to use when connecting to IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "The username to use when connecting to IBM MQ."
         },
         {
           "name": "mq.password",
@@ -49,14 +20,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 2,
           "display_name": "Password",
-          "documentation": "The password to use when connecting to IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "The password to use when connecting to IBM MQ."
         },
         {
           "name": "mq.configuration.mode",
@@ -65,18 +30,12 @@
           "default_value": "single",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 3,
           "display_name": "MQ configuration mode",
           "documentation": "The mode in connector is to configure single mq instance or multiple for HA/DR support",
           "recommended_values": [
             "single",
             "multiple"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3,
-            "group_name": "IBM MQ Connection"
-          }
+          ]
         },
         {
           "name": "mq.hostname",
@@ -84,30 +43,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 4,
           "display_name": "IBM MQ broker host",
-          "documentation": "IBM MQ broker host",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "mq.configuration.mode==single"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "common.conditional.mutual.exclusion",
-              "arguments": {
-                "condition": "mq.hostname,mq.connection.list"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4,
-            "group_name": "IBM MQ Connection",
-            "visibility": "mq.configuration.mode==single"
-          }
+          "documentation": "IBM MQ broker host"
         },
         {
           "name": "mq.port",
@@ -116,15 +53,8 @@
           "default_value": 1414,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 5,
           "display_name": "IBM MQ broker port",
-          "documentation": "IBM MQ broker port",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "group_name": "IBM MQ Connection",
-            "visibility": "mq.configuration.mode==single"
-          }
+          "documentation": "IBM MQ broker port"
         },
         {
           "name": "mq.connection.list",
@@ -132,30 +62,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 6,
           "display_name": "IBM MQ connection list",
-          "documentation": "For IBM's HA/DR support with multiple MQ instances, enter hosts as comma-separated values, e.g., host1:port1, host2:port2.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "mq.configuration.mode==multiple"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "common.conditional.mutual.exclusion",
-              "arguments": {
-                "condition": "mq.hostname,mq.connection.list"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6,
-            "group_name": "IBM MQ Connection",
-            "visibility": "mq.configuration.mode==multiple"
-          }
+          "documentation": "For IBM's HA/DR support with multiple MQ instances, enter hosts as comma-separated values, e.g., host1:port1, host2:port2."
         },
         {
           "name": "mq.queue.manager",
@@ -163,14 +71,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 7,
           "display_name": "Queue Manager",
-          "documentation": "The name of the queue manager.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "The name of the queue manager."
         },
         {
           "name": "mq.channel",
@@ -178,15 +80,9 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 8,
           "display_name": "Channel",
           "documentation": "The channel for client connections.",
-          "default_value": "",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "group_name": "IBM MQ Connection"
-          }
+          "default_value": ""
         },
         {
           "name": "mq.ssl.cipher.suite",
@@ -195,15 +91,8 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 9,
           "display_name": "SSL Cipher Suite",
-          "documentation": "The CipherSuite for SSL connections.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "The CipherSuite for SSL connections."
         },
         {
           "name": "mq.ssl.fips.required",
@@ -211,15 +100,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 10,
           "display_name": "SSL FIPS Required",
-          "documentation": "Whether SSL FIPS is required.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "Whether SSL FIPS is required."
         },
         {
           "name": "mq.ssl.peer.name",
@@ -228,15 +110,8 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "IBM MQ Connection",
-          "order_in_group": 11,
           "display_name": "SSL Peer Name",
-          "documentation": "Sets a distinguished name (DN) pattern. If sslCipherSuite is set, this pattern can ensure that the correct queue manager is used. The connection attempt fails if the distinguished name provided by the queue manager does not match this pattern.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true,
-            "group_name": "IBM MQ Connection"
-          }
+          "documentation": "Sets a distinguished name (DN) pattern. If sslCipherSuite is set, this pattern can ensure that the correct queue manager is used. The connection attempt fails if the distinguished name provided by the queue manager does not match this pattern."
         },
         {
           "name": "mq.tls.protocol",
@@ -251,15 +126,8 @@
           ],
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 1,
           "display_name": "TLS Protocol",
-          "documentation": "The TLS protocol version for secure connections to IBM MQ. The default is ``TLSv1.2``, which should be fine for most cases, though the actual set of allowed values will depend on the JVM. Recent JVMs support ``TLSv1.3`` and ``TLSv1.2``, ``TLSv1.1`` and ``TLS``. Older JVMs may support ``SSL``, ``SSLv2`` and ``SSLv3``, but these versions are disabled due to known security vulnerabilities.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The TLS protocol version for secure connections to IBM MQ. The default is ``TLSv1.2``, which should be fine for most cases, though the actual set of allowed values will depend on the JVM. Recent JVMs support ``TLSv1.3`` and ``TLSv1.2``, ``TLSv1.1`` and ``TLS``. Older JVMs may support ``SSL``, ``SSLv2`` and ``SSLv3``, but these versions are disabled due to known security vulnerabilities."
         },
         {
           "name": "mq.tls.keystore.type",
@@ -268,14 +136,8 @@
           "default_value": "JKS",
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 2,
           "display_name": "TLS Keystore Type",
-          "documentation": "The file format of the key store file. This is required only when using secure TLS communication with IBM MQ. For MQ on Cloud queue managers of version 9.2.1 revision 2 and above, TLS is enabled by default",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The file format of the key store file. This is required only when using secure TLS communication with IBM MQ. For MQ on Cloud queue managers of version 9.2.1 revision 2 and above, TLS is enabled by default"
         },
         {
           "name": "mq.tls.keystore.location",
@@ -283,21 +145,13 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 3,
           "display_name": "TLS Keystore file",
           "documentation": "The key store file. This is required only when using secure TLS communication with IBM MQ.",
           "sanitizers": [
             {
               "name": "trim.blank.string"
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "group_name": "IBM MQ Secure Connection"
-          }
+          ]
         },
         {
           "name": "mq.tls.keystore.password",
@@ -305,14 +159,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 4,
           "display_name": "TLS Keystore Password",
-          "documentation": "The store password for the key store file. This is optional for client and only needed if ``TLS Keystore file`` is configured.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The store password for the key store file. This is optional for client and only needed if ``TLS Keystore file`` is configured."
         },
         {
           "name": "mq.tls.key.password",
@@ -320,14 +168,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 5,
           "display_name": "TLS Key Password",
-          "documentation": "The password of the private key used for secure TLS communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The password of the private key used for secure TLS communication with IBM MQ."
         },
         {
           "name": "mq.tls.truststore.type",
@@ -336,14 +178,8 @@
           "default_value": "JKS",
           "importance": "MEDIUM",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 6,
           "display_name": "TLS Truststore Type",
-          "documentation": "The file format of the trust store file. This is required when using TLS and secure communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 9,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The file format of the trust store file. This is required when using TLS and secure communication with IBM MQ."
         },
         {
           "name": "mq.tls.truststore.location",
@@ -351,21 +187,13 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 7,
           "display_name": "TLS Truststore file",
           "documentation": "The trust store file. This is required only when using secure TLS communication with IBM MQ.",
           "sanitizers": [
             {
               "name": "trim.blank.string"
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 10,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "group_name": "IBM MQ Secure Connection"
-          }
+          ]
         },
         {
           "name": "mq.tls.truststore.password",
@@ -373,14 +201,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 8,
           "display_name": "TLS Truststore Password",
-          "documentation": "The password for the trust store file. If a password is not set access to the truststore is still available, but integrity checking is disabled. This is required only when using secure TLS communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 11,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The password for the trust store file. If a password is not set access to the truststore is still available, but integrity checking is disabled. This is required only when using secure TLS communication with IBM MQ."
         },
         {
           "name": "mq.tls.keymanager.algorithm",
@@ -389,14 +211,8 @@
           "default_value": "SunX509",
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 9,
           "display_name": "TLS KeyManager Algorithm",
-          "documentation": "The algorithm used by key manager factory for SSL connections. Default value is the key manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 12,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The algorithm used by key manager factory for SSL connections. Default value is the key manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ."
         },
         {
           "name": "mq.tls.trustmanager.algorithm",
@@ -405,14 +221,8 @@
           "default_value": "PKIX",
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 10,
           "display_name": "TLS TrustManager Algorithm",
-          "documentation": "The algorithm used by trust manager factory for SSL connections. Default value is the trust manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 13,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The algorithm used by trust manager factory for SSL connections. Default value is the trust manager factory algorithm configured for the Java Virtual Machine. This is required only when using secure TLS communication with IBM MQ."
         },
         {
           "name": "mq.tls.secure.random.implementation",
@@ -420,14 +230,8 @@
           "required": false,
           "importance": "LOW",
           "group": "IBM MQ Secure Connection",
-          "order_in_group": 11,
           "display_name": "TLS Secure Random Implementation",
-          "documentation": "The SecureRandom PRNG implementation to use for SSL cryptography operations. By default, tries PKCS11 implementation first. If PKCS11 is not supported, iterates through the provider and returns the first working implementation. This is required only when using secure TLS communication with IBM MQ.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 14,
-            "group_name": "IBM MQ Secure Connection"
-          }
+          "documentation": "The SecureRandom PRNG implementation to use for SSL cryptography operations. By default, tries PKCS11 implementation first. If PKCS11 is not supported, iterates through the provider and returns the first working implementation. This is required only when using secure TLS communication with IBM MQ."
         },
         {
           "name": "jms.destination.name",
@@ -435,14 +239,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "IBM MQ Session",
-          "order_in_group": 1,
           "display_name": "Destination Name",
-          "documentation": "The name of the JMS destination (queue or topic) to read from.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The name of the JMS destination (queue or topic) to read from."
         },
         {
           "name": "jms.destination.type",
@@ -451,18 +249,12 @@
           "default_value": "queue",
           "importance": "HIGH",
           "group": "IBM MQ Session",
-          "order_in_group": 2,
           "display_name": "Destination Type",
           "documentation": "The type of JMS destination, which is either `queue` or `topic`.",
           "recommended_values": [
             "topic",
             "queue"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "group_name": "IBM MQ Session"
-          }
+          ]
         },
         {
           "name": "max.pending.messages",
@@ -471,24 +263,8 @@
           "default_value": "2000",
           "importance": "HIGH",
           "group": "IBM MQ Session",
-          "order_in_group": 3,
           "display_name": "Max pending messages",
-          "documentation": "The maximum number of messages per task that can be received from JMS brokers and produced to Kafka before the task acknowledges the JMS session/messages. If the task fails and is restarted, this is the maximum number of JMS messages the task may duplicate in Kafka.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 0,
-                "max": 20000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The maximum number of messages per task that can be received from JMS brokers and produced to Kafka before the task acknowledges the JMS session/messages. If the task fails and is restarted, this is the maximum number of JMS messages the task may duplicate in Kafka."
         },
         {
           "name": "max.poll.duration",
@@ -496,15 +272,8 @@
           "required": false,
           "importance": "LOW",
           "group": "IBM MQ Session",
-          "order_in_group": 4,
           "display_name": "Maximum time to wait for a single poll in milliseconds.",
-          "documentation": "The maximum amount of time each task can build a batch. The batch is closed and sent to Kafka if not enough messages are read during the time allotted. This helps limit connector lag when the JMS queue/topic has a lower throughput.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The maximum amount of time each task can build a batch. The batch is closed and sent to Kafka if not enough messages are read during the time allotted. This helps limit connector lag when the JMS queue/topic has a lower throughput."
         },
         {
           "name": "character.encoding",
@@ -513,17 +282,10 @@
           "default_value": "UTF-8",
           "importance": "LOW",
           "group": "IBM MQ Session",
-          "order_in_group": 5,
           "display_name": "Character Encoding",
           "documentation": "The character encoding to use while receiving the message.",
           "recommender": {
             "name": "character.encoding"
-          },
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
           }
         },
         {
@@ -532,15 +294,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "IBM MQ Session",
-          "order_in_group": 6,
           "display_name": "Durable Subscription",
-          "documentation": "Whether the subscription of the connector tasks to a JMS topic is durable or not. Durable subscriptions require a subscription name to be set via ``jms.subscription.name``. ",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "Whether the subscription of the connector tasks to a JMS topic is durable or not. Durable subscriptions require a subscription name to be set via ``jms.subscription.name``. "
         },
         {
           "name": "jms.subscription.name",
@@ -548,16 +303,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "IBM MQ Session",
-          "order_in_group": 7,
           "display_name": "Subscription Name",
-          "documentation": "The name of the JMS subscription. Supported only in durable subscriptions (``jms.subscription.durable = true``) and is applicable only to JMS topics.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "advanced": true,
-            "visibility": "jms.subscription.durable==true",
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The name of the JMS subscription. Supported only in durable subscriptions (``jms.subscription.durable = true``) and is applicable only to JMS topics."
         },
         {
           "name": "jms.message.selector",
@@ -565,15 +312,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "IBM MQ Session",
-          "order_in_group": 8,
           "display_name": "Message Selector",
-          "documentation": "The JMS message selector that should be applied to messages in the destination.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The JMS message selector that should be applied to messages in the destination."
         },
         {
           "name": "initial.poll.wait.time.ms",
@@ -582,15 +322,8 @@
           "default_value": "5000",
           "importance": "LOW",
           "group": "IBM MQ Session",
-          "order_in_group": 9,
           "display_name": "Initial Poll Wait Time (ms)",
-          "documentation": "The initial amount of time in milliseconds to wait when polling for new messages before switching to a shorter poll interval. This helps reduce the number of empty poll attempts during startup or when the queue is empty.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 11,
-            "advanced": true,
-            "group_name": "IBM MQ Session"
-          }
+          "documentation": "The initial amount of time in milliseconds to wait when polling for new messages before switching to a shorter poll interval. This helps reduce the number of empty poll attempts during startup or when the queue is empty."
         }
       ],
       "connector_configs": [
@@ -761,13 +494,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -775,22 +502,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -798,21 +511,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -821,22 +521,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -844,26 +534,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -888,15 +560,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1332,13 +996,6 @@
     {
       "template_id": "kafka-topic-source",
       "abstract": true,
-      "imports": [
-        "common-source"
-      ],
-      "group_order": [
-        "Kafka Cluster credentials",
-        "Which topic do you want to send data to?"
-      ],
       "config_defs": [
         {
           "name": "kafka.topic",
@@ -1346,26 +1003,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topic do you want to send data to?",
-          "order_in_group": 1,
           "display_name": "Topic name",
-          "documentation": "Identifies the topic name to write the data to.",
-          "validators": [
-            {
-              "name": "kafka.topics.writable",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "kafka.topic"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          "documentation": "Identifies the topic name to write the data to."
         }
       ],
       "connector_configs": []
@@ -1380,33 +1019,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1414,39 +1028,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "datapreview.schemas.enable",
@@ -1456,13 +1042,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
-          }
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
           "name": "errors.tolerance",
@@ -1476,13 +1056,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         },
         {
           "name": "producer.override.linger.ms",
@@ -1491,21 +1065,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
       "connector_configs": [
@@ -1584,25 +1144,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1618,7 +1166,6 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
-          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1628,20 +1175,9 @@
             "PROTOBUF",
             "JSON"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 2,
-            "group_name": "Output messages"
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -1652,13 +1188,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -1669,13 +1199,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1686,13 +1210,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1701,12 +1219,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -1778,7 +1291,6 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 1,
           "docs_hidden": true,
           "display_name": "Enable Client-Side Field Level Encryption",
           "documentation": "Determines whether the connector honours CSFLE rules or not",
@@ -1793,41 +1305,16 @@
                 "visibility": "false"
               }
             }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "group_name": "Data encryption",
-            "group_description": "Enable client-side encryption for the data that is stored in Confluent Cloud. Encryption rule must be setup for the data to be encrypted. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
-            "order_in_page": 10,
-            "visibility": "output.data.format==AVRO,JSON_SR,PROTOBUF"
-          }
+          ]
         },
         {
           "name": "sr.service.account.id",
           "type": "STRING",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 2,
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "csfle.enabled==true"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && output.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data encryption",
-            "order_in_page": 11
-          }
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
         },
         {
           "name": "csfle.configs.visible",
@@ -1921,14 +1408,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -1937,12 +1418,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1951,13 +1427,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1966,12 +1436,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1980,12 +1445,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1994,12 +1454,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2008,12 +1463,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2022,12 +1472,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2036,12 +1481,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2050,12 +1490,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2064,12 +1499,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2078,12 +1508,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2098,13 +1523,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2113,12 +1532,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2127,12 +1541,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2141,12 +1550,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2162,13 +1566,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2184,13 +1582,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2204,13 +1596,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2219,12 +1605,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2234,12 +1615,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2248,12 +1624,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2262,12 +1633,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2287,12 +1653,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2527,17 +1888,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "mq.configuration.mode",
-    "name",
-    "output.data.format",
-    "schema.context.name",
-    "sr.service.account.id"
   ]
 }

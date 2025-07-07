@@ -4,36 +4,6 @@
       "template_id": "HttpSink",
       "connector_type": "SINK",
       "connector.class": "io.confluent.connect.http.HttpSinkConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-sink",
-        "csfle-sink",
-        "http-network-restrictions-common",
-        "schema-registry",
-        "reporter",
-        "input-data-format"
-      ],
-      "group_order": [
-        "Which topics do you want to get data from?",
-        "Schema Config",
-        "Input messages",
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "CSFLE",
-        "HTTP server details",
-        "HTTP server error handling",
-        "HTTP server batches",
-        "HTTP server authentication",
-        "HTTP server retries",
-        "HTTP server regular expressions",
-        "HTTP server SSL",
-        "Reporter",
-        "Consumer configuration",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "http.api.url",
@@ -41,13 +11,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "HTTP server details",
-          "order_in_group": 1,
           "display_name": "HTTP URL",
-          "documentation": "Specifies the API endpoint to which connector should write to.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1
-          }
+          "documentation": "Specifies the API endpoint to which connector should write to."
         },
         {
           "name": "request.method",
@@ -55,7 +20,6 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server details",
-          "order_in_group": 2,
           "display_name": "HTTP Request Method",
           "default_value": "POST",
           "recommended_values": [
@@ -66,12 +30,7 @@
           "documentation": "Specifies the HTTP request method (POST, PUT, PATCH) the connector should use for sending API request.",
           "dependents": [
             "http.api.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "headers",
@@ -79,14 +38,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server details",
-          "order_in_group": 3,
           "display_name": "HTTP Headers",
-          "documentation": "HTTP headers to be included in all requests. Individual headers should be separated by the Header Separator",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "advanced": true
-          }
+          "documentation": "HTTP headers to be included in all requests. Individual headers should be separated by the Header Separator"
         },
         {
           "name": "header.separator",
@@ -94,14 +47,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server details",
-          "order_in_group": 4,
           "display_name": "HTTP Headers Separator",
-          "documentation": "Separator character used in headers",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true
-          }
+          "documentation": "Separator character used in headers"
         },
         {
           "name": "sensitive.headers",
@@ -109,14 +56,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server details",
-          "order_in_group": 5,
           "display_name": "Sensitive HTTP Headers",
-          "documentation": "Sensitive HTTP headers (eg: credentials) to be included in all requests. Individual headers should be separated by the Header Separator",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true
-          }
+          "documentation": "Sensitive HTTP headers (eg: credentials) to be included in all requests. Individual headers should be separated by the Header Separator"
         },
         {
           "name": "behavior.on.null.values",
@@ -124,7 +65,6 @@
           "required": false,
           "importance": "LOW",
           "group": "HTTP server details",
-          "order_in_group": 5,
           "display_name": "Behavior for null valued records",
           "documentation": "How to handle records with a non-null key and a null value (i.e. Kafka tombstone records). Valid options are ``ignore``, ``delete`` and ``fail``",
           "default_value": "ignore",
@@ -132,12 +72,7 @@
             "ignore",
             "delete",
             "fail"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "auth.type",
@@ -145,7 +80,6 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 1,
           "display_name": "Endpoint Authentication type",
           "documentation": "Specifies the authentication type of the API endpoint. Valid values are ``NONE``, ``BASIC``, ``OAUTH2`` (Client Credentials grant type only).",
           "default_value": "NONE",
@@ -153,11 +87,7 @@
             "NONE",
             "BASIC",
             "OAUTH2"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "connection.user",
@@ -165,13 +95,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 2,
           "display_name": "Auth username",
-          "documentation": "The username to be used with an endpoint requiring authentication",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3
-          }
+          "documentation": "The username to be used with an endpoint requiring authentication"
         },
         {
           "name": "connection.password",
@@ -179,13 +104,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 3,
           "display_name": "Auth password",
-          "documentation": "The password to be used with an endpoint requiring authentication",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4
-          }
+          "documentation": "The password to be used with an endpoint requiring authentication"
         },
         {
           "name": "oauth2.token.url",
@@ -193,13 +113,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 4,
           "display_name": "OAuth2 token URL",
-          "documentation": "The URL to be used for fetching OAuth2 token. Client Credentials is the only supported grant type.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5
-          }
+          "documentation": "The URL to be used for fetching OAuth2 token. Client Credentials is the only supported grant type."
         },
         {
           "name": "oauth2.client.id",
@@ -207,13 +122,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 5,
           "display_name": "OAuth2 client ID",
-          "documentation": "The client id used when fetching OAuth2 token",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6
-          }
+          "documentation": "The client id used when fetching OAuth2 token"
         },
         {
           "name": "oauth2.client.secret",
@@ -221,13 +131,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 6,
           "display_name": "OAuth2 secret",
-          "documentation": "The secret used when fetching OAuth2 token",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7
-          }
+          "documentation": "The secret used when fetching OAuth2 token"
         },
         {
           "name": "oauth2.token.property",
@@ -235,14 +140,9 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server authentication",
-          "order_in_group": 7,
           "display_name": "OAuth2 token property name",
           "default_value": "access_token",
-          "documentation": "The name of the property containing the OAuth2 token returned by the http proxy.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8
-          }
+          "documentation": "The name of the property containing the OAuth2 token returned by the http proxy."
         },
         {
           "name": "oauth2.client.auth.mode",
@@ -250,18 +150,13 @@
           "required": false,
           "importance": "LOW",
           "group": "HTTP server authentication",
-          "order_in_group": 8,
           "display_name": "OAuth2 auth mode mechanism",
           "documentation": "Specifies how to encode ``client_id`` and ``client_secret`` in the OAuth2 authorization request. If set to 'header', the credentials are encoded as an ``'Authorization: Basic <base-64 encoded client_id:client_secret>'`` HTTP header. If set to 'url', then ``client_id`` and ``client_secret`` are sent in body as URL encoded parameters.",
           "default_value": "header",
           "recommended_values": [
             "header",
             "url"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 9
-          }
+          ]
         },
         {
           "name": "oauth2.client.scope",
@@ -269,14 +164,9 @@
           "required": false,
           "importance": "LOW",
           "group": "HTTP server authentication",
-          "order_in_group": 9,
           "display_name": "OAuth2 scope",
           "default_value": "any",
-          "documentation": "The scope used when fetching OAuth2 token. If empty, this parameter is not set in the authorization request",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 10
-          }
+          "documentation": "The scope used when fetching OAuth2 token. If empty, this parameter is not set in the authorization request"
         },
         {
           "name": "oauth2.jwt.enabled",
@@ -284,15 +174,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server authentication",
-          "order_in_group": 10,
           "display_name": "Add JWT token",
           "default_value": "false",
-          "documentation": "Whether to generate and add JWT token to request. If selected, JWT token will be added as 'jwt_token' request param",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 11,
-            "advanced": true
-          }
+          "documentation": "Whether to generate and add JWT token to request. If selected, JWT token will be added as 'jwt_token' request param"
         },
         {
           "name": "oauth2.jwt.keystore.path",
@@ -300,18 +184,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server authentication",
-          "order_in_group": 11,
           "display_name": "JWT keystore",
           "default_value": "",
-          "documentation": "Keystore containing private key to use to sign JWT.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "order_in_page": 12,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "visibility": "oauth2.jwt.enabled==true"
-          }
+          "documentation": "Keystore containing private key to use to sign JWT."
         },
         {
           "name": "oauth2.jwt.keystore.password",
@@ -319,16 +194,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server authentication",
-          "order_in_group": 12,
           "display_name": "JWT keystore password",
           "default_value": "",
-          "documentation": "Password to access keystore",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "order_in_page": 13,
-            "visibility": "oauth2.jwt.enabled==true"
-          }
+          "documentation": "Password to access keystore"
         },
         {
           "name": "oauth2.jwt.keystore.type",
@@ -336,20 +204,13 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server authentication",
-          "order_in_group": 13,
           "display_name": "JWT keystore type",
           "default_value": "JKS",
           "documentation": "JWT keystore type",
           "recommended_values": [
             "JKS",
             "PKCS12"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "order_in_page": 14,
-            "visibility": "oauth2.jwt.enabled==true"
-          }
+          ]
         },
         {
           "name": "oauth2.jwt.claimset",
@@ -357,16 +218,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server authentication",
-          "order_in_group": 14,
           "display_name": "JWT JSON claims",
           "default_value": "",
-          "documentation": "JSON containing JWT claims",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "order_in_page": 15,
-            "visibility": "oauth2.jwt.enabled==true"
-          }
+          "documentation": "JSON containing JWT claims"
         },
         {
           "name": "oauth2.client.headers",
@@ -374,14 +228,8 @@
           "required": false,
           "importance": "LOW",
           "group": "HTTP server authentication",
-          "order_in_group": 15,
           "display_name": "OAuth2 Client Headers",
-          "documentation": "HTTP headers to be included in the OAuth2 client endpoint. Individual headers should be separated by OAuth2 Client Headers Separator",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true
-          }
+          "documentation": "HTTP headers to be included in the OAuth2 client endpoint. Individual headers should be separated by OAuth2 Client Headers Separator"
         },
         {
           "name": "oauth2.client.header.separator",
@@ -389,14 +237,8 @@
           "required": false,
           "importance": "LOW",
           "group": "HTTP server authentication",
-          "order_in_group": 16,
           "display_name": "OAuth2 Client Headers Separator",
-          "documentation": "Separator character used in OAuth2 Client Headers",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          "documentation": "Separator character used in OAuth2 Client Headers"
         },
         {
           "name": "behavior.on.error",
@@ -404,19 +246,13 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server error handling",
-          "order_in_group": 1,
           "display_name": "Behavior on errors",
           "default_value": "ignore",
           "recommended_values": [
             "ignore",
             "fail"
           ],
-          "documentation": "Describes the error handling behavior configuration for handling error responses from HTTP requests. Accepted values are ``ignore`` and ``fail``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true
-          }
+          "documentation": "Describes the error handling behavior configuration for handling error responses from HTTP requests. Accepted values are ``ignore`` and ``fail``."
         },
         {
           "name": "report.errors.as",
@@ -424,19 +260,13 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server error handling",
-          "order_in_group": 2,
           "display_name": "Report errors as",
           "default_value": "error_string",
           "recommended_values": [
             "error_string",
             "http_response"
           ],
-          "documentation": "Dictates the content of records produced to the error topic. Accepted values are ``error_string`` and ``http_response``. If set to ``error_string``, the value would be a human readable string describing the failure. The value will include some or all of the following information if available: http response code, reason phrase, submitted payload, url, response content, exception and error message. If set to ``http_response``, the value would be the plain response content for the request which failed to write the record. In both modes, any information about the failure will also be included in the error record's headers.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "advanced": true
-          }
+          "documentation": "Dictates the content of records produced to the error topic. Accepted values are ``error_string`` and ``http_response``. If set to ``error_string``, the value would be a human readable string describing the failure. The value will include some or all of the following information if available: http response code, reason phrase, submitted payload, url, response content, exception and error message. If set to ``http_response``, the value would be the plain response content for the request which failed to write the record. In both modes, any information about the failure will also be included in the error record's headers."
         },
         {
           "name": "retry.on.status.codes",
@@ -444,15 +274,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 1,
           "display_name": "Retry on HTTP codes",
           "default_value": "400-",
-          "documentation": "The HTTP error codes to retry on. Comma-separated list of codes or range of codes to retry on. Ranges are specified with start and optional end code. Range boundaries are inclusive. For instance, '400-' includes all codes greater than or equal to 400. '400-500' includes codes from 400 to 500, including 500. Multiple ranges and single codes can be specified together to achieve fine grained control over retry behavior. For example, '404,408,500-' will retry on 404 NOT FOUND, 408 REQUEST TIMEOUT, and all 5xx error codes",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "advanced": true
-          }
+          "documentation": "The HTTP error codes to retry on. Comma-separated list of codes or range of codes to retry on. Ranges are specified with start and optional end code. Range boundaries are inclusive. For instance, '400-' includes all codes greater than or equal to 400. '400-500' includes codes from 400 to 500, including 500. Multiple ranges and single codes can be specified together to achieve fine grained control over retry behavior. For example, '404,408,500-' will retry on 404 NOT FOUND, 408 REQUEST TIMEOUT, and all 5xx error codes"
         },
         {
           "name": "max.retries",
@@ -460,15 +284,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 2,
           "display_name": "Maximum Retries",
           "default_value": 3,
-          "documentation": "The maximum number of times to retry on errors before failing the task",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 11,
-            "advanced": true
-          }
+          "documentation": "The maximum number of times to retry on errors before failing the task"
         },
         {
           "name": "retry.backoff.ms",
@@ -476,23 +294,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 3,
           "display_name": "Retry Backoff (milliseconds)",
           "default_value": 3000,
-          "documentation": "The initial duration in milliseconds to wait following an error before a retry attempt is made. Subsequent backoff attempts will be exponentially larger than the first duration. Note that this value is the initial backoff before retrying. After that, the connector will retry using exponential jitter. Jitter adds randomness to the exponential backoff algorithm to prevent synchronized retries.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 12,
-            "advanced": true
-          }
+          "documentation": "The initial duration in milliseconds to wait following an error before a retry attempt is made. Subsequent backoff attempts will be exponentially larger than the first duration. Note that this value is the initial backoff before retrying. After that, the connector will retry using exponential jitter. Jitter adds randomness to the exponential backoff algorithm to prevent synchronized retries."
         },
         {
           "name": "http.connect.timeout.ms",
@@ -500,15 +304,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 4,
           "display_name": "Connect timeout (milliseconds)",
           "default_value": 30000,
-          "documentation": "The time in milliseconds to wait for a connection to be established",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 13,
-            "advanced": true
-          }
+          "documentation": "The time in milliseconds to wait for a connection to be established"
         },
         {
           "name": "http.request.timeout.ms",
@@ -516,15 +314,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 5,
           "display_name": "Request timeout (milliseconds)",
           "default_value": 30000,
-          "documentation": "The time in milliseconds to wait for a request response from the server",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 14,
-            "advanced": true
-          }
+          "documentation": "The time in milliseconds to wait for a request response from the server"
         },
         {
           "name": "request.body.format",
@@ -532,19 +324,13 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server batches",
-          "order_in_group": 1,
           "display_name": "Request Body Format",
           "default_value": "string",
           "documentation": "Used to produce request body in either JSON or String format",
           "recommended_values": [
             "string",
             "json"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 15,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "batch.key.pattern",
@@ -552,14 +338,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 2,
           "display_name": "Batch key pattern",
-          "documentation": "Pattern used to build the key for a given batch. ${key} and ${topic} can be used to include message attributes here",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 16,
-            "advanced": true
-          }
+          "documentation": "Pattern used to build the key for a given batch. ${key} and ${topic} can be used to include message attributes here"
         },
         {
           "name": "batch.max.size",
@@ -567,15 +347,9 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 3,
           "display_name": "Batch max size",
           "default_value": 1,
-          "documentation": "The number of records accumulated in a batch before the HTTP API is invoked",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 17,
-            "advanced": true
-          }
+          "documentation": "The number of records accumulated in a batch before the HTTP API is invoked"
         },
         {
           "name": "batch.prefix",
@@ -583,14 +357,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 4,
           "display_name": "Batch prefix",
-          "documentation": "Prefix added to record batches. This is applied once at the beginning of the batch of records",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 18,
-            "advanced": true
-          }
+          "documentation": "Prefix added to record batches. This is applied once at the beginning of the batch of records"
         },
         {
           "name": "batch.suffix",
@@ -598,14 +366,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 5,
           "display_name": "Batch suffix",
-          "documentation": "Suffix added to record batches. This is applied once at the end of the batch of records",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 19,
-            "advanced": true
-          }
+          "documentation": "Suffix added to record batches. This is applied once at the end of the batch of records"
         },
         {
           "name": "batch.separator",
@@ -613,14 +375,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 6,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 20,
-            "advanced": true
-          }
+          "documentation": "Separator for records in a batch"
         },
         {
           "name": "batch.json.as.array",
@@ -628,14 +384,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server batches",
-          "order_in_group": 7,
           "display_name": "Batch json as array",
-          "documentation": "Whether or not to use an array to bundle json records. Only used when request.body.format is set to json. This can be disabled only when batch.max.size is set to 1.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 21,
-            "advanced": true
-          }
+          "documentation": "Whether or not to use an array to bundle json records. Only used when request.body.format is set to json. This can be disabled only when batch.max.size is set to 1."
         },
         {
           "name": "regex.patterns",
@@ -643,14 +393,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server regular expressions",
-          "order_in_group": 1,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 22,
-            "advanced": true
-          }
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``"
         },
         {
           "name": "regex.replacements",
@@ -658,14 +402,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server regular expressions",
-          "order_in_group": 2,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 23,
-            "advanced": true
-          }
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here."
         },
         {
           "name": "regex.separator",
@@ -673,14 +411,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "HTTP server regular expressions",
-          "order_in_group": 3,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 24,
-            "advanced": true
-          }
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property."
         },
         {
           "name": "retry.backoff.policy",
@@ -689,18 +421,12 @@
           "default_value": "EXPONENTIAL_WITH_JITTER",
           "importance": "MEDIUM",
           "group": "HTTP server retries",
-          "order_in_group": 6,
           "display_name": "Retry Backoff Policy",
           "documentation": "The backoff policy to use in terms of retry - CONSTANT_VALUE or EXPONENTIAL_WITH_JITTER",
           "recommended_values": [
             "CONSTANT_VALUE",
             "EXPONENTIAL_WITH_JITTER"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 25,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "https.ssl.key.password",
@@ -708,13 +434,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server SSL",
-          "order_in_group": 1,
           "display_name": "Key password",
-          "documentation": "The password of the private key in the key store file. This is optional for client",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 16
-          }
+          "documentation": "The password of the private key in the key store file. This is optional for client"
         },
         {
           "name": "https.ssl.keystorefile",
@@ -723,15 +444,8 @@
           "default_value": "",
           "importance": "LOW",
           "group": "HTTP server SSL",
-          "order_in_group": 2,
           "display_name": "Key Store",
-          "documentation": "The key store containing server certificate. Only required if using https",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 17,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY"
-          }
+          "documentation": "The key store containing server certificate. Only required if using https"
         },
         {
           "name": "https.ssl.keystore.password",
@@ -739,13 +453,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server SSL",
-          "order_in_group": 3,
           "display_name": "Keystore Password",
-          "documentation": "The store password for the key store file. This is optional for a client and is only needed if https.ssl.keystore.location is configured",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 18
-          }
+          "documentation": "The store password for the key store file. This is optional for a client and is only needed if https.ssl.keystore.location is configured"
         },
         {
           "name": "https.ssl.truststorefile",
@@ -754,15 +463,8 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "HTTP server SSL",
-          "order_in_group": 4,
           "display_name": "Trust store",
-          "documentation": "The trust store containing server CA certificate. Only required if using https",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 19,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY"
-          }
+          "documentation": "The trust store containing server CA certificate. Only required if using https"
         },
         {
           "name": "https.ssl.truststore.password",
@@ -770,13 +472,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "HTTP server SSL",
-          "order_in_group": 5,
           "display_name": "Trust store password",
-          "documentation": "The trust store password containing server CA certificate. Only required if using https",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 20
-          }
+          "documentation": "The trust store password containing server CA certificate. Only required if using https"
         },
         {
           "name": "https.ssl.protocol",
@@ -785,13 +482,8 @@
           "default_value": "TLSv1.3",
           "importance": "MEDIUM",
           "group": "HTTP server SSL",
-          "order_in_group": 6,
           "display_name": "SSL Protocol",
-          "documentation": "The protocol to use for SSL connections",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 21
-          }
+          "documentation": "The protocol to use for SSL connections"
         },
         {
           "name": "https.host.verifier.enabled",
@@ -800,17 +492,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "HTTP server SSL",
-          "order_in_group": 7,
           "display_name": "Enable host verification",
           "documentation": "True if SSL host verification should be enabled",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 22
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1076,13 +763,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -1090,22 +771,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -1113,21 +780,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -1136,22 +790,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -1159,26 +803,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -1203,15 +829,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1654,36 +1272,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1691,36 +1281,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "topics",
@@ -1728,22 +1293,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
-          "order_in_group": 1,
           "display_name": "Topic names",
           "documentation": "Identifies the topic name or a comma-separated list of topic names.",
-          "validators": [
-            {
-              "name": "kafka.topics",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.secret"
           ],
@@ -1751,11 +1302,7 @@
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "max.poll.interval.ms",
@@ -1763,26 +1310,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 1,
           "display_name": "Max poll interval(ms)",
           "default_value": "300000",
-          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 60000,
-                "max": 1800000,
-                "dedicatedMin": 60000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
         },
         {
           "name": "max.poll.records",
@@ -1790,26 +1320,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 2,
           "display_name": "Max poll records",
           "default_value": "500",
-          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 1,
-                "max": 500,
-                "dedicatedMin": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -1823,13 +1336,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1907,7 +1414,6 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 1,
           "docs_hidden": true,
           "display_name": "Enable Client-Side Field Level Encryption",
           "documentation": "Determines whether the connector honours CSFLE rules or not",
@@ -1922,15 +1428,7 @@
                 "visibility": "false"
               }
             }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "group_name": "Data decryption",
-            "group_description": "Enable client-side decryption for the data that is pushed out of Confluent Cloud. Encryption rule must be setup for the data to be encrypted. The data will be written in encrypted form if there is no key access. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
-            "order_in_page": 10,
-            "visibility": "input.data.format==AVRO,JSON_SR,PROTOBUF"
-          }
+          ]
         },
         {
           "name": "csfle.onFailure",
@@ -1939,52 +1437,22 @@
           "default_value": "ERROR",
           "importance": "MEDIUM",
           "group": "CSFLE",
-          "order_in_group": 3,
           "docs_hidden": true,
           "display_name": "Connector behaviour on data decryption failure",
           "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
           "recommended_values": [
             "ERROR",
             "NONE"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data decryption",
-            "order_in_page": 12
-          }
+          ]
         },
         {
           "name": "sr.service.account.id",
           "type": "STRING",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 2,
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "csfle.enabled==true"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data decryption",
-            "order_in_page": 11
-          }
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
         },
         {
           "name": "csfle.configs.visible",
@@ -2130,25 +1598,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -2305,7 +1761,6 @@
           "importance": "HIGH",
           "alias": "data.format",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -2315,19 +1770,9 @@
             "JSON",
             "BYTES"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -2338,13 +1783,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -2355,13 +1794,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -2372,13 +1805,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -2387,12 +1814,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -2466,14 +1888,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -2482,12 +1898,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -2496,13 +1907,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -2511,12 +1916,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -2525,12 +1925,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -2539,12 +1934,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2553,12 +1943,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2567,12 +1952,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2581,12 +1961,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2595,12 +1970,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2609,12 +1979,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2623,12 +1988,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2643,13 +2003,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2658,12 +2012,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2672,12 +2021,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2686,12 +2030,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2707,13 +2046,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2729,13 +2062,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2749,13 +2076,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2764,12 +2085,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2779,12 +2095,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2793,12 +2104,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2807,12 +2113,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2832,12 +2133,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -3161,24 +2457,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "csfle.onFailure",
-    "https.host.verifier.enabled",
-    "https.ssl.keystorefile",
-    "https.ssl.truststorefile",
-    "input.data.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "max.poll.interval.ms",
-    "max.poll.records",
-    "name",
-    "oauth2.client.header.separator",
-    "oauth2.client.headers",
-    "schema.context.name",
-    "sr.service.account.id"
   ]
 }

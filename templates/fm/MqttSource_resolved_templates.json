@@ -4,22 +4,6 @@
       "template_id": "MqttSource",
       "connector_type": "SOURCE",
       "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "kafka-topic-source",
-        "mqtt-common"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "Which topic do you want to send data to?",
-        "How should we connect to MQTT Broker?",
-        "MQTT secure connection",
-        "Connection Details",
-        "Number of tasks for this connector"
-      ],
       "config_defs": [
         {
           "name": "mqtt.topics",
@@ -27,14 +11,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Connection Details",
-          "order_in_group": 5,
           "display_name": "MQTT Topics",
-          "documentation": "The MQTT topics to subscribe to.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "group_name": "Connection Details"
-          }
+          "documentation": "The MQTT topics to subscribe to."
         },
         {
           "name": "mqtt.qos",
@@ -43,19 +21,13 @@
           "default_value": 0,
           "importance": "LOW",
           "group": "Connection Details",
-          "order_in_group": 6,
           "display_name": "MQTT QOS",
           "documentation": "The MQTT QOS level to subscribe to. Valid values are 0, 1 and 2.",
           "recommended_values": [
             "0",
             "1",
             "2"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "group_name": "Connection Details"
-          }
+          ]
         },
         {
           "name": "records.buffer.queue.size",
@@ -64,23 +36,8 @@
           "default_value": 50000,
           "importance": "LOW",
           "group": "Connection Details",
-          "order_in_group": 7,
           "display_name": "Records Buffer Queue Size",
-          "documentation": "The capacity of the buffer queue that stores the data before sending it to the Kafka Topic.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 10000,
-                "max": 100000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "group_name": "Connection Details"
-          }
+          "documentation": "The capacity of the buffer queue that stores the data before sending it to the Kafka Topic."
         },
         {
           "name": "records.buffer.queue.max.batch.size",
@@ -89,23 +46,8 @@
           "default_value": 4096,
           "importance": "LOW",
           "group": "Connection Details",
-          "order_in_group": 8,
           "display_name": "Records Buffer Queue Maximum Batch Size",
-          "documentation": "The maximum size of the batch to send to Kafka topic in a single request.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 4096
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "group_name": "Connection Details"
-          }
+          "documentation": "The maximum size of the batch to send to Kafka topic in a single request."
         },
         {
           "name": "records.buffer.queue.empty.timeout",
@@ -114,23 +56,8 @@
           "default_value": 100,
           "importance": "LOW",
           "group": "Connection Details",
-          "order_in_group": 9,
           "display_name": "Records Buffer Queue Empty Timeout (Milliseconds)",
-          "documentation": "Timeout to wait on an empty buffer queue for extracting records.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 10,
-                "max": 10000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "group_name": "Connection Details"
-          }
+          "documentation": "Timeout to wait on an empty buffer queue for extracting records."
         },
         {
           "name": "records.buffer.queue.full.timeout",
@@ -139,23 +66,8 @@
           "default_value": 60000,
           "importance": "LOW",
           "group": "Connection Details",
-          "order_in_group": 10,
           "display_name": "Records Buffer Queue Full Timeout (Milliseconds)",
-          "documentation": "Timeout to wait on a full buffer queue for inserting new records.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 30000,
-                "max": 300000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "group_name": "Connection Details"
-          }
+          "documentation": "Timeout to wait on a full buffer queue for inserting new records."
         }
       ],
       "connector_configs": [
@@ -242,13 +154,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -256,22 +162,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -279,21 +171,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -302,22 +181,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -325,26 +194,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -369,15 +220,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -813,13 +656,6 @@
     {
       "template_id": "kafka-topic-source",
       "abstract": true,
-      "imports": [
-        "common-source"
-      ],
-      "group_order": [
-        "Kafka Cluster credentials",
-        "Which topic do you want to send data to?"
-      ],
       "config_defs": [
         {
           "name": "kafka.topic",
@@ -827,26 +663,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topic do you want to send data to?",
-          "order_in_group": 1,
           "display_name": "Topic name",
-          "documentation": "Identifies the topic name to write the data to.",
-          "validators": [
-            {
-              "name": "kafka.topics.writable",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "kafka.topic"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          "documentation": "Identifies the topic name to write the data to."
         }
       ],
       "connector_configs": []
@@ -861,33 +679,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -895,39 +688,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "datapreview.schemas.enable",
@@ -937,13 +702,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
-          }
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
           "name": "errors.tolerance",
@@ -957,13 +716,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         },
         {
           "name": "producer.override.linger.ms",
@@ -972,21 +725,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
       "connector_configs": [
@@ -1061,14 +800,8 @@
           "type": "LIST",
           "importance": "HIGH",
           "group": "How should we connect to MQTT Broker?",
-          "order_in_group": 1,
           "display_name": "List of Server URIs",
-          "documentation": "The URI of the MQTT broker. This must be given in the format <PROTOCOL>//:URI. The supported protocols are tcp, ssl, ws, wss. Note that for a connection that uses TLS, you must provide the required key stores and trust stores.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1,
-            "group_name": "How should we connect to MQTT Broker?"
-          }
+          "documentation": "The URI of the MQTT broker. This must be given in the format <PROTOCOL>//:URI. The supported protocols are tcp, ssl, ws, wss. Note that for a connection that uses TLS, you must provide the required key stores and trust stores."
         },
         {
           "name": "mqtt.username",
@@ -1076,14 +809,8 @@
           "type": "PASSWORD",
           "importance": "HIGH",
           "group": "How should we connect to MQTT Broker?",
-          "order_in_group": 2,
           "display_name": "Username",
-          "documentation": "Username to connect with, or blank if a username is not required. Note: username field is masked as it may contain sensitive information",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "group_name": "How should we connect to MQTT Broker?"
-          }
+          "documentation": "Username to connect with, or blank if a username is not required. Note: username field is masked as it may contain sensitive information"
         },
         {
           "name": "mqtt.password",
@@ -1092,14 +819,8 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "How should we connect to MQTT Broker?",
-          "order_in_group": 3,
           "display_name": "Password",
-          "documentation": "Password to connect with, or blank if a password is not required.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3,
-            "group_name": "How should we connect to MQTT Broker?"
-          }
+          "documentation": "Password to connect with, or blank if a password is not required."
         },
         {
           "name": "mqtt.ssl.key.store.file",
@@ -1108,16 +829,8 @@
           "default_value": "",
           "importance": "LOW",
           "group": "MQTT secure connection",
-          "order_in_group": 1,
           "display_name": "SSL Keystore",
-          "documentation": "The location of the Java KeyStore file containing the private key to use for authenticating with the server.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "group_name": "MQTT secure connection"
-          }
+          "documentation": "The location of the Java KeyStore file containing the private key to use for authenticating with the server."
         },
         {
           "name": "mqtt.ssl.key.store.password",
@@ -1126,14 +839,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "MQTT secure connection",
-          "order_in_group": 2,
           "display_name": "Keystore Password",
-          "documentation": "Password used to open the Java KeyStore file.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "group_name": "MQTT secure connection"
-          }
+          "documentation": "Password used to open the Java KeyStore file."
         },
         {
           "name": "mqtt.ssl.key.password",
@@ -1142,14 +849,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "MQTT secure connection",
-          "order_in_group": 3,
           "display_name": "Key Password",
-          "documentation": "Password for the client certificate contained in the Java KeyStore.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6,
-            "group_name": "MQTT secure connection"
-          }
+          "documentation": "Password for the client certificate contained in the Java KeyStore."
         },
         {
           "name": "mqtt.ssl.trust.store.file",
@@ -1158,16 +859,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "MQTT secure connection",
-          "order_in_group": 4,
           "display_name": "SSL Truststore",
-          "documentation": "The location of the Java TrustStore file containing the certificates required to validate the SSL connection to the server.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "group_name": "MQTT secure connection"
-          }
+          "documentation": "The location of the Java TrustStore file containing the certificates required to validate the SSL connection to the server."
         },
         {
           "name": "mqtt.ssl.trust.store.password",
@@ -1176,14 +869,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "MQTT secure connection",
-          "order_in_group": 5,
           "display_name": "Truststore Password",
-          "documentation": "Password used to open the Java TrustStore file.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8,
-            "group_name": "MQTT secure connection"
-          }
+          "documentation": "Password used to open the Java TrustStore file."
         },
         {
           "name": "mqtt.clean.session.enabled",
@@ -1192,19 +879,12 @@
           "importance": "MEDIUM",
           "default_value": "false",
           "group": "Connection Details",
-          "order_in_group": 1,
           "display_name": "Clean Session?",
           "documentation": "Sets whether the client and server should remember state across restarts and reconnects. Note that for unreceived messages to be received after reconnect you should set the QOS to 1 or above. ",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Connection Details"
-          }
+          ]
         },
         {
           "name": "mqtt.connect.timeout.seconds",
@@ -1213,15 +893,8 @@
           "importance": "MEDIUM",
           "default_value": 30,
           "group": "Connection Details",
-          "order_in_group": 2,
           "display_name": "Connection Timeout",
-          "documentation": "Sets the connection timeout value in seconds.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Connection Details"
-          }
+          "documentation": "Sets the connection timeout value in seconds."
         },
         {
           "name": "mqtt.keepalive.interval.seconds",
@@ -1230,15 +903,8 @@
           "importance": "MEDIUM",
           "default_value": 60,
           "group": "Connection Details",
-          "order_in_group": 3,
           "display_name": "Connection Keepalive",
-          "documentation": "This value, measured in seconds, defines the maximum time interval between messages sent or received. In the absence of a data-related message during the time period, the client sends a very small \"ping\" message, which the server will acknowledge.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "advanced": true,
-            "group_name": "Connection Details"
-          }
+          "documentation": "This value, measured in seconds, defines the maximum time interval between messages sent or received. In the absence of a data-related message during the time period, the client sends a very small \"ping\" message, which the server will acknowledge."
         },
         {
           "name": "max.retry.time.ms",
@@ -1247,15 +913,8 @@
           "importance": "MEDIUM",
           "default_value": 30000,
           "group": "Connection Details",
-          "order_in_group": 4,
           "display_name": "Max Retry Time",
-          "documentation": "The maximum time in milliseconds (ms) the connector will spend backing off and retrying failed operations (connecting to the MQTT broker and publishing records).",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true,
-            "group_name": "Connection Details"
-          }
+          "documentation": "The maximum time in milliseconds (ms) the connector will spend backing off and retrying failed operations (connecting to the MQTT broker and publishing records)."
         }
       ],
       "connector_configs": [
@@ -1314,14 +973,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -1330,12 +983,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1344,13 +992,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1359,12 +1001,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1373,12 +1010,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1387,12 +1019,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1401,12 +1028,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1415,12 +1037,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1429,12 +1046,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1443,12 +1055,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1457,12 +1064,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1471,12 +1073,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1491,13 +1088,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -1506,12 +1097,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -1520,12 +1106,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -1534,12 +1115,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -1555,13 +1131,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -1577,13 +1147,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -1597,13 +1161,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -1612,12 +1170,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -1627,12 +1180,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -1641,12 +1189,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -1655,12 +1198,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -1680,12 +1218,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1891,15 +1424,5 @@
       "name": "connector.endpoint",
       "value": "${mqtt.server.uri}"
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "mqtt.ssl.key.store.file",
-    "mqtt.ssl.trust.store.file",
-    "name"
   ]
 }

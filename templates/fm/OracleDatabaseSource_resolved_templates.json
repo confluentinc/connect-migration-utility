@@ -4,32 +4,6 @@
       "template_id": "OracleDatabaseSource",
       "connector_type": "SOURCE",
       "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-jdbc-source",
-        "timestamp-column",
-        "topic-prefix-source",
-        "numeric-mapping",
-        "schema-registry",
-        "source-connector-output-data-format",
-        "ssl-mode",
-        "ssl-truststore-file-and-password"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "Schema Config",
-        "How do you want to prefix table names?",
-        "How should we connect to your database?",
-        "Database details",
-        "Mode",
-        "Connection details",
-        "Output messages",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "connection.host",
@@ -37,28 +11,13 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 1,
           "display_name": "Connection host",
           "documentation": "Depending on the service environment, certain network access limitations may exist. Make sure the connector can reach your service. Do not include jdbc:xxxx:// in the connection hostname property (e.g. database-1.abc234ec2.us-west.rds.amazonaws.com).",
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "validators": [
-            {
-              "name": "jdbc.connection.host",
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "jdbc.connection",
-              "arguments": {}
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "connection.port",
@@ -66,27 +25,13 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 2,
           "display_name": "Connection port",
           "documentation": "JDBC connection port.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 0,
-                "max": 65535
-              }
-            }
-          ],
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "connection.user",
@@ -94,13 +39,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 3,
           "display_name": "Connection user",
-          "documentation": "JDBC connection user.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3
-          }
+          "documentation": "JDBC connection user."
         },
         {
           "name": "connection.password",
@@ -108,13 +48,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 4,
           "display_name": "Connection password",
-          "documentation": "JDBC connection password.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4
-          }
+          "documentation": "JDBC connection password."
         },
         {
           "name": "db.connection.type",
@@ -123,17 +58,12 @@
           "default_value": "SID",
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 5,
           "display_name": "Database name type",
           "documentation": "Select database connection using sid or service name",
           "recommended_values": [
             "SID",
             "SERVICE_NAME"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5
-          }
+          ]
         },
         {
           "name": "db.name",
@@ -141,23 +71,13 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 6,
           "display_name": "Database name",
           "documentation": "JDBC database name.",
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "validators": [
-            {
-              "name": "jdbc.connection.database"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6
-          }
+          ]
         },
         {
           "name": "ssl.mode",
@@ -166,18 +86,13 @@
           "default_value": "disabled",
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 7,
           "display_name": "SSL mode",
           "documentation": "What SSL mode should we use to connect to your database. `disabled` disables SSL entirely. `verify-ca` uses SSL for encryption and performs authentication of the server CA. `verify-ca` option requires a Java truststore containing the server CA and the truststore password to be provided.",
           "recommended_values": [
             "disabled",
             "verify-ca",
             "verify-full"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7
-          }
+          ]
         },
         {
           "name": "ssl.server.cert.dn",
@@ -185,19 +100,13 @@
           "required": false,
           "importance": "LOW",
           "group": "How should we connect to your database?",
-          "order_in_group": 8,
           "display_name": "Distinguished name (DN) of the database server",
           "documentation": "Use this paramter to specify the distinguished name (DN) of the database server. Only required if using `verify-full` ssl mode.",
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "table.whitelist",
@@ -205,24 +114,13 @@
           "required": true,
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 2,
           "display_name": "Table names",
           "documentation": "List of tables to include in copying. Use a comma-separated list to specify multiple tables (for example: \"User, Address, Email\").",
-          "validators": [
-            {
-              "name": "jdbc.tables",
-              "arguments": {}
-            }
-          ],
           "sanitizers": [
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "incrementing.column.name",
@@ -231,22 +129,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 4,
           "display_name": "Incrementing column name",
-          "documentation": "The name of the strictly incrementing column to use to detect new rows. Any empty value indicates the column should be autodetected by looking for an auto-incrementing column. This column may not be nullable.",
-          "validators": [
-            {
-              "name": "jdbc.incrementing.column"
-            },
-            {
-              "name": "jdbc.nullable.column"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true
-          }
+          "documentation": "The name of the strictly incrementing column to use to detect new rows. Any empty value indicates the column should be autodetected by looking for an auto-incrementing column. This column may not be nullable."
         },
         {
           "name": "table.types",
@@ -255,7 +139,6 @@
           "default_value": "TABLE",
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 5,
           "display_name": "Table types",
           "documentation": "By default, the JDBC connector will only detect tables with type TABLE from the source Database. This config allows a command separated list of table types to extract.",
           "sanitizers": [
@@ -268,11 +151,7 @@
             "VIEW",
             "ALIAS",
             "SYNONYM"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3
-          }
+          ]
         },
         {
           "name": "schema.pattern",
@@ -281,14 +160,8 @@
           "default_value": null,
           "importance": "HIGH",
           "group": "Database details",
-          "order_in_group": 6,
           "display_name": "Schema pattern",
-          "documentation": "Schema pattern to fetch table metadata from the database.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true
-          }
+          "documentation": "Schema pattern to fetch table metadata from the database."
         },
         {
           "name": "db.timezone",
@@ -297,15 +170,10 @@
           "default_value": "UTC",
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 7,
           "display_name": "Database timezone",
           "documentation": "Name of the JDBC timezone used in the connector when querying with time-based criteria. Defaults to UTC.",
           "recommender": {
             "name": "timezone"
-          },
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5
           }
         },
         {
@@ -314,7 +182,6 @@
           "required": false,
           "importance": "LOW",
           "group": "Database details",
-          "order_in_group": 8,
           "display_name": "Timestamp granularity for timestamp columns",
           "default_value": "CONNECT_LOGICAL",
           "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL` (default): represents timestamp values using Kafka Connect built-in representations. `MICROS_LONG`: represents timestamp values as micros since epoch. `MICROS_STRING`: represents timestamp values as micros since epoch in string. `MICROS_ISO_DATETIME_STRING`: uses iso format for timestamps in micros. `NANOS_LONG`: represents timestamp values as nanos since epoch. `NANOS_STRING`: represents timestamp values as nanos since epoch in string. `NANOS_ISO_DATETIME_STRING`: uses iso format",
@@ -326,12 +193,7 @@
             "NANOS_LONG",
             "NANOS_STRING",
             "NANOS_ISO_DATETIME_STRING"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "poll.interval.ms",
@@ -339,22 +201,8 @@
           "default_value": "5000",
           "importance": "HIGH",
           "group": "Connection details",
-          "order_in_group": 1,
           "display_name": "Poll interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          "documentation": "Frequency in ms to poll for new data in each table."
         },
         {
           "name": "batch.max.rows",
@@ -362,23 +210,8 @@
           "default_value": "100",
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 2,
           "display_name": "Max rows per batch",
-          "documentation": "Maximum number of rows to include in a single batch when polling for new data. This setting can be used to limit the amount of data buffered internally in the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 5000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true
-          }
+          "documentation": "Maximum number of rows to include in a single batch when polling for new data. This setting can be used to limit the amount of data buffered internally in the connector."
         },
         {
           "name": "timestamp.delay.interval.ms",
@@ -386,31 +219,11 @@
           "default_value": "0",
           "importance": "HIGH",
           "group": "Connection details",
-          "order_in_group": 3,
           "display_name": "Delay interval (ms)",
-          "documentation": "How long to wait after a row with a certain timestamp appears before we include it in the result. You may choose to add some delay to allow transactions with an earlier timestamp to complete. The first execution will fetch all available records (starting at timestamp 0) until current time minus the delay. Every following execution will get data from the last time we fetched until current time minus the delay.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 0
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true
-          }
+          "documentation": "How long to wait after a row with a certain timestamp appears before we include it in the result. You may choose to add some delay to allow transactions with an earlier timestamp to complete. The first execution will fetch all available records (starting at timestamp 0) until current time minus the delay. Every following execution will get data from the last time we fetched until current time minus the delay."
         },
         {
-          "name": "topic.prefix",
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1,
-            "advanced": true,
-            "documentation": "Your connector will publish to kafka topics using the prefix provided. The connector automatically creates Kafka topics using the naming convention: <topic.prefix><tableName>."
-          }
+          "name": "topic.prefix"
         }
       ],
       "connector_configs": [
@@ -597,13 +410,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -611,22 +418,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -634,21 +427,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -657,22 +437,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -680,26 +450,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -724,15 +476,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1176,7 +920,6 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 1,
           "display_name": "Mode",
           "documentation": "The mode for updating a table each time it is polled. BULK: perform a bulk load of the entire table each time it is polled. TIMESTAMP: use a timestamp (or timestamp-like) column to detect new and modified rows. This assumes the column is updated with each write, and that values are monotonically incrementing, but not necessarily unique. INCREMENTING: use a strictly incrementing column on each table to detect only new rows. Note that this will not detect modifications or deletions of existing rows. TIMESTAMP AND INCREMENTING: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset.",
           "recommended_values": [
@@ -1184,17 +927,7 @@
             "incrementing",
             "timestamp+incrementing",
             "bulk"
-          ],
-          "validators": [
-            {
-              "name": "jdbc.mode"
-            }
-          ],
-          "metadata": {
-            "advanced": true,
-            "page": "CONFIGURATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "quote.sql.identifiers",
@@ -1202,24 +935,13 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 2,
           "display_name": "Quote SQL Identifiers",
           "default_value": "ALWAYS",
           "documentation": "When to quote table names, column names, and other identifiers in SQL statements. For backward compatibility, the default value is ALWAYS.",
           "recommended_values": [
             "ALWAYS",
             "NEVER"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "advanced": true,
-            "page": "CONFIGURATION",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "transaction.isolation.mode",
@@ -1227,7 +949,6 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 3,
           "display_name": "Transaction Isolation Level",
           "default_value": "DEFAULT",
           "documentation": "Isolation level determines how transaction integrity is visible to other users and systems. `DEFAULT`: This is the default isolation level configured at the Database Server. `READ_UNCOMMITTED`: This is the lowest isolation level. At this level, one transaction may see dirty reads (that is, not-yet-committed changes made by other transactions). `READ_COMMITTED`: This level guarantees that any data read is already committed at the moment it is read. `REPEATABLE_READ`: In addition to the guarantees of the `READ_COMMITTED` level, this option also guarantees that any data read cannot change, if the transaction reads the same data again. However, phantom reads are possible. `SERIALIZABLE`: This is the highest isolation level. In addition to everything `REPEATABLE_READ` guarantees, it also eliminates phantom reads.",
@@ -1237,17 +958,7 @@
             "READ_COMMITTED",
             "REPEATABLE_READ",
             "SERIALIZABLE"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "advanced": true,
-            "page": "CONFIGURATION",
-            "order_in_page": 3
-          }
+          ]
         },
         {
           "name": "timestamp.initial",
@@ -1255,22 +966,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 4,
           "display_name": "Initial timestamp",
-          "documentation": "The epoch timestamp used for initial queries that use timestamp criteria. The value -1 sets the initial timestamp to the current time. If not specified, the connector retrieves all data. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": "-1"
-              }
-            }
-          ],
-          "metadata": {
-            "advanced": true,
-            "page": "CONFIGURATION",
-            "order_in_page": 4
-          }
+          "documentation": "The epoch timestamp used for initial queries that use timestamp criteria. The value -1 sets the initial timestamp to the current time. If not specified, the connector retrieves all data. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
         }
       ],
       "connector_configs": [
@@ -1301,22 +998,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 3,
           "display_name": "Timestamp column name",
-          "documentation": "Comma separated list of one or more timestamp columns to detect new or modified rows using the COALESCE SQL function. Rows whose first non-null timestamp value is greater than the largest previous timestamp value seen will be discovered with each poll. At least one column should not be nullable.",
-          "validators": [
-            {
-              "name": "jdbc.timestamp.column"
-            },
-            {
-              "name": "jdbc.nullable.columns"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true
-          }
+          "documentation": "Comma separated list of one or more timestamp columns to detect new or modified rows using the COALESCE SQL function. Rows whose first non-null timestamp value is greater than the largest previous timestamp value seen will be discovered with each poll. At least one column should not be nullable."
         }
       ],
       "connector_configs": [
@@ -1328,13 +1011,6 @@
     {
       "template_id": "topic-prefix-source",
       "abstract": true,
-      "imports": [
-        "common-source"
-      ],
-      "group_order": [
-        "Kafka Cluster credentials",
-        "How do you want to prefix table names?"
-      ],
       "config_defs": [
         {
           "name": "topic.prefix",
@@ -1342,13 +1018,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How do you want to prefix table names?",
-          "order_in_group": 1,
           "display_name": "Topic prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Apache Kafka\u00ae topic to publish data to.",
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          "documentation": "Prefix to prepend to table names to generate the name of the Apache Kafka® topic to publish data to."
         }
       ],
       "connector_configs": []
@@ -1363,33 +1034,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1397,39 +1043,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "datapreview.schemas.enable",
@@ -1439,13 +1057,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
-          }
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
           "name": "errors.tolerance",
@@ -1459,13 +1071,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         },
         {
           "name": "producer.override.linger.ms",
@@ -1474,21 +1080,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
       "connector_configs": [
@@ -1564,7 +1156,6 @@
           "default_value": "none",
           "importance": "LOW",
           "group": "Database details",
-          "order_in_group": 8,
           "display_name": "Numeric Mapping",
           "documentation": "Map NUMERIC values by precision and optionally scale to integral or decimal types. Use ``none`` if all NUMERIC columns are to be represented by Connect's DECIMAL logical type. Use ``best_fit`` if NUMERIC columns should be cast to Connect's INT8, INT16, INT32, INT64, or FLOAT64 based upon the column's precision and scale. Use ``best_fit_eager_double`` if, in addition to the properties of best_fit described above, it is desirable to always cast NUMERIC columns with scale to Connect FLOAT64 type, despite potential of loss in accuracy. Use ``precision_only`` to map NUMERIC columns based only on the column's precision assuming that column's scale is 0. The ``none`` option is the default, but may lead to serialization issues with Avro since Connect's DECIMAL type is mapped to its binary representation, and ``best_fit`` will often be preferred since it maps to the most appropriate primitive type.",
           "recommended_values": [
@@ -1572,13 +1163,7 @@
             "best_fit",
             "best_fit_eager_double",
             "precision_only"
-          ],
-          "metadata": {
-            "advanced": true,
-            "page": "CONFIGURATION",
-            "group": "Database details",
-            "order_in_page": 3
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1601,25 +1186,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1635,7 +1208,6 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
-          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1645,20 +1217,9 @@
             "PROTOBUF",
             "JSON"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 2,
-            "group_name": "Output messages"
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -1669,13 +1230,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -1686,13 +1241,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1703,13 +1252,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1718,12 +1261,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -1796,7 +1334,6 @@
           "default_value": "prefer",
           "importance": "HIGH",
           "group": "How should we connect to your database?",
-          "order_in_group": 6,
           "display_name": "SSL mode",
           "documentation": "What SSL mode should we use to connect to your database. `prefer` and `require` allows for the connection to be encrypted but does not do certificate validation on the server. `verify-ca` and `verify-full` require a file containing SSL CA certificate to be provided. The server's certificate will be verified to be signed by one of these authorities.`verify-ca` will verify that the server certificate is issued by a trusted CA. `verify-full` will verify that the server certificate is issued by a trusted CA and that the server hostname matches that in the certificate. Client authentication is not performed.",
           "recommended_values": [
@@ -1804,11 +1341,7 @@
             "require",
             "verify-ca",
             "verify-full"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1824,20 +1357,8 @@
           "default_value": "",
           "importance": "LOW",
           "group": "How should we connect to your database?",
-          "order_in_group": 7,
           "display_name": "Trust store",
-          "documentation": "The trust store containing server CA certificate. Only required if using `verify-ca` or `verify-full` ssl mode.",
-          "validators": [
-            {
-              "name": "jdbc.connection"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY"
-          }
+          "documentation": "The trust store containing server CA certificate. Only required if using `verify-ca` or `verify-full` ssl mode."
         },
         {
           "name": "ssl.truststorepassword",
@@ -1846,13 +1367,8 @@
           "default_value": "",
           "importance": "LOW",
           "group": "How should we connect to your database?",
-          "order_in_group": 8,
           "display_name": "Trust store password",
-          "documentation": "The trust store password containing server CA certificate. Only required if using `verify-ca` or `verify-full` ssl mode.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8
-          }
+          "documentation": "The trust store password containing server CA certificate. Only required if using `verify-ca` or `verify-full` ssl mode."
         }
       ],
       "connector_configs": []
@@ -1868,14 +1384,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -1884,12 +1394,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1898,13 +1403,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1913,12 +1412,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1927,12 +1421,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1941,12 +1430,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1955,12 +1439,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1969,12 +1448,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1983,12 +1457,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1997,12 +1466,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2011,12 +1475,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2025,12 +1484,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2045,13 +1499,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2060,12 +1508,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2074,12 +1517,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2088,12 +1526,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2109,13 +1542,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2131,13 +1558,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2151,13 +1572,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2166,12 +1581,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2181,12 +1591,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2195,12 +1600,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2209,12 +1609,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2234,12 +1629,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2507,23 +1897,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connection.host",
-    "connection.port",
-    "connector.class",
-    "db.connection.type",
-    "db.name",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "name",
-    "output.data.format",
-    "schema.context.name",
-    "ssl.mode",
-    "ssl.server.cert.dn",
-    "ssl.truststorefile",
-    "ssl.truststorepassword"
   ]
 }

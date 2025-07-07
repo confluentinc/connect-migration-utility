@@ -4,37 +4,9 @@
       "template_id": "BigQueryStorageSink",
       "connector_type": "SINK",
       "connector.class": "io.confluent.connect.bigquerystorage.BigQueryStorageSinkConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-sink",
-        "schema-registry",
-        "input-data-format",
-        "input-key-format"
-      ],
-      "group_order": [
-        "Which topics do you want to get data from?",
-        "Schema Config",
-        "Input messages",
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "GCP credentials",
-        "BigQuery details",
-        "Ingestion Mode details",
-        "Insertion and DDL support",
-        "Consumer configuration",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
-          "name": "topics",
-          "validators": [
-            {
-              "name": "bigquery.tables"
-            }
-          ]
+          "name": "topics"
         },
         {
           "name": "authentication.method",
@@ -43,20 +15,13 @@
           "default_value": "Google cloud service account",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 1,
           "display_name": "Authentication method",
           "documentation": "Select how you want to authenticate with BigQuery.",
           "recommended_values": [
             "Google cloud service account",
             "OAuth 2.0 (Shared app)",
             "OAuth 2.0 (Bring your own app)"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1,
-            "advanced": false,
-            "ui_default_value": "OAuth 2.0 (Shared app)"
-          }
+          ]
         },
         {
           "name": "keyfile",
@@ -64,36 +29,13 @@
           "required": false,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 2,
           "display_name": "GCP credentials file",
           "documentation": "GCP service account JSON file with write permissions for BigQuery.",
           "sanitizers": [
             {
               "name": "gcp.credentials.sanitize"
             }
-          ],
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==Google cloud service account"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "gcp.credentials.type"
-            },
-            {
-              "name": "bigquery.keyfile"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "inputType": "CREDENTIALS_FILE",
-            "credentialsProvider": "GCP",
-            "visibility": "authentication.method==Google cloud service account"
-          }
+          ]
         },
         {
           "name": "oauth.client.id",
@@ -101,25 +43,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 3,
           "display_name": "Client ID",
-          "documentation": "Client ID of your Google OAuth application.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==OAuth 2.0 (Bring your own app)"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "group_description": "For more information about client credentials and the consent screen, <a href=\"https://docs.confluent.io/cloud/current/connectors/cc-gcp-bigquery-storage-sink.html#set-up-google-oauth\">see the documentation</a>.",
-            "page": "AUTHENTICATION",
-            "order_in_page": 3,
-            "group_name": "Setting up client credentials",
-            "visibility": "authentication.method==OAuth 2.0 (Bring your own app)"
-          }
+          "documentation": "Client ID of your Google OAuth application."
         },
         {
           "name": "oauth.client.secret",
@@ -127,24 +52,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 4,
           "display_name": "Client secret",
-          "documentation": "Client secret of your Google OAuth application.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==OAuth 2.0 (Bring your own app)"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4,
-            "group_name": "Setting up client credentials",
-            "visibility": "authentication.method==OAuth 2.0 (Bring your own app)"
-          }
+          "documentation": "Client secret of your Google OAuth application."
         },
         {
           "name": "oauth.auth.button",
@@ -153,15 +62,8 @@
           "queryable_internal": true,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 5,
           "display_name": "Connect with Google Cloud",
-          "documentation": "Initiates the OAuth authentication flow.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "group_name": "Setting up client credentials",
-            "visibility": "authentication.method==OAuth 2.0 (Bring your own app),OAuth 2.0 (Shared app)"
-          }
+          "documentation": "Initiates the OAuth authentication flow."
         },
         {
           "name": "oauth.refresh.token",
@@ -169,14 +71,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 6,
           "display_name": "Refresh Token",
-          "documentation": "OAuth 2.0 refresh token for BigQuery.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6,
-            "visibility": "false"
-          }
+          "documentation": "OAuth 2.0 refresh token for BigQuery."
         },
         {
           "name": "oauth.auth.endpoint",
@@ -186,14 +82,8 @@
           "default_value": "https://accounts.google.com/o/oauth2/v2/auth",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 7,
           "display_name": "Auth Endpoint",
-          "documentation": "GCP OAuth 2.0 Auth Endpoint.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7,
-            "visibility": "false"
-          }
+          "documentation": "GCP OAuth 2.0 Auth Endpoint."
         },
         {
           "name": "oauth.token.endpoint",
@@ -203,14 +93,8 @@
           "default_value": "https://www.googleapis.com/oauth2/v4/token",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 8,
           "display_name": "Token Endpoint",
-          "documentation": "GCP OAuth 2.0 Token Endpoint.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8,
-            "visibility": "false"
-          }
+          "documentation": "GCP OAuth 2.0 Token Endpoint."
         },
         {
           "name": "oauth.client.auth.mode",
@@ -220,14 +104,8 @@
           "default_value": "REQUEST_BODY",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 9,
           "display_name": "Client authorization mode",
-          "documentation": "Client authorization mode i.e. via RequestBody or Basic Auth Header.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 9,
-            "visibility": "false"
-          }
+          "documentation": "Client authorization mode i.e. via RequestBody or Basic Auth Header."
         },
         {
           "name": "oauth.scopes",
@@ -237,14 +115,8 @@
           "default_value": "https://www.googleapis.com/auth/bigquery",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 10,
           "display_name": "BigQuery OAuth 2.0 Scopes",
-          "documentation": "BigQuery Storage Write API OAuth 2.0 Scopes.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 10,
-            "visibility": "false"
-          }
+          "documentation": "BigQuery Storage Write API OAuth 2.0 Scopes."
         },
         {
           "name": "oauth.query.params",
@@ -254,14 +126,8 @@
           "default_value": "access_type:offline,prompt:consent",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 11,
           "display_name": "BigQuery OAuth query parameters",
-          "documentation": "BigQuery OAuth query parameters.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 11,
-            "visibility": "false"
-          }
+          "documentation": "BigQuery OAuth query parameters."
         },
         {
           "name": "oauth.session.id",
@@ -270,14 +136,8 @@
           "queryable_internal": true,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 12,
           "display_name": "Connect OAuth Session ID",
-          "documentation": "Connect OAuth Session ID.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 12,
-            "visibility": "false"
-          }
+          "documentation": "Connect OAuth Session ID."
         },
         {
           "name": "oauth.use.shared.app",
@@ -287,14 +147,8 @@
           "default_value": false,
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 13,
           "display_name": "User shared app",
-          "documentation": "Whether to use shared app.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 13,
-            "visibility": "false"
-          }
+          "documentation": "Whether to use shared app."
         },
         {
           "name": "oauth.config.map",
@@ -304,14 +158,8 @@
           "default_value": "auth_endpoint:oauth.auth.endpoint,token_endpoint:oauth.token.endpoint,client_id:oauth.client.id,client_secret:oauth.client.secret,client_auth_mode:oauth.client.auth.mode,scopes:oauth.scopes,query_params:oauth.query.params,oauth_session_id:oauth.session.id,refresh_token:oauth.refresh.token,connector_class:connector.class,auth_button:oauth.auth.button,use_shared_app:oauth.use.shared.app",
           "importance": "HIGH",
           "group": "GCP credentials",
-          "order_in_group": 14,
           "display_name": "Connect OAuth Config Map",
-          "documentation": "Connect OAuth Config Map to map OAuth API parameters to ConfigDefs.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 14,
-            "visibility": "false"
-          }
+          "documentation": "Connect OAuth Config Map to map OAuth API parameters to ConfigDefs."
         },
         {
           "name": "project",
@@ -319,20 +167,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "BigQuery details",
-          "order_in_group": 1,
           "display_name": "Project ID",
-          "documentation": "ID for the GCP project where BigQuery is located.",
-          "validators": [
-            {
-              "name": "bigquery.project"
-            }
-          ],
-          "metadata": {
-            "group_description": "Enter details of the project and dataset within the project where you send the data.",
-            "page": "AUTHENTICATION",
-            "order_in_page": 15,
-            "group_name": "Add project details"
-          }
+          "documentation": "ID for the GCP project where BigQuery is located."
         },
         {
           "name": "datasets",
@@ -340,22 +176,11 @@
           "required": true,
           "importance": "HIGH",
           "group": "BigQuery details",
-          "order_in_group": 2,
           "display_name": "Dataset",
           "documentation": "Name of the BigQuery dataset where table(s) is located.",
-          "validators": [
-            {
-              "name": "bigquery.datasets"
-            }
-          ],
           "dependents": [
             "project"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 16,
-            "group_name": "Add project details"
-          }
+          ]
         },
         {
           "name": "ingestion.mode",
@@ -364,7 +189,6 @@
           "default_value": "STREAMING",
           "importance": "HIGH",
           "group": "Ingestion Mode details",
-          "order_in_group": 1,
           "display_name": "Ingestion Mode",
           "documentation": "Select a mode to ingest data into the table. Select STREAMING for reduced latency. Select BATCH LOADING for cost savings. Select UPSERT for upserting records. Select UPSERT_DELETE for upserting and deleting records.",
           "recommended_values": [
@@ -372,17 +196,11 @@
             "BATCH LOADING",
             "UPSERT",
             "UPSERT_DELETE"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": false
-          }
+          ]
         },
         {
           "name": "input.data.format",
           "required": true,
-          "order_in_group": 2,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, and JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, or PROTOBUF.",
           "recommended_values": [
@@ -390,15 +208,10 @@
             "JSON_SR",
             "PROTOBUF",
             "JSON"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "input.key.format",
-          "order_in_group": 1,
           "display_name": "Input Kafka record key format",
           "default_value": "BYTES",
           "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -409,12 +222,7 @@
             "JSON_SR",
             "PROTOBUF",
             "STRING"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 3
-          }
+          ]
         },
         {
           "name": "commit.interval",
@@ -423,24 +231,8 @@
           "default_value": "60",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 1,
           "display_name": "Commit Interval",
-          "documentation": "The interval, in seconds, the connector attempts to commit streamed records. Set the interval between 60 seconds (1 minute) and 14,400 seconds (4 hours). Be careful when setting the commit interval as on every commit interval, a task calls the ``CreateWriteStream`` API which is subject to a `quota <https://cloud.google.com/bigquery/quotas#write-api-limits:~:text=handle%20unexpected%20demand.-,CreateWriteStream,-requests>`. For example, if you have five tasks (may belong to different connectors also) set to commit every 60 seconds to a project, there will be five calls to ``CreateWriteStream`` API on that project every minute. If the count exceeds the allowed quota, some tasks may fail.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 60,
-                "max": 14400
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true,
-            "visibility": "ingestion.mode==BATCH LOADING"
-          }
+          "documentation": "The interval, in seconds, the connector attempts to commit streamed records. Set the interval between 60 seconds (1 minute) and 14,400 seconds (4 hours). Be careful when setting the commit interval as on every commit interval, a task calls the ``CreateWriteStream`` API which is subject to a `quota <https://cloud.google.com/bigquery/quotas#write-api-limits:~:text=handle%20unexpected%20demand.-,CreateWriteStream,-requests>`. For example, if you have five tasks (may belong to different connectors also) set to commit every 60 seconds to a project, there will be five calls to ``CreateWriteStream`` API on that project every minute. If the count exceeds the allowed quota, some tasks may fail."
         },
         {
           "name": "topic2table.map",
@@ -449,19 +241,8 @@
           "importance": "MEDIUM",
           "default_value": "",
           "group": "Insertion and DDL support",
-          "order_in_group": 2,
           "display_name": "Kafka Topic to BigQuery Table Map",
-          "documentation": "Map of topics to tables (optional). The required format is comma-separated tuples. For example, <topic-1>:<table-1>,<topic-2>:<table-2>,... Note that a topic name must not be modified using a regex SMT while using this option. Note that if this property is used, ``sanitize.topics`` is ignored. Also, if the topic-to-table map doesn\u2019t contain the topic for a record, the connector creates a table with the same name as the topic name.",
-          "validators": [
-            {
-              "name": "bigquery.topic2table.map"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true
-          }
+          "documentation": "Map of topics to tables (optional). The required format is comma-separated tuples. For example, <topic-1>:<table-1>,<topic-2>:<table-2>,... Note that a topic name must not be modified using a regex SMT while using this option. Note that if this property is used, ``sanitize.topics`` is ignored. Also, if the topic-to-table map doesn’t contain the topic for a record, the connector creates a table with the same name as the topic name."
         },
         {
           "name": "sanitize.topics",
@@ -470,18 +251,12 @@
           "default_value": "true",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 3,
           "display_name": "Sanitize topics",
           "documentation": "Designates whether to automatically sanitize topic names before using them as table names in BigQuery. If not enabled, topic names are used as table names.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "sanitize.field.names",
@@ -490,18 +265,12 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 4,
           "display_name": "Sanitize field names",
           "documentation": "Whether to automatically sanitize field names before using them as field names in BigQuery. BigQuery specifies that field names can only contain letters, numbers, and underscores. The sanitizer replaces invalid symbols with underscores. If the field name starts with a digit, the sanitizer adds an underscore in front of field name. Caution: Key duplication errors can occur if different fields are named a.b and a_b, for instance. After being sanitized, field names a.b and a_b will have same value.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "auto.update.schemas",
@@ -510,26 +279,15 @@
           "default_value": "DISABLED",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 5,
           "display_name": "Auto update schemas",
           "documentation": "Designates whether or not to automatically update BigQuery schemas. New fields in record schemas must be nullable. Note: Supports AVRO, JSON_SR, and PROTOBUF message format only.",
-          "validators": [
-            {
-              "name": "bigquery.storage.data.format"
-            }
-          ],
           "dependents": [
             "input.data.format"
           ],
           "recommended_values": [
             "DISABLED",
             "ADD NEW FIELDS"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "auto.create.tables",
@@ -538,17 +296,8 @@
           "default_value": "DISABLED",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 5,
           "display_name": "Auto create tables",
           "documentation": "Designates whether or not to automatically create BigQuery tables. Note: Supports AVRO, JSON_SR, and PROTOBUF message format only.",
-          "validators": [
-            {
-              "name": "bigquery.storage.data.format"
-            },
-            {
-              "name": "bigquery.storage.timestamp.column.partitioning"
-            }
-          ],
           "dependents": [
             "input.data.format"
           ],
@@ -557,12 +306,7 @@
             "NON-PARTITIONED",
             "PARTITION by INGESTION TIME",
             "PARTITION by FIELD"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "partitioning.type",
@@ -571,7 +315,6 @@
           "default_value": "DAY",
           "importance": "LOW",
           "group": "Insertion and DDL support",
-          "order_in_group": 6,
           "display_name": "Partitioning type",
           "documentation": "The time partitioning type to use when creating new partitioned tables. Existing tables will not be altered to use this partitioning type.",
           "recommended_values": [
@@ -579,13 +322,7 @@
             "DAY",
             "MONTH",
             "YEAR"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "advanced": true,
-            "visibility": "auto.create.tables==PARTITION by INGESTION TIME,PARTITION by FIELD"
-          }
+          ]
         },
         {
           "name": "timestamp.partition.field.name",
@@ -593,15 +330,8 @@
           "required": false,
           "importance": "LOW",
           "group": "Insertion and DDL support",
-          "order_in_group": 7,
           "display_name": "Timestamp partition field name",
-          "documentation": "The name of the field in the value that contains the timestamp to partition by in BigQuery. This also enables timestamp partitioning for each table.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "advanced": true,
-            "visibility": "auto.create.tables==PARTITION by FIELD"
-          }
+          "documentation": "The name of the field in the value that contains the timestamp to partition by in BigQuery. This also enables timestamp partitioning for each table."
         },
         {
           "name": "use.date.time.formatter",
@@ -610,18 +340,12 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "Insertion and DDL support",
-          "order_in_group": 8,
           "display_name": "Use Date Time Formatter",
           "documentation": "Specify whether to use a ``DateTimeFormatter`` to support a wide range of epochs. Setting this true will use ``DateTimeFormatter`` over default ``SimpleDateFormat``. The output might vary for same input between the two formatters.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 11,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "topic2clustering.fields.map",
@@ -630,20 +354,8 @@
           "importance": "LOW",
           "default_value": "",
           "group": "Insertion and DDL support",
-          "order_in_group": 9,
           "display_name": "Kafka Topic to Clustering Fields Map",
-          "documentation": "Maps topics to their corresponding table clustering fields (optional). Format: comma-separated tuples, e.g., topic1:[col1|col2], topic2:[col1|col2|..], ... Specifies the fields used to cluster data in BigQuery. The order of the fields determines the clustering precedence.",
-          "validators": [
-            {
-              "name": "bigquery.topic2clustering.fields.map"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 12,
-            "advanced": true,
-            "visibility": "auto.create.tables==PARTITION by INGESTION TIME,PARTITION by FIELD,NON-PARTITIONED"
-          }
+          "documentation": "Maps topics to their corresponding table clustering fields (optional). Format: comma-separated tuples, e.g., topic1:[col1|col2], topic2:[col1|col2|..], ... Specifies the fields used to cluster data in BigQuery. The order of the fields determines the clustering precedence."
         },
         {
           "name": "use.integer.for.int8.int16",
@@ -652,18 +364,12 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Insertion and DDL support",
-          "order_in_group": 10,
           "display_name": "Use INTEGER for INT8 and INT16",
           "documentation": "Determines how the connector stores INT8 (BYTE) and INT16 (SHORT) data types in BigQuery during auto table creation and schema update. When set to ``false``(default), these values are stored as FLOAT. When set to ``true``, INT8 (BYTE) and INT16 (SHORT) values are stored as INTEGER.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 13,
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -883,13 +589,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -897,22 +597,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -920,21 +606,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -943,22 +616,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -966,26 +629,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -1010,15 +655,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1461,36 +1098,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1498,36 +1107,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "topics",
@@ -1535,22 +1119,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
-          "order_in_group": 1,
           "display_name": "Topic names",
           "documentation": "Identifies the topic name or a comma-separated list of topic names.",
-          "validators": [
-            {
-              "name": "kafka.topics",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.secret"
           ],
@@ -1558,11 +1128,7 @@
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "max.poll.interval.ms",
@@ -1570,26 +1136,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 1,
           "display_name": "Max poll interval(ms)",
           "default_value": "300000",
-          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 60000,
-                "max": 1800000,
-                "dedicatedMin": 60000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
         },
         {
           "name": "max.poll.records",
@@ -1597,26 +1146,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 2,
           "display_name": "Max poll records",
           "default_value": "500",
-          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 1,
-                "max": 500,
-                "dedicatedMin": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -1630,13 +1162,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1718,25 +1244,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1753,7 +1267,6 @@
           "importance": "HIGH",
           "alias": "data.format",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -1763,19 +1276,9 @@
             "JSON",
             "BYTES"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -1786,13 +1289,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -1803,13 +1300,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1820,13 +1311,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1835,12 +1320,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -1914,7 +1394,6 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Input messages",
-          "order_in_group": 2,
           "display_name": "Input Kafka record key format",
           "alias": "key.format",
           "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, BYTES, JSON, JSON_SR, PROTOBUF, or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -1926,22 +1405,9 @@
             "PROTOBUF",
             "STRING"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            },
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "key.converter.schemas.enable",
@@ -1951,12 +1417,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "key.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter."
         },
         {
           "name": "key.converter.replace.null.with.default",
@@ -1966,12 +1427,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "key.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter."
         }
       ],
       "connector_configs": [
@@ -2037,14 +1493,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -2053,12 +1503,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -2067,13 +1512,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -2082,12 +1521,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -2096,12 +1530,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -2110,12 +1539,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2124,12 +1548,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2138,12 +1557,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2152,12 +1566,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2166,12 +1575,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2180,12 +1584,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2194,12 +1593,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2214,13 +1608,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2229,12 +1617,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2243,12 +1626,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2257,12 +1635,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2278,13 +1651,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2300,13 +1667,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2320,13 +1681,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2335,12 +1690,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2350,12 +1700,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2364,12 +1709,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2378,12 +1718,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2403,12 +1738,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2727,38 +2057,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "auto.create.tables",
-    "auto.update.schemas",
-    "commit.interval",
-    "connector.class",
-    "datasets",
-    "ingestion.mode",
-    "input.data.format",
-    "input.key.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "max.poll.interval.ms",
-    "max.poll.records",
-    "name",
-    "oauth.auth.button",
-    "oauth.auth.endpoint",
-    "oauth.client.auth.mode",
-    "oauth.config.map",
-    "oauth.query.params",
-    "oauth.scopes",
-    "oauth.session.id",
-    "oauth.token.endpoint",
-    "oauth.use.shared.app",
-    "partitioning.type",
-    "sanitize.field.names",
-    "sanitize.topics",
-    "schema.context.name",
-    "timestamp.partition.field.name",
-    "topic2clustering.fields.map",
-    "topic2table.map"
   ]
 }

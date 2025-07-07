@@ -4,32 +4,6 @@
       "template_id": "MongoDbAtlasSource",
       "connector_type": "SOURCE",
       "connector.class": "com.mongodb.kafka.connect.MongoSourceConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "topic-prefix-source",
-        "schema-registry",
-        "common-mongodb",
-        "source-connector-output-data-format",
-        "output-key-format"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "Schema Config",
-        "How do you want to name your topic(s)?",
-        "How should we connect to your MongoDB Atlas database?",
-        "Database details",
-        "Connection details",
-        "Producer configuration",
-        "Output messages",
-        "Error handling",
-        "Server API",
-        "Partition",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "output.data.format",
@@ -38,7 +12,6 @@
           "importance": "HIGH",
           "default_value": "STRING",
           "group": "Output messages",
-          "order_in_group": 1,
           "display_name": "Output Kafka record value format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON, STRING or BSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
           "recommended_values": [
@@ -49,19 +22,9 @@
             "STRING",
             "BSON"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "publish.full.document.only",
@@ -70,18 +33,12 @@
           "importance": "HIGH",
           "default_value": "false",
           "group": "Output messages",
-          "order_in_group": 2,
           "display_name": "Publish full document only",
           "documentation": "Only publish the changed document instead of the full change stream document. Sets the change.stream.full.document=updateLookup automatically so updated documents will be included.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "publish.full.document.only.tombstone.on.delete",
@@ -90,18 +47,12 @@
           "importance": "HIGH",
           "default_value": "false",
           "group": "Output messages",
-          "order_in_group": 3,
           "display_name": "Publish tombstone events on documents deletion",
           "documentation": "Return the tombstone events when documents are deleted. Tombstone events contain the keys of deleted documents with null values. This setting applies only when publish.full.document.only is true",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 3
-          }
+          ]
         },
         {
           "name": "change.stream.full.document",
@@ -110,7 +61,6 @@
           "importance": "HIGH",
           "default_value": "default",
           "group": "Output messages",
-          "order_in_group": 4,
           "display_name": "Change stream full document",
           "documentation": "Determines what to return for update operations when using a Change Stream. When set to 'updateLookup' setting returns the differences between the original document and updated document as well as a copy of the entire updated document at a point in time after the update. The 'whenAvailable' setting returns the updated document, if available. The 'required' setting returns the updated document and raises an error if it is not available.",
           "recommended_values": [
@@ -118,12 +68,7 @@
             "updateLookup",
             "whenAvailable",
             "required"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 4
-          }
+          ]
         },
         {
           "name": "change.stream.full.document.before.change",
@@ -132,19 +77,13 @@
           "importance": "HIGH",
           "default_value": "default",
           "group": "Output messages",
-          "order_in_group": 5,
           "display_name": "Change stream full document before change",
           "documentation": "Configures the document pre-image your change stream returns on update operations. When set to 'whenAvailable' setting returns the document pre-image if it's available, before it was replaced, updated, or deleted. When set to 'required' setting returns the document pre-image and raises an error if it is not available.",
           "recommended_values": [
             "default",
             "whenAvailable",
             "required"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 5
-          }
+          ]
         },
         {
           "name": "output.json.format",
@@ -153,19 +92,13 @@
           "importance": "HIGH",
           "default_value": "DefaultJson",
           "group": "Output messages",
-          "order_in_group": 6,
           "display_name": "Output json formatter",
           "documentation": "The output format of json strings can be configured to be either: DefaultJson: The legacy strict json formatter. ExtendedJson: The fully type safe extended json formatter. SimplifiedJson: Simplified Json, with ObjectId, Decimals, Dates and Binary values represented as strings. Users can provide their own implementation of the com.mongodb.kafka.connect.source.json.formatter.",
           "recommended_values": [
             "DefaultJson",
             "ExtendedJson",
             "SimplifiedJson"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 6
-          }
+          ]
         },
         {
           "name": "topic.separator",
@@ -174,14 +107,8 @@
           "importance": "LOW",
           "default_value": ".",
           "group": "Output messages",
-          "order_in_group": 7,
           "display_name": "Topic separator",
-          "documentation": "Separator to use when joining prefix, database, collection, and suffix values. This generates the name of the Kafka topic to publish data to. Used by the 'DefaultTopicMapper'.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 7
-          }
+          "documentation": "Separator to use when joining prefix, database, collection, and suffix values. This generates the name of the Kafka topic to publish data to. Used by the 'DefaultTopicMapper'."
         },
         {
           "name": "topic.suffix",
@@ -189,14 +116,8 @@
           "required": false,
           "importance": "LOW",
           "group": "Output messages",
-          "order_in_group": 8,
           "display_name": "Topic suffix",
-          "documentation": "Suffix to append to database and collection names to generate the name of the Kafka topic to publish data to.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 8
-          }
+          "documentation": "Suffix to append to database and collection names to generate the name of the Kafka topic to publish data to."
         },
         {
           "name": "output.schema.infer.value",
@@ -205,18 +126,12 @@
           "importance": "LOW",
           "default_value": "true",
           "group": "Output messages",
-          "order_in_group": 10,
           "display_name": "Output schema infer value",
           "documentation": "Whether the connector should infer the schema for the value document of the Source Record.  Since the connector processes each document in isolation, the connector may generate many schemas. The connector only reads this setting when you set your 'Output Kafka record value format' setting to AVRO, JSON, JSON_SR and PROTOBUF.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 27
-          }
+          ]
         },
         {
           "name": "topic.prefix",
@@ -224,13 +139,7 @@
           "required": false,
           "importance": "HIGH",
           "group": "How do you want to name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic prefix",
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1,
-            "documentation": "Your connector will publish to kafka topics using the prefix provided. The connector automatically creates Kafka topics using the naming convention: <prefix>.<database-name>.<collection-name>."
-          }
+          "display_name": "Topic prefix"
         },
         {
           "name": "topic.namespace.map",
@@ -239,13 +148,7 @@
           "default_value": "",
           "importance": "LOW",
           "group": "How do you want to name your topic(s)?",
-          "order_in_group": 2,
           "display_name": "Topic namespace map",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": "true"
-          },
           "documentation": "JSON object that maps change stream document namespaces to topics. Any prefix configuration will still apply. In case multiple collections with records having varying schema are mapped to single topic with AVRO, JSON_SR, and PROTOBUF, then multiple schemas will be registered under single subject name. If these schemas are not backward compatible to each other, the connector will fail until you change the schema compatibility in Confluent Cloud Schema Registry."
         },
         {
@@ -255,25 +158,13 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 1,
           "display_name": "Connection host",
           "documentation": "MongoDB Atlas connection host (e.g. confluent-test.mycluster.mongodb.net).",
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "validators": [
-            {
-              "name": "mongodb.connection.string"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": false,
-            "group_name": "MongoDB Atlas database details",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "connector.endpoint",
@@ -292,20 +183,13 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 2,
           "display_name": "Connection user",
           "documentation": "MongoDB Atlas connection user.",
           "sanitizers": [
             {
               "name": "trim"
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": false,
-            "group_name": "MongoDB Atlas database details",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "connection.password",
@@ -313,15 +197,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 3,
           "display_name": "Connection password",
-          "documentation": "MongoDB Atlas connection password.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": false,
-            "group_name": "MongoDB Atlas database details",
-            "order_in_page": 3
-          }
+          "documentation": "MongoDB Atlas connection password."
         },
         {
           "name": "database",
@@ -329,15 +206,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 4,
           "display_name": "Database name",
-          "documentation": "MongoDB Atlas database name. If not set, all databases in the cluster are watched.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "group_name": "MongoDB Atlas database details",
-            "order_in_page": 4
-          }
+          "documentation": "MongoDB Atlas database name. If not set, all databases in the cluster are watched."
         },
         {
           "name": "collection",
@@ -345,15 +215,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 1,
           "display_name": "Collection name",
-          "documentation": "Single MongoDB Atlas collection to watch. If not set, all collections in the specified database are watched.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "advanced": true,
-            "group_name": "Database details",
-            "order_in_page": 5
-          }
+          "documentation": "Single MongoDB Atlas collection to watch. If not set, all collections in the specified database are watched."
         },
         {
           "name": "poll.await.time.ms",
@@ -362,23 +225,8 @@
           "default_value": "5000",
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 1,
           "display_name": "Poll wait time (ms)",
-          "documentation": "The amount of time to wait before checking for new results on the change stream.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 7,
-            "group_name": "Connection details"
-          }
+          "documentation": "The amount of time to wait before checking for new results on the change stream."
         },
         {
           "name": "poll.max.batch.size",
@@ -387,24 +235,8 @@
           "default_value": "100",
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 2,
           "display_name": "Maximum documents to include in a batch",
-          "documentation": "Maximum number of change stream documents to include in a single batch when polling for new data. This setting can be used to limit the amount of data buffered internally in the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 1000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 8,
-            "group_name": "Connection details"
-          }
+          "documentation": "Maximum number of change stream documents to include in a single batch when polling for new data. This setting can be used to limit the amount of data buffered internally in the connector."
         },
         {
           "name": "pipeline",
@@ -413,14 +245,7 @@
           "default_value": "[]",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 3,
           "display_name": "Pipeline",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 9,
-            "group_name": "Connection details"
-          },
           "documentation": "An array of JSON objects describing the pipeline operations to filter or modify the change events output. For example, [{\"$match\": {\"ns.coll\": {\"$regex\": /^(collection1|collection2)$/}}}] will set your source connector to listen to the \"collection1\" and \"collection2\" collections only."
         },
         {
@@ -430,20 +255,13 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "Connection details",
-          "order_in_group": 4,
           "internal": true,
           "display_name": "Copy existing data",
           "documentation": "Whether to copy existing data from source collections. Setting this to true may cause record duplications.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 10,
-            "group_name": "Connection details"
-          }
+          ]
         },
         {
           "name": "startup.mode",
@@ -452,20 +270,13 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "Connection details",
-          "order_in_group": 5,
           "display_name": "Startup mode",
           "documentation": "Specifies how the connector should start up when there is no source offset available. If set to 'latest', the connector ignores all existing source data. If set to 'timestamp', the connector actuates startup.mode.timestamp.* properties. If no properties are configured, timestamp is equivalent to latest. If startup.mode=copy_existing, the connector copies all existing source data to Change Stream events.",
           "recommended_values": [
             "latest",
             "timestamp",
             "copy_existing"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 11,
-            "group_name": "Connection details"
-          }
+          ]
         },
         {
           "name": "copy.existing.namespace.regex",
@@ -474,15 +285,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 6,
           "internal": true,
           "display_name": "Copy existing namespace regex",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 12,
-            "group_name": "Connection details"
-          },
           "documentation": "Regular expression that matches the namespaces (databaseName.collectionName) from which to copy data. For example, stats\\.page.* matches all collections that starts with \"page\" in \"stats\" database."
         },
         {
@@ -492,14 +296,7 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 7,
           "display_name": "Copy existing namespace regex",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 13,
-            "group_name": "Connection details"
-          },
           "documentation": "Regular expression that matches the namespaces (databaseName.collectionName) from which to copy data. For example, stats\\.page.* matches all collections that starts with \"page\" in \"stats\" database."
         },
         {
@@ -509,16 +306,9 @@
           "default_value": "[]",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 8,
           "internal": true,
           "display_name": "Copy existing pipeline",
-          "documentation": "An array of JSON objects describing the pipeline operations to run when copying existing data. It will only be applied for existing documents which are being copied.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 14,
-            "group_name": "Connection details"
-          }
+          "documentation": "An array of JSON objects describing the pipeline operations to run when copying existing data. It will only be applied for existing documents which are being copied."
         },
         {
           "name": "startup.mode.copy.existing.pipeline",
@@ -527,15 +317,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 9,
           "display_name": "Copy existing pipeline",
-          "documentation": "An array of JSON objects describing the pipeline operations to run when copying existing data. It will only be applied for existing documents which are being copied.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 15,
-            "group_name": "Connection details"
-          }
+          "documentation": "An array of JSON objects describing the pipeline operations to run when copying existing data. It will only be applied for existing documents which are being copied."
         },
         {
           "name": "startup.mode.timestamp.start.at.operation.time",
@@ -544,15 +327,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 10,
           "display_name": "Start timestamp",
-          "documentation": "Actuated only if startup.mode=timestamp. Specifies the starting point for the change stream.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 16,
-            "group_name": "Connection details"
-          }
+          "documentation": "Actuated only if startup.mode=timestamp. Specifies the starting point for the change stream."
         },
         {
           "name": "batch.size",
@@ -561,23 +337,8 @@
           "default_value": "0",
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 11,
           "display_name": "Cursor batch size",
-          "documentation": "The number of documents to return in a batch.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 17,
-            "group_name": "Connection details"
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "max": 50
-              }
-            }
-          ]
+          "documentation": "The number of documents to return in a batch."
         },
         {
           "name": "output.schema.key",
@@ -586,23 +347,8 @@
           "default_value": "{ \"type\": \"record\", \"name\": \"keySchema\", \"fields\": [{ \"name\": \"_id\", \"type\": \"string\"}]}",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 12,
           "display_name": "Output Schema Key",
-          "documentation": "The Avro schema definition for the key value of the SourceRecord.",
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 100000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 29,
-            "group_name": "Connection details"
-          }
+          "documentation": "The Avro schema definition for the key value of the SourceRecord."
         },
         {
           "name": "output.schema.value",
@@ -611,23 +357,8 @@
           "default_value": "{\"name\": \"ChangeStream\", \"type\": \"record\", \"fields\": [{\"name\": \"_id\", \"type\": \"string\"}, {\"name\": \"operationType\", \"type\": [\"string\", \"null\"]}, {\"name\": \"fullDocumentBeforeChange\", \"type\": [\"string\", \"null\"]}, {\"name\": \"fullDocument\", \"type\": [\"string\", \"null\"]}, {\"name\": \"ns\", \"type\": [{\"name\": \"ns\", \"type\": \"record\", \"fields\": [{\"name\": \"db\", \"type\": \"string\"}, {\"name\": \"coll\", \"type\": [\"string\", \"null\"]}]}, \"null\"]}, {\"name\": \"to\", \"type\": [{\"name\": \"to\", \"type\": \"record\", \"fields\": [{\"name\": \"db\", \"type\": \"string\"}, {\"name\": \"coll\", \"type\": [\"string\", \"null\"]}]}, \"null\"]}, {\"name\": \"documentKey\", \"type\": [\"string\", \"null\"]}, {\"name\": \"updateDescription\", \"type\": [{\"name\": \"updateDescription\", \"type\": \"record\", \"fields\": [{\"name\": \"updatedFields\", \"type\": [\"string\", \"null\"]}, {\"name\": \"removedFields\", \"type\": [{\"type\": \"array\", \"items\": \"string\"}, \"null\"]}]}, \"null\"]}, {\"name\": \"clusterTime\", \"type\": [\"string\", \"null\"]}, {\"name\": \"txnNumber\", \"type\": [\"long\", \"null\"]}, {\"name\": \"lsid\", \"type\": [{\"name\": \"lsid\", \"type\": \"record\", \"fields\": [{\"name\": \"id\", \"type\": \"string\"}, {\"name\": \"uid\", \"type\": \"string\"}]}, \"null\"]}]}",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 13,
           "display_name": "Output Schema Value",
-          "documentation": "The Avro schema definition for the value of the SourceRecord.",
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 100000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 30,
-            "group_name": "Connection details"
-          }
+          "documentation": "The Avro schema definition for the value of the SourceRecord."
         },
         {
           "name": "heartbeat.interval.ms",
@@ -636,14 +367,7 @@
           "default_value": "0",
           "importance": "MEDIUM",
           "group": "Error handling",
-          "order_in_group": 1,
           "display_name": "Heartbeat interval",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 18,
-            "group_name": "Error handling"
-          },
           "documentation": "The number of milliseconds the connector waits between sending heartbeat messages. The connector sends heartbeat messages when source records are not published in the specified interval. This mechanism improves resumability of the connector for low volume namespaces. When using SMTs, use predicates to prevent SMTs from processing the heartbeat messages. See connector documentation for more details."
         },
         {
@@ -653,14 +377,7 @@
           "default_value": "__mongodb_heartbeats",
           "importance": "MEDIUM",
           "group": "Error handling",
-          "order_in_group": 2,
           "display_name": "Heartbeat topic name",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 19,
-            "group_name": "Error handling"
-          },
           "documentation": "The name of the topic on which the connector should publish heartbeat messages. You must provide a positive value in the \"heartbeat.interval.ms\" setting to enable this feature."
         },
         {
@@ -670,14 +387,7 @@
           "default_value": "NONE",
           "importance": "MEDIUM",
           "group": "Error handling",
-          "order_in_group": 4,
           "display_name": "Error tolerance",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 20,
-            "group_name": "Error handling Mongo"
-          },
           "recommended_values": [
             "NONE",
             "ALL"
@@ -690,14 +400,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Error handling",
-          "order_in_group": 5,
           "display_name": "Output errors",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 21,
-            "group_name": "Error handling Mongo"
-          },
           "documentation": "Whether to output conversion errors to the dead letter queue. Stops poison messages when using schemas, any message will be outputted as extended json on the specified topic. By default messages are not outputted to the dead letter queue. Also requires errors.tolerance=all."
         },
         {
@@ -706,14 +409,7 @@
           "required": false,
           "importance": "LOW",
           "group": "Server API",
-          "order_in_group": 1,
           "display_name": "Server API version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 22,
-            "group_name": "Server API"
-          },
           "documentation": "The server API version to use. Disabled by default."
         },
         {
@@ -723,14 +419,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Server API",
-          "order_in_group": 2,
           "display_name": "Deprecation errors",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 23,
-            "group_name": "Server API"
-          },
           "recommended_values": [
             "true",
             "false"
@@ -744,14 +433,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Server API",
-          "order_in_group": 3,
           "display_name": "Strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 24,
-            "group_name": "Server API"
-          },
           "recommended_values": [
             "true",
             "false"
@@ -765,14 +447,7 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Error handling",
-          "order_in_group": 3,
           "display_name": "Offset partition name",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 28,
-            "group_name": "Error handling"
-          },
           "documentation": "The custom offset partition name to use. You can use this option to instruct the connector to start a new change stream when an existing offset contains an invalid resume token. If you leave this setting blank, the connector uses the default partition name based on the connection details."
         },
         {
@@ -781,18 +456,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 1
-              }
-            }
-          ]
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "linger.ms",
@@ -800,25 +465,9 @@
           "required": "false",
           "importance": "MEDIUM",
           "group": "Producer configuration",
-          "order_in_group": 1,
           "display_name": "Producer linger(ms)",
           "default_value": 0,
-          "documentation": "Artificial delay for records to be sent together.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 25,
-            "group_name": "Producer configuration"
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 0,
-                "max": 20000
-              }
-            }
-          ]
+          "documentation": "Artificial delay for records to be sent together."
         },
         {
           "name": "producer.batch.size",
@@ -826,25 +475,9 @@
           "required": "false",
           "importance": "MEDIUM",
           "group": "Producer configuration",
-          "order_in_group": 2,
           "display_name": "Producer batch size(bytes)",
           "default_value": 16384,
-          "documentation": "Record batch size in bytes.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 26,
-            "group_name": "Producer configuration"
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 0,
-                "max": 491520
-              }
-            }
-          ]
+          "documentation": "Record batch size in bytes."
         }
       ],
       "connector_configs": [
@@ -1171,13 +804,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -1185,22 +812,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -1208,21 +821,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -1231,22 +831,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -1254,26 +844,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -1298,15 +870,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1742,13 +1306,6 @@
     {
       "template_id": "topic-prefix-source",
       "abstract": true,
-      "imports": [
-        "common-source"
-      ],
-      "group_order": [
-        "Kafka Cluster credentials",
-        "How do you want to prefix table names?"
-      ],
       "config_defs": [
         {
           "name": "topic.prefix",
@@ -1756,13 +1313,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How do you want to prefix table names?",
-          "order_in_group": 1,
           "display_name": "Topic prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Apache Kafka\u00ae topic to publish data to.",
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          "documentation": "Prefix to prepend to table names to generate the name of the Apache Kafka® topic to publish data to."
         }
       ],
       "connector_configs": []
@@ -1777,33 +1329,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1811,39 +1338,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "datapreview.schemas.enable",
@@ -1853,13 +1352,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
-          }
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
           "name": "errors.tolerance",
@@ -1873,13 +1366,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         },
         {
           "name": "producer.override.linger.ms",
@@ -1888,21 +1375,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
       "connector_configs": [
@@ -1981,25 +1454,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -2028,7 +1489,6 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
-          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -2038,20 +1498,9 @@
             "PROTOBUF",
             "JSON"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 2,
-            "group_name": "Output messages"
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -2062,13 +1511,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -2079,13 +1522,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -2096,13 +1533,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -2111,12 +1542,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -2189,7 +1615,6 @@
           "default_value": "STRING",
           "importance": "HIGH",
           "group": "Output messages",
-          "order_in_group": 2,
           "display_name": "Output Kafka record key format",
           "alias": "key.format",
           "documentation": "Sets the output Kafka record key format. Valid entries are AVRO, JSON_SR, PROTOBUF, STRING or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -2200,22 +1625,9 @@
             "JSON",
             "STRING"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            },
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "key.converter.schemas.enable",
@@ -2225,12 +1637,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "key.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized keys. Input message keys must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Key Converter."
         },
         {
           "name": "key.converter.replace.null.with.default",
@@ -2240,12 +1647,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "key.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Key Converter."
         }
       ],
       "connector_configs": [
@@ -2310,14 +1712,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -2326,12 +1722,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -2340,13 +1731,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -2355,12 +1740,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -2369,12 +1749,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -2383,12 +1758,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2397,12 +1767,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2411,12 +1776,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2425,12 +1785,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2439,12 +1794,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2453,12 +1803,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2467,12 +1812,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2487,13 +1827,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2502,12 +1836,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2516,12 +1845,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2530,12 +1854,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2551,13 +1870,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2573,13 +1886,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2593,13 +1900,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2608,12 +1909,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2623,12 +1919,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2637,12 +1928,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2651,12 +1937,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2676,12 +1957,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2975,22 +2251,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connection.host",
-    "connection.password",
-    "connection.user",
-    "connector.class",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "linger.ms",
-    "name",
-    "output.data.format",
-    "output.json.format",
-    "output.key.format",
-    "producer.batch.size",
-    "schema.context.name"
   ]
 }

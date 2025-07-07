@@ -4,27 +4,6 @@
       "template_id": "SolaceSink",
       "connector_type": "SINK",
       "connector.class": "io.confluent.connect.jms.SolaceSinkConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-sink",
-        "schema-registry"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Which topics do you want to get data from?",
-        "Schema Config",
-        "Input messages",
-        "Kafka Cluster credentials",
-        "How should we connect to your Solace cluster?",
-        "Connection details",
-        "Solace secure connection",
-        "JMS details",
-        "JMS formatter",
-        "Consumer configuration",
-        "Number of tasks for this connector"
-      ],
       "config_defs": [
         {
           "name": "input.data.format",
@@ -32,7 +11,6 @@
           "required": true,
           "importance": "HIGH",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON, STRING or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -43,18 +21,9 @@
             "STRING",
             "BYTES"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "solace.host",
@@ -62,13 +31,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Solace cluster?",
-          "order_in_group": 1,
           "display_name": "Solace host",
-          "documentation": "IP or hostname and port (optional) of the message broker to connect to. If a port is not specified, the default port number is 55555 when compression is not in use, or 55003 when compression is in use.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1
-          }
+          "documentation": "IP or hostname and port (optional) of the message broker to connect to. If a port is not specified, the default port number is 55555 when compression is not in use, or 55003 when compression is in use."
         },
         {
           "name": "solace.username",
@@ -76,13 +40,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Solace cluster?",
-          "order_in_group": 2,
           "display_name": "Solace username",
-          "documentation": "Username to authenticate with Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2
-          }
+          "documentation": "Username to authenticate with Solace."
         },
         {
           "name": "solace.password",
@@ -90,26 +49,16 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Solace cluster?",
-          "order_in_group": 3,
           "display_name": "Solace password",
-          "documentation": "Password to authenticate with Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3
-          }
+          "documentation": "Password to authenticate with Solace."
         },
         {
           "name": "solace.vpn",
           "type": "STRING",
           "importance": "MEDIUM",
           "group": "How should we connect to your Solace cluster?",
-          "order_in_group": 4,
           "display_name": "Message VPN",
-          "documentation": "Message VPN to use when connecting to the Solace message broker.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4
-          }
+          "documentation": "Message VPN to use when connecting to the Solace message broker."
         },
         {
           "name": "solace.compression.level",
@@ -118,25 +67,10 @@
           "default_value": "-1",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 1,
           "display_name": "Compression Level",
-          "documentation": "ZLIB compression level for messages written to Solace. Valid values for the compression level are -1 through 9. -1 means use the JNDI connection\u2019s compression level. 0 means use no compression. 1 through 9 enables data compression (where 1 offers the least amount of compression and fastest data throughput, and 9 offers the most compression and slowest data throughput)",
+          "documentation": "ZLIB compression level for messages written to Solace. Valid values for the compression level are -1 through 9. -1 means use the JNDI connection’s compression level. 0 means use no compression. 1 through 9 enables data compression (where 1 offers the least amount of compression and fastest data throughput, and 9 offers the most compression and slowest data throughput)",
           "recommender": {
             "name": "compression.level"
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": -1,
-                "max": 9
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "advanced": true
           }
         },
         {
@@ -145,17 +79,12 @@
           "required": true,
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 2,
           "display_name": "Dynamic Durables",
           "documentation": "Whether queues or topic endpoints (which are used to support durable subscription names), are to be created on the message broker. In case of `queue` destination, set this property to true if the queue doesn't exist already, false otherwise. Setting it incorrectly will fail the connector.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2
-          }
+          ]
         },
         {
           "name": "solace.client.description",
@@ -164,14 +93,8 @@
           "default_value": "Kafka Connect",
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 3,
           "display_name": "Client Description",
-          "documentation": "Application description on the message broker for the data connection.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true
-          }
+          "documentation": "Application description on the message broker for the data connection."
         },
         {
           "name": "solace.ssl.keystore.file",
@@ -180,15 +103,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Solace secure connection",
-          "order_in_group": 1,
           "display_name": "SSL Keystore",
-          "documentation": "Keystore of SSL-enabled VPN for Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY"
-          }
+          "documentation": "Keystore of SSL-enabled VPN for Solace."
         },
         {
           "name": "solace.ssl.keystore.password",
@@ -196,13 +112,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Solace secure connection",
-          "order_in_group": 2,
           "display_name": "SSL Keystore Password",
-          "documentation": "Keystore password for SSL-enabled VPN for Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6
-          }
+          "documentation": "Keystore password for SSL-enabled VPN for Solace."
         },
         {
           "name": "solace.ssl.truststore.file",
@@ -211,15 +122,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Solace secure connection",
-          "order_in_group": 3,
           "display_name": "SSL Truststore",
-          "documentation": "Truststore containing server CA certificate for SSL-enabled VPN for Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 7,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY"
-          }
+          "documentation": "Truststore containing server CA certificate for SSL-enabled VPN for Solace."
         },
         {
           "name": "solace.ssl.truststore.password",
@@ -227,13 +131,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Solace secure connection",
-          "order_in_group": 4,
           "display_name": "SSL Truststore Password",
-          "documentation": "Truststore password for SSL-enabled VPN for Solace.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 8
-          }
+          "documentation": "Truststore password for SSL-enabled VPN for Solace."
         },
         {
           "name": "solace.ssl.validate.certificate",
@@ -242,17 +141,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Solace secure connection",
-          "order_in_group": 5,
           "display_name": "Validate SSL Certificate",
           "documentation": "Whether to validate the SSL certificates.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 9
-          }
+          ]
         },
         {
           "name": "jms.destination.name",
@@ -260,13 +154,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "JMS details",
-          "order_in_group": 1,
           "display_name": "JMS Destination Name",
-          "documentation": "The name of the JMS destination that messages are written to.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3
-          }
+          "documentation": "The name of the JMS destination that messages are written to."
         },
         {
           "name": "jms.destination.type",
@@ -275,18 +164,12 @@
           "default_value": "queue",
           "importance": "HIGH",
           "group": "JMS details",
-          "order_in_group": 2,
           "display_name": "JMS Destination Type",
           "documentation": "The type of JMS destination.",
           "recommended_values": [
             "queue",
             "topic"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "jms.forward.kafka.key",
@@ -295,18 +178,12 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "JMS details",
-          "order_in_group": 3,
           "display_name": "Forward Kafka Record Key",
           "documentation": "Convert the Kafka record key to a string and forward it on the JMS Message property JMSCorrelationID.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "jms.forward.kafka.metadata",
@@ -315,18 +192,12 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "JMS details",
-          "order_in_group": 4,
           "display_name": "Forward Kafka Record Metadata",
           "documentation": "Forward the Kafka record metadata on the JMS Message properties. This includes the record topic, partition, and offset.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "jms.forward.kafka.headers",
@@ -335,18 +206,12 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "JMS details",
-          "order_in_group": 5,
           "display_name": "Forward Kafka Record Headers",
           "documentation": "Add the Kafka record headers to the JMS Message as string properties.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "jms.message.format",
@@ -355,7 +220,6 @@
           "default_value": "string",
           "importance": "HIGH",
           "group": "JMS formatter",
-          "order_in_group": 1,
           "display_name": "JMS Message Format",
           "documentation": "The format of JMS message values.",
           "recommended_values": [
@@ -363,17 +227,7 @@
             "bytes",
             "json",
             "string"
-          ],
-          "validators": [
-            {
-              "name": "solace.format.compatibility"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true
-          }
+          ]
         },
         {
           "name": "character.encoding",
@@ -382,16 +236,10 @@
           "default_value": "UTF-8",
           "importance": "LOW",
           "group": "JMS formatter",
-          "order_in_group": 2,
           "display_name": "Character Encoding",
           "documentation": "The character encoding to use while writing the message.",
           "recommender": {
             "name": "character.encoding"
-          },
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true
           }
         }
       ],
@@ -643,13 +491,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -657,22 +499,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -680,21 +508,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -703,22 +518,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -726,26 +531,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -770,15 +557,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1221,36 +1000,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1258,36 +1009,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "topics",
@@ -1295,22 +1021,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
-          "order_in_group": 1,
           "display_name": "Topic names",
           "documentation": "Identifies the topic name or a comma-separated list of topic names.",
-          "validators": [
-            {
-              "name": "kafka.topics",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.secret"
           ],
@@ -1318,11 +1030,7 @@
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "max.poll.interval.ms",
@@ -1330,26 +1038,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 1,
           "display_name": "Max poll interval(ms)",
           "default_value": "300000",
-          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 60000,
-                "max": 1800000,
-                "dedicatedMin": 60000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
         },
         {
           "name": "max.poll.records",
@@ -1357,26 +1048,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 2,
           "display_name": "Max poll records",
           "default_value": "500",
-          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 1,
-                "max": 500,
-                "dedicatedMin": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -1390,13 +1064,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1478,25 +1146,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1512,14 +1168,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -1528,12 +1178,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1542,13 +1187,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1557,12 +1196,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1571,12 +1205,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1585,12 +1214,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1599,12 +1223,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1613,12 +1232,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1627,12 +1241,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1641,12 +1250,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1655,12 +1259,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1669,12 +1268,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1689,13 +1283,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -1704,12 +1292,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -1718,12 +1301,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -1732,12 +1310,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -1753,13 +1326,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -1775,13 +1342,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -1795,13 +1356,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -1810,12 +1365,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -1825,12 +1375,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -1839,12 +1384,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -1853,12 +1393,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -1878,12 +1413,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2133,19 +1663,5 @@
       "name": "admin.override.sasl.jaas.config",
       "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "input.data.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "max.poll.interval.ms",
-    "max.poll.records",
-    "name",
-    "schema.context.name",
-    "solace.ssl.keystore.file",
-    "solace.ssl.truststore.file"
   ]
 }

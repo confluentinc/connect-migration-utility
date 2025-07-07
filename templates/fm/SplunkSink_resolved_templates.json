@@ -4,28 +4,6 @@
       "template_id": "SplunkSink",
       "connector_type": "SINK",
       "connector.class": "com.splunk.kafka.connect.SplunkSinkConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-sink",
-        "schema-registry"
-      ],
-      "group_order": [
-        "Which topics do you want to get data from?",
-        "Schema Config",
-        "Input messages",
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "How should we connect to Splunk?",
-        "Metadata configuration",
-        "Endpoint configuration",
-        "HEC configuration",
-        "Acknowledgement configuration",
-        "Headers configuration",
-        "Consumer configuration",
-        "Number of tasks for this connector"
-      ],
       "config_defs": [
         {
           "name": "input.data.format",
@@ -33,7 +11,6 @@
           "required": true,
           "importance": "HIGH",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON, JSON_SR, PROTOBUF, or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -43,18 +20,9 @@
             "PROTOBUF",
             "STRING"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "splunk.hec.uri",
@@ -62,13 +30,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to Splunk?",
-          "order_in_group": 1,
           "display_name": "Splunk HEC URIs",
-          "documentation": "Either a list of FQDNs or IPs of all Splunk indexers, separated with a ',' or a load balancer. The connector will load balance to indexers using round robin. Example: https://hec1.splunk.com:8088,https://hec2.splunk.com:8088,https://hec3.splunk.com:8088.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1
-          }
+          "documentation": "Either a list of FQDNs or IPs of all Splunk indexers, separated with a ',' or a load balancer. The connector will load balance to indexers using round robin. Example: https://hec1.splunk.com:8088,https://hec2.splunk.com:8088,https://hec3.splunk.com:8088."
         },
         {
           "name": "splunk.hec.token",
@@ -76,13 +39,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to Splunk?",
-          "order_in_group": 2,
           "display_name": "Splunk HEC Token",
-          "documentation": "Splunk HTTP Event Collector token.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2
-          }
+          "documentation": "Splunk HTTP Event Collector token."
         },
         {
           "name": "splunk.hec.ssl.validate.certs",
@@ -91,13 +49,8 @@
           "default_value": true,
           "importance": "MEDIUM",
           "group": "How should we connect to Splunk?",
-          "order_in_group": 3,
           "display_name": "Splunk HEC SSL Validate Certificates",
-          "documentation": "Enables or disables HTTPS certification validation.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3
-          }
+          "documentation": "Enables or disables HTTPS certification validation."
         },
         {
           "name": "splunk.hec.ssl.trust.store.file",
@@ -106,16 +59,8 @@
           "default_value": "",
           "importance": "HIGH",
           "group": "How should we connect to Splunk?",
-          "order_in_group": 4,
           "display_name": "Splunk HEC SSL Trust Store",
-          "documentation": "The certificate trust store containing the certificates required to validate the SSL connection.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4,
-            "inputType": "CREDENTIALS_FILE",
-            "secretType": "BINARY",
-            "visibility": "splunk.hec.ssl.validate.certs==true"
-          }
+          "documentation": "The certificate trust store containing the certificates required to validate the SSL connection."
         },
         {
           "name": "splunk.hec.ssl.trust.store.password",
@@ -123,14 +68,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "How should we connect to Splunk?",
-          "order_in_group": 5,
           "display_name": "Splunk HEC SSL Trust Store Password",
-          "documentation": "Password for the certificate trust store.",
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "visibility": "splunk.hec.ssl.validate.certs==true"
-          }
+          "documentation": "Password for the certificate trust store."
         },
         {
           "name": "splunk.indexes",
@@ -139,14 +78,8 @@
           "default_value": "default",
           "importance": "MEDIUM",
           "group": "Metadata configuration",
-          "order_in_group": 1,
           "display_name": "Splunk Indexes",
-          "documentation": "Splunk index names for Kafka topic data separated by comma for multiple topics to indexers (\"prod-index1,prod-index2,prod-index3\").",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true
-          }
+          "documentation": "Splunk index names for Kafka topic data separated by comma for multiple topics to indexers (\"prod-index1,prod-index2,prod-index3\")."
         },
         {
           "name": "splunk.sourcetypes",
@@ -154,14 +87,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Metadata configuration",
-          "order_in_group": 2,
           "display_name": "Splunk Sourcetypes",
-          "documentation": "Splunk event sourcetype metadata for Kafka topic data.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "advanced": true
-          }
+          "documentation": "Splunk event sourcetype metadata for Kafka topic data."
         },
         {
           "name": "splunk.sources",
@@ -169,14 +96,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Metadata configuration",
-          "order_in_group": 3,
           "display_name": "Splunk Sources",
-          "documentation": "Splunk event source metadata for Kafka topic data.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "advanced": true
-          }
+          "documentation": "Splunk event source metadata for Kafka topic data."
         },
         {
           "name": "splunk.hec.raw",
@@ -185,14 +106,8 @@
           "default_value": false,
           "importance": "MEDIUM",
           "group": "Endpoint configuration",
-          "order_in_group": 1,
           "display_name": "Splunk HEC Raw",
-          "documentation": "When set to true, the connector ingests data using the the /raw HEC endpoint.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true
-          }
+          "documentation": "When set to true, the connector ingests data using the the /raw HEC endpoint."
         },
         {
           "name": "splunk.hec.raw.line.breaker",
@@ -200,15 +115,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Endpoint configuration",
-          "order_in_group": 2,
           "display_name": "Splunk HEC Raw Line Breaker",
-          "documentation": "Only applicable to /raw HEC endpoint. The setting is used to specify a custom line breaker to help Splunk separate the events correctly.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true,
-            "visibility": "splunk.hec.raw==true"
-          }
+          "documentation": "Only applicable to /raw HEC endpoint. The setting is used to specify a custom line breaker to help Splunk separate the events correctly."
         },
         {
           "name": "splunk.hec.json.event.enrichment",
@@ -216,15 +124,8 @@
           "required": false,
           "importance": "LOW",
           "group": "Endpoint configuration",
-          "order_in_group": 3,
           "display_name": "Splunk HEC JSON Event Enrichment",
-          "documentation": "Only applicable to /event HEC endpoint. This setting is used to enrich raw data with extra metadata fields. It contains a list of key value pairs separated by \",\".",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true,
-            "visibility": "splunk.hec.raw==false"
-          }
+          "documentation": "Only applicable to /event HEC endpoint. This setting is used to enrich raw data with extra metadata fields. It contains a list of key value pairs separated by \",\"."
         },
         {
           "name": "splunk.hec.track.data",
@@ -233,15 +134,8 @@
           "default_value": false,
           "importance": "LOW",
           "group": "Endpoint configuration",
-          "order_in_group": 4,
           "display_name": "Splunk HEC Track Data",
-          "documentation": "Only applicable to /event HEC endpoint. When set to true, data loss and data injection latency metadata will be indexed along with raw data.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true,
-            "visibility": "splunk.hec.raw==false"
-          }
+          "documentation": "Only applicable to /event HEC endpoint. When set to true, data loss and data injection latency metadata will be indexed along with raw data."
         },
         {
           "name": "splunk.hec.http.keepalive",
@@ -250,14 +144,8 @@
           "default_value": true,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 1,
           "display_name": "Splunk HEC HTTP Keep-alive",
-          "documentation": "Enables or disables HTTP connection keep-alive.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "advanced": true
-          }
+          "documentation": "Enables or disables HTTP connection keep-alive."
         },
         {
           "name": "splunk.hec.max.http.connection.per.channel",
@@ -266,14 +154,8 @@
           "default_value": 2,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 2,
           "display_name": "Splunk HEC Max HTTP Connections Per Channel",
-          "documentation": "Max HTTP connections pooled for one HEC Channel when posting events to Splunk.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "advanced": true
-          }
+          "documentation": "Max HTTP connections pooled for one HEC Channel when posting events to Splunk."
         },
         {
           "name": "splunk.hec.total.channels",
@@ -282,14 +164,8 @@
           "default_value": 2,
           "importance": "HIGH",
           "group": "HEC configuration",
-          "order_in_group": 3,
           "display_name": "Splunk HEC Total Channels",
-          "documentation": "Total HEC Channels used to post events to Splunk.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 11,
-            "advanced": true
-          }
+          "documentation": "Total HEC Channels used to post events to Splunk."
         },
         {
           "name": "splunk.hec.socket.timeout",
@@ -298,14 +174,8 @@
           "default_value": 10,
           "importance": "LOW",
           "group": "HEC configuration",
-          "order_in_group": 4,
           "display_name": "Splunk HEC Socket Timeout (s)",
-          "documentation": "Max duration in seconds to read / write data to network before internal TCP Socket timeout.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 12,
-            "advanced": true
-          }
+          "documentation": "Max duration in seconds to read / write data to network before internal TCP Socket timeout."
         },
         {
           "name": "splunk.hec.use.record.timestamp",
@@ -314,14 +184,8 @@
           "default_value": true,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 5,
           "display_name": "Splunk HEC Use Record Timestamp",
-          "documentation": "When set to true, The timestamp is retrieved from the Kafka record and passed to Splunk as a HEC metadata override.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 13,
-            "advanced": true
-          }
+          "documentation": "When set to true, The timestamp is retrieved from the Kafka record and passed to Splunk as a HEC metadata override."
         },
         {
           "name": "splunk.hec.threads",
@@ -330,23 +194,8 @@
           "default_value": 1,
           "importance": "LOW",
           "group": "HEC configuration",
-          "order_in_group": 6,
           "display_name": "Splunk HEC Threads",
-          "documentation": "The number of threads spawned to do data injection via HEC in a single connector task.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 10
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 14,
-            "advanced": true
-          }
+          "documentation": "The number of threads spawned to do data injection via HEC in a single connector task."
         },
         {
           "name": "splunk.hec.max.outstanding.events",
@@ -355,23 +204,8 @@
           "default_value": 10000,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 7,
           "display_name": "Splunk HEC Max Outstanding Events",
-          "documentation": "Maximum amount of unacknowledged events kept in memory by connector. Will trigger back-pressure event to slow collection.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 10000,
-                "max": 100000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 15,
-            "advanced": true
-          }
+          "documentation": "Maximum amount of unacknowledged events kept in memory by connector. Will trigger back-pressure event to slow collection."
         },
         {
           "name": "splunk.hec.max.retries",
@@ -380,14 +214,8 @@
           "default_value": -1,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 8,
           "display_name": "Splunk HEC Max Retries",
-          "documentation": "Number of retries for failed batches before giving up. By default this is set to -1 which will retry indefinitely.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 16,
-            "advanced": true
-          }
+          "documentation": "Number of retries for failed batches before giving up. By default this is set to -1 which will retry indefinitely."
         },
         {
           "name": "splunk.hec.backoff.threshhold.seconds",
@@ -396,14 +224,8 @@
           "default_value": 60,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 9,
           "display_name": "Splunk HEC Backoff Threshold (s)",
-          "documentation": "The amount of time the connector waits on errors sending events to Splunk to attempt resending it.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 17,
-            "advanced": true
-          }
+          "documentation": "The amount of time the connector waits on errors sending events to Splunk to attempt resending it."
         },
         {
           "name": "splunk.hec.json.event.formatted",
@@ -412,14 +234,8 @@
           "default_value": false,
           "importance": "LOW",
           "group": "HEC configuration",
-          "order_in_group": 10,
           "display_name": "Splunk HEC JSON Event Formatted",
-          "documentation": "Set to true for events that are already in HEC format.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 18,
-            "advanced": true
-          }
+          "documentation": "Set to true for events that are already in HEC format."
         },
         {
           "name": "splunk.hec.max.batch.size",
@@ -428,14 +244,8 @@
           "default_value": 500,
           "importance": "MEDIUM",
           "group": "HEC configuration",
-          "order_in_group": 11,
           "display_name": "Splunk HEC Max Batch Size",
-          "documentation": "Maximum batch size when posting events to Splunk. The size is the actual number of Kafka events not the byte size.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 19,
-            "advanced": true
-          }
+          "documentation": "Maximum batch size when posting events to Splunk. The size is the actual number of Kafka events not the byte size."
         },
         {
           "name": "splunk.hec.lb.poll.interval",
@@ -444,14 +254,8 @@
           "default_value": 120,
           "importance": "LOW",
           "group": "HEC configuration",
-          "order_in_group": 12,
           "display_name": "Splunk HEC Load Balancer Poll Interval (s)",
-          "documentation": "This setting controls the load balancer polling interval.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 20,
-            "advanced": true
-          }
+          "documentation": "This setting controls the load balancer polling interval."
         },
         {
           "name": "splunk.flush.window",
@@ -460,14 +264,8 @@
           "default_value": 30,
           "importance": "LOW",
           "group": "HEC configuration",
-          "order_in_group": 13,
           "display_name": "Splunk Flush Window (s)",
-          "documentation": "The interval in seconds at which the events from kafka will be flushed to Splunk.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 21,
-            "advanced": true
-          }
+          "documentation": "The interval in seconds at which the events from kafka will be flushed to Splunk."
         },
         {
           "name": "splunk.hec.ack.enabled",
@@ -476,14 +274,8 @@
           "default_value": false,
           "importance": "MEDIUM",
           "group": "Acknowledgement configuration",
-          "order_in_group": 1,
           "display_name": "Splunk HEC Ack Enabled",
-          "documentation": "When set to true the connector will poll event ACKs for POST events before check-pointing the Kafka offsets. This is used to prevent data loss, as this setting implements guaranteed delivery.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 22,
-            "advanced": true
-          }
+          "documentation": "When set to true the connector will poll event ACKs for POST events before check-pointing the Kafka offsets. This is used to prevent data loss, as this setting implements guaranteed delivery."
         },
         {
           "name": "splunk.hec.ack.poll.interval",
@@ -492,15 +284,8 @@
           "default_value": 10,
           "importance": "MEDIUM",
           "group": "Acknowledgement configuration",
-          "order_in_group": 2,
           "display_name": "Splunk HEC Ack Poll Interval (s)",
-          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. Internally it controls the event ACKs polling interval.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 23,
-            "advanced": true,
-            "visibility": "splunk.hec.ack.enabled==true"
-          }
+          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. Internally it controls the event ACKs polling interval."
         },
         {
           "name": "splunk.hec.ack.poll.threads",
@@ -509,24 +294,8 @@
           "default_value": 1,
           "importance": "MEDIUM",
           "group": "Acknowledgement configuration",
-          "order_in_group": 3,
           "display_name": "Splunk HEC Ack Poll Threads",
-          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. It controls how many threads should be spawned to poll event ACKs.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 10
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 24,
-            "advanced": true,
-            "visibility": "splunk.hec.ack.enabled==true"
-          }
+          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. It controls how many threads should be spawned to poll event ACKs."
         },
         {
           "name": "splunk.hec.event.timeout",
@@ -535,15 +304,8 @@
           "default_value": 300,
           "importance": "MEDIUM",
           "group": "Acknowledgement configuration",
-          "order_in_group": 4,
           "display_name": "Splunk HEC Event Timeout (s)",
-          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. When events are POSTed to Splunk and before they are ACKed, this setting determines how long the connector will wait before timing out and resending.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 25,
-            "advanced": true,
-            "visibility": "splunk.hec.ack.enabled==true"
-          }
+          "documentation": "This setting is only applicable when splunk.hec.ack.enabled is set to true. When events are POSTed to Splunk and before they are ACKed, this setting determines how long the connector will wait before timing out and resending."
         },
         {
           "name": "splunk.header.support",
@@ -552,14 +314,8 @@
           "default_value": false,
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 1,
           "display_name": "Splunk Header Support",
-          "documentation": "When set to true the connector will parse Kafka headers for use as metadata in Splunk events.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 26,
-            "advanced": true
-          }
+          "documentation": "When set to true the connector will parse Kafka headers for use as metadata in Splunk events."
         },
         {
           "name": "splunk.header.custom",
@@ -567,15 +323,8 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 2,
           "display_name": "Splunk Header Custom",
-          "documentation": "This setting will look for kafka record headers with these values and add them to each event if present. Custom headers are configured separated by comma for multiple headers. Example: \"custom_header_1,custom_header_2,custom_header_3\".",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 27,
-            "advanced": true,
-            "visibility": "splunk.header.support==true"
-          }
+          "documentation": "This setting will look for kafka record headers with these values and add them to each event if present. Custom headers are configured separated by comma for multiple headers. Example: \"custom_header_1,custom_header_2,custom_header_3\"."
         },
         {
           "name": "splunk.header.index",
@@ -584,15 +333,8 @@
           "default_value": "splunk.header.index",
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 3,
           "display_name": "Splunk Header Index",
-          "documentation": "Header to use for Splunk Header Index",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 28,
-            "advanced": true,
-            "visibility": "splunk.header.support==true"
-          }
+          "documentation": "Header to use for Splunk Header Index"
         },
         {
           "name": "splunk.header.source",
@@ -601,15 +343,8 @@
           "default_value": "splunk.header.source",
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 4,
           "display_name": "Splunk Header Source",
-          "documentation": "Header to use for Splunk Header Source",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 29,
-            "advanced": true,
-            "visibility": "splunk.header.support==true"
-          }
+          "documentation": "Header to use for Splunk Header Source"
         },
         {
           "name": "splunk.header.sourcetype",
@@ -618,15 +353,8 @@
           "default_value": "splunk.header.sourcetype",
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 5,
           "display_name": "Splunk Header Sourcetype",
-          "documentation": "Header to use for Splunk Header Sourcetype",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 30,
-            "advanced": true,
-            "visibility": "splunk.header.support==true"
-          }
+          "documentation": "Header to use for Splunk Header Sourcetype"
         },
         {
           "name": "splunk.header.host",
@@ -635,15 +363,8 @@
           "default_value": "splunk.header.host",
           "importance": "MEDIUM",
           "group": "Headers configuration",
-          "order_in_group": 6,
           "display_name": "Splunk Header Host",
-          "documentation": "Header to use for Splunk Header Host",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 31,
-            "advanced": true,
-            "visibility": "splunk.header.support==true"
-          }
+          "documentation": "Header to use for Splunk Header Host"
         }
       ],
       "connector_configs": [
@@ -872,13 +593,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -886,22 +601,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -909,21 +610,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -932,22 +620,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -955,26 +633,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -999,15 +659,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1450,36 +1102,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1487,36 +1111,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "topics",
@@ -1524,22 +1123,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
-          "order_in_group": 1,
           "display_name": "Topic names",
           "documentation": "Identifies the topic name or a comma-separated list of topic names.",
-          "validators": [
-            {
-              "name": "kafka.topics",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.secret"
           ],
@@ -1547,11 +1132,7 @@
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "max.poll.interval.ms",
@@ -1559,26 +1140,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 1,
           "display_name": "Max poll interval(ms)",
           "default_value": "300000",
-          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 60000,
-                "max": 1800000,
-                "dedicatedMin": 60000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
         },
         {
           "name": "max.poll.records",
@@ -1586,26 +1150,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 2,
           "display_name": "Max poll records",
           "default_value": "500",
-          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 1,
-                "max": 500,
-                "dedicatedMin": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -1619,13 +1166,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1707,25 +1248,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1741,14 +1270,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -1757,12 +1280,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1771,13 +1289,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1786,12 +1298,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1800,12 +1307,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1814,12 +1316,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1828,12 +1325,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1842,12 +1334,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1856,12 +1343,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1870,12 +1352,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1884,12 +1361,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1898,12 +1370,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1918,13 +1385,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -1933,12 +1394,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -1947,12 +1403,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -1961,12 +1412,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -1982,13 +1428,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2004,13 +1444,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2024,13 +1458,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2039,12 +1467,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2054,12 +1477,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2068,12 +1486,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2082,12 +1495,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2107,12 +1515,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2362,18 +1765,5 @@
       "name": "admin.override.sasl.jaas.config",
       "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "input.data.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "max.poll.interval.ms",
-    "max.poll.records",
-    "name",
-    "schema.context.name",
-    "splunk.hec.ssl.trust.store.file"
   ]
 }

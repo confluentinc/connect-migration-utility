@@ -4,32 +4,6 @@
       "template_id": "SnowflakeSink",
       "connector_type": "SINK",
       "connector.class": "com.snowflake.kafka.connector.SnowflakeSinkConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-sink",
-        "csfle-sink",
-        "schema-registry",
-        "input-data-format"
-      ],
-      "group_order": [
-        "Which topics do you want to get data from?",
-        "Schema Config",
-        "Input messages",
-        "How should we connect to your data?",
-        "Kafka Cluster credentials",
-        "How should we connect to your Snowflake database?",
-        "Database details",
-        "Snowflake connection",
-        "Connection details",
-        "Error handling",
-        "CSFLE",
-        "Organize my data by...",
-        "Consumer configuration",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "regional.connectivity",
@@ -40,12 +14,7 @@
           "queryable_internal": true,
           "custom_config_provider": {
             "name": "snowflake.regional.connectivity.provider"
-          },
-          "validators": [
-            {
-              "name": "common.regional_connectivity.validator"
-            }
-          ]
+          }
         },
         {
           "name": "input.data.format",
@@ -61,18 +30,13 @@
             "JSON_SR",
             "PROTOBUF",
             "STRING"
-          ],
-          "metadata": {
-            "order_in_page": 2,
-            "page": "CONFIGURATION"
-          }
+          ]
         },
         {
           "name": "key.converter.reference.subject.name.strategy",
           "type": "STRING",
           "importance": "HIGH",
           "group": "Input messages",
-          "order_in_group": 9,
           "display_name": "Key Converter Reference Subject Name Strategy",
           "default_value": "DefaultReferenceSubjectNameStrategy",
           "documentation": "Set the subject reference name strategy for key. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
@@ -82,13 +46,7 @@
           ],
           "dependents": [
             "input.key.format"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 9,
-            "visibility": "input.key.format==PROTOBUF"
-          }
+          ]
         },
         {
           "name": "input.key.format",
@@ -97,7 +55,6 @@
           "default_value": "STRING",
           "importance": "HIGH",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record key format",
           "alias": "key.format",
           "documentation": "Sets the input Kafka record key format. Valid entries are AVRO, JSON_SR, PROTOBUF, STRING or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -108,22 +65,9 @@
             "JSON",
             "STRING"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            },
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 3
-          }
+          ]
         },
         {
           "name": "snowflake.url.name",
@@ -131,24 +75,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Snowflake database?",
-          "order_in_group": 1,
           "display_name": "Connection URL",
-          "documentation": "The URL for accessing your Snowflake account, in the form of https://<account_name>.<region_id>.snowflakecomputing.com:443. Note that the https:// and port number are optional. The region ID is not used if your account is in the AWS US West region and you are not using AWS PrivateLink.",
-          "validators": [
-            {
-              "name": "snowflake.url",
-              "priority": "HIGHER"
-            },
-            {
-              "name": "snowflake.region"
-            }
-          ],
-          "metadata": {
-            "documentation": "The URL for accessing your Snowflake account, in the form of https://&lt;account_name&gt;.&lt;region_id&gt;.snowflakecomputing.com:443. Note that the https:// and port number are optional. The region ID is not used if your account is in the AWS US West region and you are not using AWS PrivateLink.",
-            "group_name": "Snowflake Credentials",
-            "page": "AUTHENTICATION",
-            "order_in_page": 1
-          }
+          "documentation": "The URL for accessing your Snowflake account, in the form of https://<account_name>.<region_id>.snowflakecomputing.com:443. Note that the https:// and port number are optional. The region ID is not used if your account is in the AWS US West region and you are not using AWS PrivateLink."
         },
         {
           "name": "snowflake.user.name",
@@ -156,14 +84,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Snowflake database?",
-          "order_in_group": 2,
           "display_name": "Connection user name",
-          "documentation": "User login name for the Snowflake account",
-          "metadata": {
-            "group_name": "Snowflake Credentials",
-            "page": "AUTHENTICATION",
-            "order_in_page": 2
-          }
+          "documentation": "User login name for the Snowflake account"
         },
         {
           "name": "snowflake.private.key",
@@ -171,14 +93,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Snowflake database?",
-          "order_in_group": 3,
           "display_name": "Private key",
-          "documentation": "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks. You can provide either an unencrypted key or an encrypted key. If you use an encrypted key, provide the snowflake.private.key.passphrase parameter so Snowflake can decrypt the key. Use this parameter only if the snowflake.private.key parameter value is encrypted.",
-          "metadata": {
-            "group_name": "Snowflake Credentials",
-            "page": "AUTHENTICATION",
-            "order_in_page": 3
-          }
+          "documentation": "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks. You can provide either an unencrypted key or an encrypted key. If you use an encrypted key, provide the snowflake.private.key.passphrase parameter so Snowflake can decrypt the key. Use this parameter only if the snowflake.private.key parameter value is encrypted."
         },
         {
           "name": "snowflake.role.name",
@@ -186,23 +102,8 @@
           "required": false,
           "importance": "LOW",
           "group": "How should we connect to your Snowflake database?",
-          "order_in_group": 4,
           "display_name": "Snowflake role",
-          "documentation": "Access control role to use when inserting the rows into the table. If Ingestion method is Snowpipe_Streaming Ingestion then it's required. If Ingestion method is Snowpipe then its not required and use default role",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "snowflake.ingestion.method==SNOWPIPE_STREAMING"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "group_name": "Snowflake Credentials",
-            "page": "AUTHENTICATION",
-            "order_in_page": 5
-          }
+          "documentation": "Access control role to use when inserting the rows into the table. If Ingestion method is Snowpipe_Streaming Ingestion then it's required. If Ingestion method is Snowpipe then its not required and use default role"
         },
         {
           "name": "snowflake.database.name",
@@ -210,14 +111,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your Snowflake database?",
-          "order_in_group": 4,
           "display_name": "Database name",
-          "documentation": "The name of the database that contains the table to insert rows into.",
-          "metadata": {
-            "group_name": "Snowflake Database Details",
-            "page": "AUTHENTICATION",
-            "order_in_page": 6
-          }
+          "documentation": "The name of the database that contains the table to insert rows into."
         },
         {
           "name": "snowflake.schema.name",
@@ -225,14 +120,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Database details",
-          "order_in_group": 1,
           "display_name": "Schema name",
-          "documentation": "The name of the schema that contains the table to insert rows into.",
-          "metadata": {
-            "group_name": "Snowflake Database Details",
-            "page": "AUTHENTICATION",
-            "order_in_page": 7
-          }
+          "documentation": "The name of the schema that contains the table to insert rows into."
         },
         {
           "name": "snowflake.topic2table.map",
@@ -240,15 +129,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Database details",
-          "order_in_group": 2,
           "display_name": "Topics to tables mapping",
-          "documentation": "Map of topics to tables (optional). Format : comma-separated tuples, e.g. <topic-1>:<table-1>,<topic-2>:<table-2>,...",
-          "metadata": {
-            "documentation": "Map of topics to tables (optional). Format : comma-separated tuples, e.g. &lt;topic-1&gt;:&lt;table-1&gt;,&lt;topic-2&gt;:&lt;table-2&gt;,...",
-            "group_name": "Snowflake Database Details",
-            "page": "AUTHENTICATION",
-            "order_in_page": 8
-          }
+          "documentation": "Map of topics to tables (optional). Format : comma-separated tuples, e.g. <topic-1>:<table-1>,<topic-2>:<table-2>,..."
         },
         {
           "name": "snowflake.private.key.passphrase",
@@ -257,14 +139,8 @@
           "default_value": "",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 1,
           "display_name": "Decryption key of private key",
-          "documentation": "If snowflake.private.key is encrypted, this passphrase is used to decrypt the key. If the value of this parameter is not empty, Kafka uses this phrase to try to decrypt the private key.",
-          "metadata": {
-            "group_name": "Snowflake Credentials",
-            "page": "AUTHENTICATION",
-            "order_in_page": 4
-          }
+          "documentation": "If snowflake.private.key is encrypted, this passphrase is used to decrypt the key. If the value of this parameter is not empty, Kafka uses this phrase to try to decrypt the private key."
         },
         {
           "name": "snowflake.ingestion.method",
@@ -273,18 +149,12 @@
           "default_value": "SNOWPIPE",
           "importance": "HIGH",
           "group": "Snowflake connection",
-          "order_in_group": 1,
           "display_name": "Ingestion method",
           "documentation": "Choose the preferred ingestion method. The connector supports the SNOWPIPE (default) and SNOWPIPE_STREAMIMG for Kafka data ingestion. Using SNOWPIPE_STREAMING may provide a cost-benefit for your Snowflake project.",
           "recommended_values": [
             "SNOWPIPE",
             "SNOWPIPE_STREAMING"
-          ],
-          "metadata": {
-            "group_name": "Snowflake connection",
-            "page": "CONFIGURATION",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "snowflake.metadata.createtime",
@@ -293,19 +163,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 3,
           "display_name": "Whether or not to include \"createtime\" in metadata",
           "documentation": "If the value is set to FALSE, the CreateTime property value is omitted from the metadata in the RECORD_METADATA column. The default value is TRUE.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 4
-          }
+          ]
         },
         {
           "name": "snowflake.metadata.topic",
@@ -314,19 +177,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 4,
           "display_name": "Whether or not to include \"topic\" in metadata",
           "documentation": "If the value is set to FALSE, the topic property value is omitted from the metadata in the RECORD_METADATA column. The default value is TRUE.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 5
-          }
+          ]
         },
         {
           "name": "snowflake.metadata.offset.and.partition",
@@ -335,19 +191,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 5,
           "display_name": "Whether or not to include \"offset\" and \"partition\" in metadata",
           "documentation": "If the value is set to FALSE, the Offset and Partition property values are omitted from the metadata in the RECORD_METADATA column. The default value is TRUE.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 6
-          }
+          ]
         },
         {
           "name": "snowflake.metadata.all",
@@ -356,19 +205,12 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 6,
           "display_name": "Whether or not to include metadata column",
           "documentation": "If the value is set to FALSE, the metadata in the RECORD_METADATA column is completely empty. The default value is TRUE.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 7
-          }
+          ]
         },
         {
           "name": "snowflake.enable.schematization",
@@ -377,27 +219,12 @@
           "default_value": "false",
           "importance": "MEDIUM",
           "group": "Connection details",
-          "order_in_group": 7,
           "display_name": "Enable Schematization",
           "documentation": "Specify to TRUE to enable schema detection and evolution for Kafka Connector with Snowpipe Streaming. The default value is FALSE",
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            },
-            {
-              "name": "validate.schematization.ingestion.method"
-            }
-          ],
           "recommended_values": [
             "true",
             "false"
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 8
-          }
+          ]
         },
         {
           "name": "buffer.flush.time",
@@ -406,20 +233,8 @@
           "default_value": 120,
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 8,
           "display_name": "The time in seconds to flush cached data",
-          "documentation": "Number of seconds between buffer flushes, where the flush is from the Kafka\u2019s memory cache to the internal stage. The default value is 120 seconds. Minimum value allowed is 10 for snowflake.ingestion.method=SNOWPIPE, and 1 for snowflake.ingestion.method=SNOWPIPE_STREAMING. The connector uses buffer.count.records and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake.",
-          "validators": [
-            {
-              "name": "buffer.flush.time.range"
-            }
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 9
-          }
+          "documentation": "Number of seconds between buffer flushes, where the flush is from the Kafka’s memory cache to the internal stage. The default value is 120 seconds. Minimum value allowed is 10 for snowflake.ingestion.method=SNOWPIPE, and 1 for snowflake.ingestion.method=SNOWPIPE_STREAMING. The connector uses buffer.count.records and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
         },
         {
           "name": "buffer.count.records",
@@ -428,23 +243,8 @@
           "default_value": 10000,
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 9,
           "display_name": "The number of records to flush cached data",
-          "documentation": "Number of records between buffer flushes, where the flush is from the Kafka\u2019s memory cache to the internal stage. The default and minimum value is 10,000 records. The connector uses buffer.flush.time and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 10000
-              }
-            }
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 10
-          }
+          "documentation": "Number of records between buffer flushes, where the flush is from the Kafka’s memory cache to the internal stage. The default and minimum value is 10,000 records. The connector uses buffer.flush.time and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
         },
         {
           "name": "buffer.size.bytes",
@@ -453,24 +253,8 @@
           "default_value": 10000000,
           "importance": "LOW",
           "group": "Connection details",
-          "order_in_group": 10,
           "display_name": "The size of the connector record buffer",
-          "documentation": "Kafka records are cached in a buffer (per partition) before being written to Snowflake as data files. The buffer size defaults to 10000000 bytes (10 MB). The records are compressed when written to Snowflake. Because of the compression, the size of the cached records buffer may be larger that the size of the resulting data files created in Snowflake.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 10000000,
-                "max": 100000000
-              }
-            }
-          ],
-          "metadata": {
-            "group_name": "Connection details",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 11
-          }
+          "documentation": "Kafka records are cached in a buffer (per partition) before being written to Snowflake as data files. The buffer size defaults to 10000000 bytes (10 MB). The records are compressed when written to Snowflake. Because of the compression, the size of the cached records buffer may be larger that the size of the resulting data files created in Snowflake."
         },
         {
           "name": "errors.tolerance",
@@ -479,19 +263,12 @@
           "default_value": "all",
           "importance": "LOW",
           "group": "Error handling",
-          "order_in_group": 1,
           "display_name": "Error Tolerance",
           "documentation": "Use this property if you would like to configure the connector's error handling behavior differently from the Connect framework's.",
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Error handling",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 12
-          }
+          ]
         },
         {
           "name": "tasks.max",
@@ -499,30 +276,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "The number of tasks for the connector. Each task is limited to a number of topic partitions based on the `buffer.size.bytes` configuration, e.g., 10 MB -> 50 Topic Partitions, 20 MB-> 25 Topic Partitions, 50 MB -> 10 Topic Partitions, and 100 MB -> 5 Topic Partitions.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            },
-            {
-              "name": "buffer.size.kafka.partitions.max",
-              "arguments": {
-                "buffer.size.config.key": "buffer.size.bytes",
-                "max.buffer.size.per.task": "500000000",
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ]
+          "documentation": "The number of tasks for the connector. Each task is limited to a number of topic partitions based on the `buffer.size.bytes` configuration, e.g., 10 MB -> 50 Topic Partitions, 20 MB-> 25 Topic Partitions, 50 MB -> 10 Topic Partitions, and 100 MB -> 5 Topic Partitions."
         }
       ],
       "connector_configs": [
@@ -831,13 +586,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -845,22 +594,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -868,21 +603,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -891,22 +613,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -914,26 +626,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -958,15 +652,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1409,36 +1095,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1446,36 +1104,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "topics",
@@ -1483,22 +1116,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
-          "order_in_group": 1,
           "display_name": "Topic names",
           "documentation": "Identifies the topic name or a comma-separated list of topic names.",
-          "validators": [
-            {
-              "name": "kafka.topics",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL",
-                "topic.config.name": "topics"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.secret"
           ],
@@ -1506,11 +1125,7 @@
             {
               "name": "trim.list"
             }
-          ],
-          "metadata": {
-            "page": "SELECT_TOPICS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "max.poll.interval.ms",
@@ -1518,26 +1133,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 1,
           "display_name": "Max poll interval(ms)",
           "default_value": "300000",
-          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes).",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 60000,
-                "max": 1800000,
-                "dedicatedMin": 60000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
         },
         {
           "name": "max.poll.records",
@@ -1545,26 +1143,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Consumer configuration",
-          "order_in_group": 2,
           "display_name": "Max poll records",
           "default_value": "500",
-          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records.",
-          "validators": [
-            {
-              "name": "conditional.common.range",
-              "arguments": {
-                "min": 1,
-                "max": 500,
-                "dedicatedMin": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "advanced": true,
-            "group_name": "Consumer configuration"
-          }
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -1578,13 +1159,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -1662,7 +1237,6 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 1,
           "docs_hidden": true,
           "display_name": "Enable Client-Side Field Level Encryption",
           "documentation": "Determines whether the connector honours CSFLE rules or not",
@@ -1677,15 +1251,7 @@
                 "visibility": "false"
               }
             }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "group_name": "Data decryption",
-            "group_description": "Enable client-side decryption for the data that is pushed out of Confluent Cloud. Encryption rule must be setup for the data to be encrypted. The data will be written in encrypted form if there is no key access. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
-            "order_in_page": 10,
-            "visibility": "input.data.format==AVRO,JSON_SR,PROTOBUF"
-          }
+          ]
         },
         {
           "name": "csfle.onFailure",
@@ -1694,52 +1260,22 @@
           "default_value": "ERROR",
           "importance": "MEDIUM",
           "group": "CSFLE",
-          "order_in_group": 3,
           "docs_hidden": true,
           "display_name": "Connector behaviour on data decryption failure",
           "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
           "recommended_values": [
             "ERROR",
             "NONE"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data decryption",
-            "order_in_page": 12
-          }
+          ]
         },
         {
           "name": "sr.service.account.id",
           "type": "STRING",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 2,
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "csfle.enabled==true"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && input.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data decryption",
-            "order_in_page": 11
-          }
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
         },
         {
           "name": "csfle.configs.visible",
@@ -1838,25 +1374,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1873,7 +1397,6 @@
           "importance": "HIGH",
           "alias": "data.format",
           "group": "Input messages",
-          "order_in_group": 1,
           "display_name": "Input Kafka record value format",
           "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
@@ -1883,19 +1406,9 @@
             "JSON",
             "BYTES"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -1906,13 +1419,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -1923,13 +1430,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1940,13 +1441,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1955,12 +1450,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -2034,14 +1524,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -2050,12 +1534,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -2064,13 +1543,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -2079,12 +1552,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -2093,12 +1561,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -2107,12 +1570,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2121,12 +1579,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2135,12 +1588,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2149,12 +1597,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2163,12 +1606,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2177,12 +1615,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2191,12 +1624,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2211,13 +1639,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2226,12 +1648,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2240,12 +1657,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2254,12 +1666,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2275,13 +1682,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2297,13 +1698,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2317,13 +1712,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2332,12 +1721,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2347,12 +1731,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2361,12 +1740,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2375,12 +1749,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2400,12 +1769,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -2721,20 +2085,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "csfle.onFailure",
-    "input.data.format",
-    "input.key.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "max.poll.interval.ms",
-    "max.poll.records",
-    "name",
-    "schema.context.name",
-    "sr.service.account.id"
   ]
 }

@@ -4,30 +4,6 @@
       "template_id": "S3Source",
       "connector_type": "SOURCE",
       "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
-      "name": "{{.logicalClusterId}}",
-      "imports": [
-        "common",
-        "common-kafka-connectivity",
-        "common-source",
-        "schema-registry",
-        "csfle-source",
-        "aws-authentication",
-        "source-connector-output-data-format"
-      ],
-      "group_order": [
-        "How should we connect to your data?",
-        "Which topic(s) do you want to send data to?",
-        "Kafka Cluster credentials",
-        "CSFLE",
-        "Schema Config",
-        "Input and output messages",
-        "AWS credentials",
-        "How should we connect to your S3 bucket?",
-        "Storage",
-        "Data polling policy",
-        "Number of tasks for this connector",
-        "Additional Configs"
-      ],
       "config_defs": [
         {
           "name": "topic.regex.list",
@@ -35,14 +11,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Which topic(s) do you want to send data to?",
-          "order_in_group": 1,
           "display_name": "Topic Name Regex Patterns",
-          "documentation": "A list of topics along with a regex expression of the files which are to be sent to that topic.  For example: \"my-topic:.*\" will send all files to \"my-topic\", while a list containing only the expression \"special-topic:.*\\.json\" will send only files starting with \".json\" to \"special-topic\", and all other files not matching any patterns will be ignored and not sourced. Files that match multiple mappings will be sent to the first topic in the list that maps the file. The ``topic.regex.list`` property matches the full path (for example, ``folder/file.txt``), not just the filename.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 3,
-            "group_name": "Which topic(s) do you want to send data to?"
-          }
+          "documentation": "A list of topics along with a regex expression of the files which are to be sent to that topic.  For example: \"my-topic:.*\" will send all files to \"my-topic\", while a list containing only the expression \"special-topic:.*\\.json\" will send only files starting with \".json\" to \"special-topic\", and all other files not matching any patterns will be ignored and not sourced. Files that match multiple mappings will be sent to the first topic in the list that maps the file. The ``topic.regex.list`` property matches the full path (for example, ``folder/file.txt``), not just the filename."
         },
         {
           "name": "aws.access.key.id",
@@ -50,24 +20,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "AWS credentials",
-          "order_in_group": 2,
           "display_name": "AWS access key ID",
-          "documentation": "The AWS Access Key used to connect to Amazon S3.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==Access Keys"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "group_name": "AWS credentials",
-            "visibility": "authentication.method==Access Keys"
-          }
+          "documentation": "The AWS Access Key used to connect to Amazon S3."
         },
         {
           "name": "aws.secret.access.key",
@@ -75,30 +29,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "AWS credentials",
-          "order_in_group": 3,
           "display_name": "AWS secret access key",
           "documentation": "The AWS Secret Key used to connect to Amazon S3.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==Access Keys"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "aws.credentials"
-            }
-          ],
           "dependents": [
             "aws.access.key.id"
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 3,
-            "group_name": "AWS credentials",
-            "visibility": "authentication.method==Access Keys"
-          }
+          ]
         },
         {
           "name": "input.data.format",
@@ -106,7 +41,6 @@
           "required": true,
           "importance": "HIGH",
           "group": "Input and output messages",
-          "order_in_group": 1,
           "display_name": "Input Message Format",
           "documentation": "Sets the input message format. Valid entries are AVRO, JSON, or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO.",
           "recommended_values": [
@@ -116,22 +50,9 @@
             "PARQUET",
             "CSV"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            },
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 1,
-            "group_name": "Input and output messages"
-          }
+          ]
         },
         {
           "name": "output.data.format",
@@ -139,7 +60,6 @@
           "required": true,
           "importance": "HIGH",
           "group": "Input and output messages",
-          "order_in_group": 2,
           "display_name": "Output Message Format",
           "default_value": "${input.data.format}",
           "documentation": "Set the output message format for values. Valid entries are AVRO, JSON, JSON_SR, PROTOBUF, STRING, or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR and PROTOBUF.",
@@ -151,22 +71,9 @@
             "STRING",
             "BYTES"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            },
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 2,
-            "group_name": "Input and output messages"
-          }
+          ]
         },
         {
           "name": "s3.bucket.name",
@@ -174,28 +81,11 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 1,
-          "display_name": "S3 bucket name",
-          "validators": [
-            {
-              "name": "aws.bucket",
-              "arguments": {
-                "writeRequired": "false",
-                "secret_access_key_name": "aws.secret.access.key",
-                "access_key_id_name": "aws.access.key.id"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 4,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          "display_name": "S3 bucket name"
         },
         {
           "name": "s3.region",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 2,
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
@@ -203,52 +93,25 @@
           "documentation": "Set to the AWS region where your S3 bucket resides.",
           "recommender": {
             "name": "aws.regions"
-          },
-          "validators": [
-            {
-              "name": "aws.region",
-              "arguments": {
-                "region.config": "s3.region"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 5,
-            "group_name": "How should we connect to your S3 bucket?"
           }
         },
         {
           "name": "s3.part.retries",
           "type": "INT",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 3,
           "importance": "MEDIUM",
           "default_value": "3",
           "display_name": "Number of Retries on S3 Errors",
-          "documentation": "The number of times a single S3 API call should be retried in the case that it fails with a \"retriable\" error (such as a throttling exception). Once this limit is exceeded, the Kafka Connect poll itself may retry (based upon the Kafka Connect-based retry configuration).",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 7,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          "documentation": "The number of times a single S3 API call should be retried in the case that it fails with a \"retriable\" error (such as a throttling exception). Once this limit is exceeded, the Kafka Connect poll itself may retry (based upon the Kafka Connect-based retry configuration)."
         },
         {
           "name": "s3.retry.backoff.ms",
           "type": "INT",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 4,
           "importance": "MEDIUM",
           "default_value": "200",
           "display_name": "Retry Backoff on S3 Errors (ms)",
-          "documentation": "How long to wait in milliseconds before attempting the first retry of a failed S3 request. Upon a failure, this connector  may wait up to twice as long as the previous wait, up to the maximum number of retries. This avoids retrying in a tight loop under failure scenarios.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 8,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          "documentation": "How long to wait in milliseconds before attempting the first retry of a failed S3 request. Upon a failure, this connector  may wait up to twice as long as the previous wait, up to the maximum number of retries. This avoids retrying in a tight loop under failure scenarios."
         },
         {
           "name": "ui.s3.wan.mode",
@@ -257,24 +120,12 @@
           "default_value": "NO",
           "importance": "MEDIUM",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 5,
           "display_name": "S3 Accelerated Endpoint",
           "documentation": "Use an S3 accelerated endpoint.",
           "recommended_values": [
             "YES",
             "NO"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 9,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          ]
         },
         {
           "name": "ui.s3.path.style.access",
@@ -283,23 +134,12 @@
           "default_value": "NO",
           "importance": "MEDIUM",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 6,
           "display_name": "S3 Path-style Access",
           "documentation": "Whether to use s3 path-style access.",
           "recommended_values": [
             "YES",
             "NO"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 6,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          ]
         },
         {
           "name": "s3.http.send.expect.continue",
@@ -308,30 +148,17 @@
           "default_value": "YES",
           "importance": "MEDIUM",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 7,
           "display_name": "Send S3 Expect Continue Request",
           "documentation": "Enable/disable use of the HTTP/1.1 handshake using EXPECT: 100-CONTINUE during multi-part upload. If true, the client waits for a 100 (CONTINUE) response before sending the request body. If false, the client uploads the entire request body without checking if the server is willing to accept the request.",
           "recommended_values": [
             "YES",
             "NO"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 10,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          ]
         },
         {
           "name": "ui.s3.ssea.name",
           "type": "STRING",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 8,
           "importance": "MEDIUM",
           "display_name": "S3 Server Side Encryption Algorithm",
           "documentation": "The S3 server-side encryption algorithm.",
@@ -340,36 +167,18 @@
             "NONE",
             "AES256",
             "AWS:KMS"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 11,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          ]
         },
         {
           "name": "s3.sse.customer.key",
           "type": "PASSWORD",
           "importance": "MEDIUM",
           "group": "How should we connect to your S3 bucket?",
-          "order_in_group": 9,
           "display_name": "S3 Server Side Encryption Customer-Provided Key (SSE-C)",
           "documentation": "The S3 Server-Side Encryption customer-provided key (SSE-C).",
           "dependents": [
             "ui.s3.ssea.name"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 12,
-            "advanced": true,
-            "group_name": "How should we connect to your S3 bucket?"
-          }
+          ]
         },
         {
           "name": "topics.dir",
@@ -377,39 +186,17 @@
           "default_value": "topics",
           "importance": "HIGH",
           "group": "Storage",
-          "order_in_group": 1,
           "display_name": "Topics directory",
-          "documentation": "Top-level directory (in the S3 bucket) where data to be ingested is stored.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 4,
-            "group_name": "Storage"
-          }
+          "documentation": "Top-level directory (in the S3 bucket) where data to be ingested is stored."
         },
         {
           "name": "task.batch.size",
           "type": "INT",
           "group": "Storage",
-          "order_in_group": 2,
           "importance": "HIGH",
           "default_value": "10",
           "documentation": "The number of files assigned to each task at a time",
-          "display_name": "Task Batch Size",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 13,
-            "group_name": "Storage"
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 2000
-              }
-            }
-          ]
+          "display_name": "Task Batch Size"
         },
         {
           "name": "file.discovery.starting.timestamp",
@@ -418,15 +205,8 @@
           "importance": "HIGH",
           "default_value": "0",
           "group": "Storage",
-          "order_in_group": 3,
           "display_name": "File Discovery Starting Timestamp",
-          "documentation": "A Unix timestamp\u2013that is,seconds since Jan 1, 1970 UTC\u2013in epoch milliseconds that denotes where to start processing files. Any file encountered with creation time earlier than this will be ignored. Note that this configuration property should only be used when there are no stored offsets for a connector\u2013that is, this parameter is intended for new connectors to start from a specific timestamp rather than reading all the files in a bucket.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 14,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "A Unix timestamp–that is,seconds since Jan 1, 1970 UTC–in epoch milliseconds that denotes where to start processing files. Any file encountered with creation time earlier than this will be ignored. Note that this configuration property should only be used when there are no stored offsets for a connector–that is, this parameter is intended for new connectors to start from a specific timestamp rather than reading all the files in a bucket."
         },
         {
           "name": "directory.delim",
@@ -435,22 +215,13 @@
           "default_value": "/",
           "importance": "MEDIUM",
           "group": "Storage",
-          "order_in_group": 4,
           "display_name": "Directory Delimiter Character",
-          "documentation": "Directory delimiter pattern.",
-          "validators": [],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 15,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Directory delimiter pattern."
         },
         {
           "name": "ui.behavior.on.error",
           "type": "STRING",
           "group": "Storage",
-          "order_in_group": 5,
           "importance": "MEDIUM",
           "display_name": "Behavior on Errors",
           "documentation": "Error handling behavior setting for storage connectors. Must be configured to one of the following: IGNORE, FAIL",
@@ -458,50 +229,24 @@
           "recommended_values": [
             "IGNORE",
             "FAIL"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 16,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          ]
         },
         {
           "name": "format.bytearray.separator",
           "type": "STRING",
           "importance": "MEDIUM",
           "group": "Storage",
-          "order_in_group": 7,
           "display_name": "Byte Array Line Separator",
-          "documentation": "String inserted between records for ByteArrayFormat. Defaults to `\\n` and may contain escape sequences like `\\n`.  An input record that contains the line separator looks like multiple records in the storage object input.",
-          "validators": [],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 17,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "String inserted between records for ByteArrayFormat. Defaults to `\\n` and may contain escape sequences like `\\n`.  An input record that contains the line separator looks like multiple records in the storage object input."
         },
         {
           "name": "format.json.schema.enable",
           "type": "BOOLEAN",
           "importance": "MEDIUM",
           "group": "Storage",
-          "order_in_group": 8,
           "default_value": "false",
           "display_name": "Enable Embedded JSON Schema",
-          "documentation": "Enable reading of JSON messages with schema embedded",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 18,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Enable reading of JSON messages with schema embedded"
         },
         {
           "name": "csv.separator.char",
@@ -509,16 +254,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 9,
           "default_value": 44,
           "display_name": "CSV - Separator character",
-          "documentation": "The character that separates each field in the form of an integer. Typically in a CSV file, this is a ``,`` (``44``) character. A TSV file would use a tab (``9``) character. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 19,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "The character that separates each field in the form of an integer. Typically in a CSV file, this is a ``,`` (``44``) character. A TSV file would use a tab (``9``) character. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.first.row.as.header",
@@ -526,16 +264,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Storage",
-          "order_in_group": 10,
           "default_value": "true",
           "display_name": "CSV - Treat first row as header",
-          "documentation": "Flag to indicate if the fist row of data contains the header of the file. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 20,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Flag to indicate if the fist row of data contains the header of the file. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.null.field.indicator",
@@ -544,7 +275,6 @@
           "default_value": "NEITHER",
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 11,
           "display_name": "CSV - Null field indicator",
           "documentation": "Indicator to determine how the CSV Reader can determine if a field is null. For more information, see http://opencsv.sourceforge.net/apidocs/com/opencsv/enums/CSVReaderNullFieldIndicator.html. Applicable only if ``input.data.format`` is set to ``CSV``  .",
           "recommended_values": [
@@ -552,13 +282,7 @@
             "EMPTY_QUOTES",
             "BOTH",
             "NEITHER"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 21,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          ]
         },
         {
           "name": "value.schema",
@@ -566,15 +290,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Storage",
-          "order_in_group": 12,
           "display_name": "CSV - Value schema",
-          "documentation": "The schema for the value written to Kafka. A default schema will be auto-generated if no value schema is provided. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 22,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "The schema for the value written to Kafka. A default schema will be auto-generated if no value schema is provided. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.file.charset",
@@ -583,17 +300,10 @@
           "default_value": "UTF-8",
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 13,
           "display_name": "CSV - File character set",
           "documentation": "Character set to read file with. Applicable only if ``input.data.format`` is set to ``CSV``",
           "recommender": {
             "name": "character.encoding"
-          },
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 23,
-            "advanced": true,
-            "group_name": "Storage"
           }
         },
         {
@@ -602,16 +312,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 14,
           "default_value": 0,
           "display_name": "CSV - Skip lines",
-          "documentation": "The number of lines to skip in the beginning of the file. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 24,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "The number of lines to skip in the beginning of the file. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.escape.char",
@@ -619,16 +322,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 15,
           "default_value": 92,
           "display_name": "CSV - Escape character",
-          "documentation": "The character as an integer to use when a special character is encountered. The default escape character is typically a ``\\`` (``92``). Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 25,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "The character as an integer to use when a special character is encountered. The default escape character is typically a ``\\`` (``92``). Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.quote.char",
@@ -636,16 +332,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 16,
           "default_value": 34,
           "display_name": "CSV - Quote character",
-          "documentation": "The character that is used to quote a field. Typically in a CSV file,  this is a ``\"`` (``34``) character. This happens when the ``csv.separator.char`` is within the data. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 26,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "The character that is used to quote a field. Typically in a CSV file,  this is a ``\"`` (``34``) character. This happens when the ``csv.separator.char`` is within the data. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.ignore.leading.whitespace",
@@ -653,16 +342,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 17,
           "default_value": "true",
           "display_name": "CSV - Ignore leading whitespace",
-          "documentation": "Sets the ignore leading whitespace setting. If ``true``, the white space in front of a quote in a field is ignored. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 27,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Sets the ignore leading whitespace setting. If ``true``, the white space in front of a quote in a field is ignored. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.ignore.quotations",
@@ -670,16 +352,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 18,
           "default_value": "false",
           "display_name": "CSV - Ignore quotations",
-          "documentation": "Sets the ignore quotations mode. If ``true``, quotations are ignored. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 28,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Sets the ignore quotations mode. If ``true``, quotations are ignored. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "csv.strict.quotes",
@@ -687,16 +362,9 @@
           "required": false,
           "importance": "LOW",
           "group": "Storage",
-          "order_in_group": 19,
           "default_value": "false",
           "display_name": "CSV - Use strict quotes",
-          "documentation": "Sets the strict quotes setting. If ``true``, characters outside the quotes are ignored. Applicable only if ``input.data.format`` is set to ``CSV``.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 29,
-            "advanced": true,
-            "group_name": "Storage"
-          }
+          "documentation": "Sets the strict quotes setting. If ``true``, characters outside the quotes are ignored. Applicable only if ``input.data.format`` is set to ``CSV``."
         },
         {
           "name": "s3.poll.interval.ms",
@@ -704,23 +372,8 @@
           "importance": "MEDIUM",
           "default_value": "60000",
           "group": "Data polling policy",
-          "order_in_group": 1,
           "display_name": "S3 poll interval (ms)",
-          "documentation": "Frequency in milliseconds to poll for new or removed folders. This may result in updated task configurations starting to poll for data in added folders or stopping polling for data in removed folders",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 5,
-            "advanced": true,
-            "group_name": "Data polling policy"
-          }
+          "documentation": "Frequency in milliseconds to poll for new or removed folders. This may result in updated task configurations starting to poll for data in added folders or stopping polling for data in removed folders"
         },
         {
           "name": "record.batch.max.size",
@@ -728,47 +381,17 @@
           "importance": "MEDIUM",
           "default_value": "200",
           "group": "Data polling policy",
-          "order_in_group": 2,
           "display_name": "Max records per poll",
-          "documentation": "The maximum amount of records to return each time storage is polled.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 10000
-              }
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "order_in_page": 6,
-            "advanced": true,
-            "group_name": "Data polling policy"
-          }
+          "documentation": "The maximum amount of records to return each time storage is polled."
         },
         {
           "name": "tasks.max",
           "type": "INT",
           "group": "Number of tasks for this connector",
           "required": true,
-          "order_in_group": 1,
           "importance": "HIGH",
           "display_name": "Tasks max",
-          "documentation": "The total number of tasks to run in parallel.",
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The total number of tasks to run in parallel."
         }
       ],
       "connector_configs": [
@@ -1138,13 +761,7 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 1,
-            "change_after_launch": false
-          }
+          "display_name": "Connector class"
         },
         {
           "name": "name",
@@ -1152,22 +769,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "How should we connect to your data?",
-          "order_in_group": 2,
           "display_name": "Connector name",
-          "documentation": "Sets a name for your connector.",
-          "metadata": {
-            "page": "REVIEW_AND_LAUNCH",
-            "order_in_page": 2,
-            "change_after_launch": false
-          },
-          "validators": [
-            {
-              "name": "common.length",
-              "arguments": {
-                "length": 64
-              }
-            }
-          ]
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -1175,21 +778,8 @@
           "required": true,
           "importance": "HIGH",
           "group": "Number of tasks for this connector",
-          "order_in_group": 1,
           "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector.",
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 1
-              }
-            }
-          ],
-          "metadata": {
-            "page": "SIZING",
-            "order_in_page": 1
-          }
+          "documentation": "Maximum number of tasks for the connector."
         },
         {
           "name": "kafka.auth.mode",
@@ -1198,22 +788,12 @@
           "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
           "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
             "SERVICE_ACCOUNT",
             "KAFKA_API_KEY"
-          ],
-          "validators": [
-            {
-              "name": "common.is.recommended.value"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 1
-          }
+          ]
         },
         {
           "name": "kafka.api.key",
@@ -1221,26 +801,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         },
         {
           "name": "kafka.service.account.api.key",
@@ -1265,15 +827,7 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "internal": true,
-          "validators": [
-            {
-              "name": "common.regex",
-              "arguments": {
-                "pattern": "^.*://.*$"
-              }
-            }
-          ]
+          "internal": true
         },
         {
           "name": "kafka.user.id",
@@ -1716,33 +1270,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
           "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==SERVICE_ACCOUNT"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==SERVICE_ACCOUNT"
-          }
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
         },
         {
           "name": "kafka.api.secret",
@@ -1750,39 +1279,11 @@
           "required": false,
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
           "display_name": "Kafka API Secret",
           "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "kafka.auth.mode==KAFKA_API_KEY"
-              },
-              "priority": "HIGHEST"
-            },
-            {
-              "name": "kafka.credentials.sanity"
-            },
-            {
-              "name": "kafka.credentials",
-              "arguments": {
-                "ssl.endpoint.identification.algorithm": "https",
-                "sasl.mechanism": "PLAIN",
-                "request.timeout.ms": "60000",
-                "retry.backoff.ms": "500",
-                "security.protocol": "SASL_SSL"
-              }
-            }
-          ],
           "dependents": [
             "kafka.api.key"
-          ],
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==KAFKA_API_KEY"
-          }
+          ]
         },
         {
           "name": "datapreview.schemas.enable",
@@ -1792,13 +1293,7 @@
           "default_value": "false",
           "display_name": "Show schemas in data preview request output",
           "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI.",
-          "metadata": {
-            "page": "KAFKA_CREDENTIALS",
-            "order_in_page": 2,
-            "visibility": "kafka.auth.mode==NEVER_VISIBLE"
-          }
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
         },
         {
           "name": "errors.tolerance",
@@ -1812,13 +1307,7 @@
           "recommended_values": [
             "none",
             "all"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true"
-          }
+          ]
         },
         {
           "name": "producer.override.linger.ms",
@@ -1827,21 +1316,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms.",
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          },
-          "validators": [
-            {
-              "name": "common.range",
-              "arguments": {
-                "min": 100,
-                "max": 1000
-              }
-            }
-          ]
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
       "connector_configs": [
@@ -1920,25 +1395,13 @@
           "name": "schema.context.name",
           "type": "STRING",
           "group": "Schema Config",
-          "order_in_group": 1,
           "importance": "MEDIUM",
           "display_name": "Schema context",
           "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
           "default_value": "default",
-          "validators": [
-            {
-              "name": "schema.context.name.exist.check",
-              "priority": "LOWER"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "order_in_page": 1
-          }
+          ]
         }
       ],
       "connector_configs": []
@@ -1953,7 +1416,6 @@
           "default_value": "false",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 1,
           "docs_hidden": true,
           "display_name": "Enable Client-Side Field Level Encryption",
           "documentation": "Determines whether the connector honours CSFLE rules or not",
@@ -1968,41 +1430,16 @@
                 "visibility": "false"
               }
             }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "group_name": "Data encryption",
-            "group_description": "Enable client-side encryption for the data that is stored in Confluent Cloud. Encryption rule must be setup for the data to be encrypted. <a href=\"https://docs.confluent.io/cloud/current/security/encrypt/csfle/overview.html\">Learn more</a>",
-            "order_in_page": 10,
-            "visibility": "output.data.format==AVRO,JSON_SR,PROTOBUF"
-          }
+          ]
         },
         {
           "name": "sr.service.account.id",
           "type": "STRING",
           "importance": "HIGH",
           "group": "CSFLE",
-          "order_in_group": 2,
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry.",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "csfle.enabled==true"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "visibility": "csfle.enabled==true && output.data.format==AVRO,JSON_SR,PROTOBUF",
-            "group_name": "Data encryption",
-            "order_in_page": 11
-          }
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
         },
         {
           "name": "csfle.configs.visible",
@@ -2096,7 +1533,6 @@
           "default_value": "Access Keys",
           "importance": "HIGH",
           "group": "AWS credentials",
-          "order_in_group": 1,
           "display_name": "Authentication method",
           "documentation": "Select how you want to authenticate with AWS.",
           "recommended_values": [
@@ -2114,12 +1550,7 @@
                 "visibility": "false"
               }
             }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 1,
-            "group_name": "AWS credentials"
-          }
+          ]
         },
         {
           "name": "provider.integration.id",
@@ -2127,24 +1558,8 @@
           "required": false,
           "importance": "HIGH",
           "group": "AWS credentials",
-          "order_in_group": 2,
           "display_name": "Provider Integration",
-          "documentation": "Select an existing integration that has access to your resource. In case you need to integrate a new IAM role, use provider integration",
-          "validators": [
-            {
-              "name": "common.conditional.required",
-              "arguments": {
-                "condition": "authentication.method==IAM Roles"
-              },
-              "priority": "HIGHEST"
-            }
-          ],
-          "metadata": {
-            "page": "AUTHENTICATION",
-            "order_in_page": 2,
-            "group_name": "AWS credentials",
-            "visibility": "authentication.method==IAM Roles"
-          }
+          "documentation": "Select an existing integration that has access to your resource. In case you need to integrate a new IAM role, use provider integration"
         },
         {
           "name": "customer.aws.iam.role.arn",
@@ -2263,7 +1678,6 @@
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
-          "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
           "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
@@ -2273,20 +1687,9 @@
             "PROTOBUF",
             "JSON"
           ],
-          "validators": [
-            {
-              "name": "sr.integration"
-            }
-          ],
           "dependents": [
             "schema.registry.url"
-          ],
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": false,
-            "order_in_page": 2,
-            "group_name": "Output messages"
-          }
+          ]
         },
         {
           "name": "value.converter.schemas.enable",
@@ -2297,13 +1700,7 @@
           "group": "Additional Configs",
           "alias": "schemas.enable",
           "display_name": "value.converter.schemas.enable",
-          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "additional.visible": "true",
-            "group_name": "Additional Configs"
-          }
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.replace.null.with.default",
@@ -2314,13 +1711,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.replace.null.with.default",
-          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -2331,13 +1722,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -2346,12 +1731,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.scrub.invalid.names"
         }
       ],
       "connector_configs": [
@@ -2424,14 +1804,8 @@
           "default_value": "true",
           "importance": "MEDIUM",
           "group": "Auto-restart policy",
-          "order_in_group": 1,
           "display_name": "Enable Connector Auto-restart",
-          "documentation": "Enable connector to automatically restart on user-actionable errors.",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": true,
-            "group_name": "Auto-restart policy"
-          }
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
         },
         {
           "name": "value.converter.enhanced.avro.schema.support",
@@ -2440,12 +1814,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.avro.schema.support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -2454,13 +1823,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.connect.meta.data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -2469,12 +1832,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -2483,12 +1841,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.index.for.unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -2497,12 +1850,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.int.for.enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -2511,12 +1859,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -2525,12 +1868,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.generate.struct.for.nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -2539,12 +1877,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -2553,12 +1886,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.wrapper.for.raw.primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -2567,12 +1895,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.object.additional.properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -2581,12 +1904,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.optional.for.nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -2601,13 +1919,7 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.decimal.format",
-          "default_value": "BASE64",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "default_value": "BASE64"
         },
         {
           "name": "value.converter.auto.register.schemas",
@@ -2616,12 +1928,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.auto.register.schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2630,12 +1937,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.use.latest.version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2644,12 +1946,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.latest.compatibility.strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2665,13 +1962,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "key.converter.key.subject.name.strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2687,13 +1978,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.value.subject.name.strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2707,13 +1992,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs",
-            "additional.visible": "true"
-          }
+          "display_name": "value.converter.reference.subject.name.strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2722,12 +2001,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.allow.optional.map.keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2737,12 +2011,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.singleton.unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2751,12 +2020,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.optional.for.proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2765,12 +2029,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions",
-          "metadata": {
-            "page": "CONFIGURATION",
-            "advanced": "true",
-            "group_name": "Additional Configs"
-          }
+          "display_name": "value.converter.flatten.unions"
         },
         {
           "name": "header.converter",
@@ -2790,12 +2049,7 @@
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter"
-          ],
-          "metadata": {
-            "group_name": "Additional Configs",
-            "page": "CONFIGURATION",
-            "advanced": true
-          }
+          ]
         }
       ],
       "connector_configs": [
@@ -3097,22 +2351,5 @@
         }
       }
     }
-  ],
-  "config_defs_not_used_as_connector_names": [
-    "connector.class",
-    "input.data.format",
-    "kafka.api.key",
-    "kafka.api.secret",
-    "kafka.auth.mode",
-    "kafka.service.account.id",
-    "name",
-    "output.data.format",
-    "s3.http.send.expect.continue",
-    "schema.context.name",
-    "sr.service.account.id",
-    "ui.behavior.on.error",
-    "ui.s3.path.style.access",
-    "ui.s3.ssea.name",
-    "ui.s3.wan.mode"
   ]
 }
