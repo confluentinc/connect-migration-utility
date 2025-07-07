@@ -9,26 +9,21 @@ import base64
 import requests
 
 class ConnectorComparator:
-    def __init__(self, input_file: Path, output_dir: Path, sm_template_dir: Path = None, fm_template_dir: Path = None):
+    def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
         self.fm_configs_dir = output_dir / 'fm_configs'
         self.semantic_matcher = SemanticMatcher()
         
-        # Template directories
-        self.sm_template_dir = sm_template_dir
-        self.fm_template_dir = fm_template_dir
+        # Worker URLs for fetching SM templates
+        self.worker_urls = worker_urls or []
         
-        # Template path cache
-        self.template_path_cache = {}
+
         
-        # User selected templates cache
-        self.user_selected_templates = {}
-        
-        # Load template files
-        self.sm_templates = self._load_templates(sm_template_dir) if sm_template_dir else {}
-        self.fm_templates = self._load_templates(fm_template_dir) if fm_template_dir else {}
+        # Load template files - hardcoded FM template directory
+        self.fm_template_dir = Path("templates/fm")
+        self.fm_templates = self._load_templates(self.fm_template_dir) if self.fm_template_dir.exists() else {}
         
         # Build connector.class to template mapping
         self.connector_class_to_template = self._build_connector_class_mapping()
@@ -81,7 +76,7 @@ class ConnectorComparator:
             }
         }
 
-    def encode_to_base64(input_string):
+    def encode_to_base64(self, input_string):
         # Convert the input string to bytes
         byte_data = input_string.encode('utf-8')
         # Encode the bytes to base64
@@ -94,7 +89,7 @@ class ConnectorComparator:
         # Extract all keys starting with "transforms"
         return {k: v for k, v in config_dict.items() if k.startswith("transforms")}
 
-    def extract_recommended_transform_types(response_json):
+    def extract_recommended_transform_types(self, response_json):
         configs = response_json.get("configs", [])
         for config in configs:
             value = config.get("value", {})
@@ -102,13 +97,46 @@ class ConnectorComparator:
                 return value.get("recommended_values", [])
         return []
 
+    def get_SM_template(self, connector_class: str) -> Dict[str, Any]:
+        """Fetch SM template for a connector class via HTTP PUT call to worker URLs"""
+        if not self.worker_urls:
+            self.logger.error("No worker URLs provided for fetching SM templates")
+            return {}
+        
+        # Try each worker URL until we get a successful response
+        for worker_url in self.worker_urls:
+            try:
+                url = f"{worker_url}/connector-plugins/{connector_class}/config/validate"
+                data = {
+                    "connector.class": connector_class
+                }
+                headers = {
+                    "Content-Type": "application/json"
+                }
+                
+                self.logger.info(f"Fetching SM template for {connector_class} from {url}")
+                self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
+                response = requests.put(url, json=data, headers=headers)
+                response.raise_for_status()
+                
+                template_data = response.json()
+                self.logger.info(f"Successfully fetched SM template for {connector_class} from {worker_url}")
+                return template_data
+                
+            except requests.exceptions.RequestException as e:
+                self.logger.warning(f"Failed to fetch SM template for {connector_class} from {worker_url}: {str(e)}")
+                continue
+        
+        self.logger.error(f"Failed to fetch SM template for {connector_class} from any worker URL")
+        return {}
+
     def get_FM_SMT(self, plugin_type) -> set[str]:
         env_id = "env-yodk3k"
         lkc_id = "lkc-nww1j6"
         bearer_token = "G42O4SU5RQG5QP4T:xAqK3hQ9RZdss2zEr7G3St0Hviv+WnPAao+Ni3cay+n6TNfChmE/o36tZSuJv0ER"
 
         url = (
-            f"https://confluent.cloud/api/internal/accounts/env-yodk3k/clusters/lkc-nww1j6/connector-plugins/DatagenSource/config/validate"
+            f"https://confluent.cloud/api/internal/accounts/env-yodk3k/clusters/lkc-nww1j6/connector-plugins/{plugin_type}/config/validate"
         )
         params = {
             "extra_fields": "configs/metadata,configs/internal"
@@ -119,20 +147,21 @@ class ConnectorComparator:
         }
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Basic {encode_to_base64(bearer_token)}"
+            "Authorization": f"Basic {self.encode_to_base64(bearer_token)}"
         }
         response = requests.put(url, params=params, json=data, headers=headers)
         response.raise_for_status()
-        recommended_values = extract_recommended_transform_types(response.json())
+        recommended_values = self.extract_recommended_transform_types(response.json())
         return recommended_values
 
     def get_transforms_config(self, config: Dict[str, Any], plugin_type: str) -> Dict[str, Dict[str, Any]]:
 
-        fm_smt = get_FM_SMT(plugin_type)
+        fm_smt = self.get_FM_SMT(plugin_type)
 
-        return classify_transform_configs_with_full_chain(config, fm_smt)
+        return self.classify_transform_configs_with_full_chain(config, fm_smt)
 
     def classify_transform_configs_with_full_chain(
+        self,
         config: Dict[str, Any],
         allowed_transform_types: set
     ) -> Dict[str, Dict[str, Any]]:
@@ -180,23 +209,6 @@ class ConnectorComparator:
         """Build mapping of connector.class to template paths"""
         mapping = {}
         
-        # Map SM templates
-        if self.sm_template_dir:
-            for template_file in self.sm_template_dir.glob('*.json'):
-                try:
-                    with open(template_file, 'r') as f:
-                        template_data = json.load(f)
-                        if 'connector.class' in template_data:
-                            connector_class = template_data['connector.class']
-                            if connector_class not in mapping:
-                                mapping[connector_class] = {
-                                    'sm_templates': [],
-                                    'fm_templates': []
-                                }
-                            mapping[connector_class]['sm_templates'].append(str(template_file))
-                except Exception as e:
-                    self.logger.error(f"Error reading template {template_file}: {str(e)}")
-        
         # Map FM templates
         if self.fm_template_dir:
             for template_file in self.fm_template_dir.glob('*_resolved_templates.json'):
@@ -207,7 +219,6 @@ class ConnectorComparator:
                             connector_class = template_data['connector.class']
                             if connector_class not in mapping:
                                 mapping[connector_class] = {
-                                    'sm_templates': [],
                                     'fm_templates': []
                                 }
                             mapping[connector_class]['fm_templates'].append(str(template_file))
@@ -216,109 +227,124 @@ class ConnectorComparator:
         
         return mapping
 
-    def _get_user_template_selection(self, connector_class: str, template_type: str, template_paths: List[str]) -> str:
+    def _find_fm_template_by_connector_class(self, connector_class: str, connector_name: str = None) -> Optional[str]:
+        """Find FM template file that contains the specified connector.class"""
+        if not self.fm_template_dir or not self.fm_template_dir.exists():
+            self.logger.error(f"FM template directory does not exist: {self.fm_template_dir}")
+            return None
+        
+        matching_templates = []
+        template_info = []
+        
+        # Search through all JSON files in the FM template directory
+        for template_file in self.fm_template_dir.glob('*.json'):
+            try:
+                with open(template_file, 'r') as f:
+                    template_data = json.load(f)
+                    
+                # Check if this template has the matching connector.class
+                # Handle both direct connector.class and nested templates structure
+                found_connector_class = None
+                
+                # Check direct connector.class
+                if template_data.get('connector.class') == connector_class:
+                    found_connector_class = template_data.get('connector.class')
+                # Check nested templates structure
+                elif 'templates' in template_data:
+                    for template in template_data['templates']:
+                        if template.get('connector.class') == connector_class:
+                            found_connector_class = template.get('connector.class')
+                            break
+                
+                if found_connector_class:
+                    template_path = str(template_file)
+                    
+                    # Extract template_id from the correct location
+                    template_id = 'Unknown'
+                    if template_data.get('template_id'):
+                        template_id = template_data.get('template_id')
+                    elif 'templates' in template_data and len(template_data['templates']) > 0:
+                        template_id = template_data['templates'][0].get('template_id', 'Unknown')
+                    
+                    matching_templates.append(template_path)
+                    template_info.append({
+                        'path': template_path,
+                        'template_id': template_id,
+                        'filename': template_file.name
+                    })
+                    self.logger.debug(f"Found matching FM template: {template_file} (template_id: {template_id})")
+                    
+            except Exception as e:
+                self.logger.warning(f"Error reading template {template_file}: {str(e)}")
+                continue
+        
+        if not matching_templates:
+            self.logger.warning(f"No FM templates found for connector.class: {connector_class}")
+            return None
+        
+        if len(matching_templates) == 1:
+            # Only one template found, use it
+            self.logger.info(f"Using single FM template: {matching_templates[0]}")
+            return matching_templates[0]
+        else:
+            # Multiple templates found, ask user to pick
+            return self._get_user_template_selection(connector_class, template_info, connector_name)
+
+    def _get_user_template_selection(self, connector_class: str, template_info: List[Dict[str, str]], connector_name: str = None) -> Optional[str]:
         """Ask user to select a template when multiple options are available"""
-        cache_key = f"{connector_class}_{template_type}"
-        
-        # Check if user has already selected this template
-        if cache_key in self.user_selected_templates:
-            return self.user_selected_templates[cache_key]
-        
-        print(f"\nMultiple {template_type.upper()} templates found for connector class: {connector_class}")
+        connector_display = f"{connector_name} ({connector_class})" if connector_name else connector_class
+        print(f"\nMultiple FM templates found for connector: {connector_display}")
         print("Available templates:")
-        for i, path in enumerate(template_paths, 1):
-            print(f"{i}. {path}")
+        for i, info in enumerate(template_info, 1):
+            template_id = info['template_id']
+            filename = info['filename']
+            print(f"{i}. Template ID: {template_id} (File: {filename})")
         
         while True:
             try:
-                choice = int(input(f"\nPlease select a {template_type.upper()} template (1-{len(template_paths)}): "))
-                if 1 <= choice <= len(template_paths):
-                    selected_path = template_paths[choice - 1]
-                    self.user_selected_templates[cache_key] = selected_path
+                choice = int(input(f"\nPlease select an FM template for '{connector_display}' (1-{len(template_info)}): "))
+                if 1 <= choice <= len(template_info):
+                    selected_template = template_info[choice - 1]
+                    selected_path = selected_template['path']
+                    self.logger.info(f"User selected FM template for {connector_display}: {selected_path}")
                     return selected_path
                 else:
-                    print(f"Please enter a number between 1 and {len(template_paths)}")
+                    print(f"Please enter a number between 1 and {len(template_info)}")
             except ValueError:
                 print("Please enter a valid number")
 
-    def _get_manual_template_path(self, connector_class: str, template_type: str) -> Optional[str]:
-        """Ask user to manually enter template path when no templates are found"""
-        cache_key = f"{connector_class}_{template_type}"
-        
-        # Check if user has already provided a path
-        if cache_key in self.user_selected_templates:
-            return self.user_selected_templates[cache_key]
-        
-        print(f"\nNo {template_type.upper()} templates found for connector class: {connector_class}")
-        while True:
-            path = input(f"Please enter the path to the {template_type.upper()} template file (or press Enter to skip): ").strip()
-            if not path:  # User pressed Enter
-                return None
-            if Path(path).exists():
-                self.user_selected_templates[cache_key] = path
-                return path
-            print(f"File not found: {path}")
-
-    def _get_templates_for_connector(self, connector_class: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    def _get_templates_for_connector(self, connector_class: str, connector_name: str = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """Get SM and FM templates for a connector class"""
-        # Check cache first
-        if connector_class in self.template_path_cache:
-            sm_path, fm_path = self.template_path_cache[connector_class]
-            self.logger.info(f"Using cached templates for {connector_class}:")
-            self.logger.info(f"  SM Template: {sm_path}")
-            self.logger.info(f"  FM Template: {fm_path}")
-            return self.sm_templates.get(sm_path, {}), self.fm_templates.get(fm_path, {})
+        # Fetch SM template via HTTP
+        self.logger.info(f"Fetching SM template for {connector_class} via HTTP...")
+        sm_template = self.get_SM_template(connector_class)
         
-        # Get template paths from mapping
-        template_info = self.connector_class_to_template.get(connector_class, {})
-        sm_templates = template_info.get('sm_templates', [])
-        fm_templates = template_info.get('fm_templates', [])
-        
-        # Handle SM templates
-        if not sm_templates:
-            self.logger.warning(f"No SM templates found for connector class: {connector_class}")
-            sm_template_path = self._get_manual_template_path(connector_class, 'sm')
-            if sm_template_path:
-                # Load the manually specified template
-                try:
-                    with open(sm_template_path, 'r') as f:
-                        self.sm_templates[sm_template_path] = json.load(f)
-                except Exception as e:
-                    self.logger.error(f"Error loading manual SM template {sm_template_path}: {str(e)}")
-                    sm_template_path = None
+        # Handle FM templates - find by connector.class
+        fm_template_path = self._find_fm_template_by_connector_class(connector_class, connector_name)
+        if fm_template_path:
+            try:
+                with open(fm_template_path, 'r') as f:
+                    self.fm_templates[fm_template_path] = json.load(f)
+                self.logger.info(f"Loaded FM template by connector.class: {fm_template_path}")
+            except Exception as e:
+                self.logger.error(f"Error loading FM template {fm_template_path}: {str(e)}")
+                fm_template_path = None
         else:
-            sm_template_path = sm_templates[0] if len(sm_templates) == 1 else self._get_user_template_selection(connector_class, 'sm', sm_templates)
+            self.logger.error(f"No FM template found for connector.class: {connector_class}")
+            fm_template_path = None
         
-        # Handle FM templates
-        if not fm_templates:
-            self.logger.warning(f"No FM templates found for connector class: {connector_class}")
-            fm_template_path = self._get_manual_template_path(connector_class, 'fm')
-            if fm_template_path:
-                # Load the manually specified template
-                try:
-                    with open(fm_template_path, 'r') as f:
-                        self.fm_templates[fm_template_path] = json.load(f)
-                except Exception as e:
-                    self.logger.error(f"Error loading manual FM template {fm_template_path}: {str(e)}")
-                    fm_template_path = None
-        else:
-            fm_template_path = fm_templates[0] if len(fm_templates) == 1 else self._get_user_template_selection(connector_class, 'fm', fm_templates)
-        
-        # If either template is missing, return empty templates
-        if not sm_template_path or not fm_template_path:
-            self.logger.error(f"Missing required templates for {connector_class}")
-            return {}, {}
+        # If FM template is missing, return empty templates
+        if not fm_template_path:
+            self.logger.error(f"Missing required FM template for {connector_class}")
+            return sm_template, {}
         
         # Log template selection
         self.logger.info(f"Selected templates for {connector_class}:")
-        self.logger.info(f"  SM Template: {sm_template_path}")
+        self.logger.info(f"  SM Template: Fetched via HTTP")
         self.logger.info(f"  FM Template: {fm_template_path}")
         
-        # Cache the paths
-        self.template_path_cache[connector_class] = (sm_template_path, fm_template_path)
-        
         # Return templates
-        return self.sm_templates.get(sm_template_path, {}), self.fm_templates.get(fm_template_path, {})
+        return sm_template, self.fm_templates.get(fm_template_path, {})
 
     def _load_templates(self, template_dir: Path) -> Dict[str, Dict[str, Any]]:
         """Load all JSON template files from a directory"""
@@ -413,9 +439,16 @@ class ConnectorComparator:
     def _get_required_properties(self, fm_template: Dict[str, Any]) -> Dict[str, Any]:
         """Extract required properties from FM template"""
         required_props = {}
-        for prop_name, prop_info in fm_template.get('properties', {}).items():
-            if prop_info.get('required', False):
-                required_props[prop_name] = prop_info
+        
+        # Look for properties in config_defs within templates
+        if 'templates' in fm_template:
+            for template in fm_template['templates']:
+                if 'config_defs' in template:
+                    for config_def in template['config_defs']:
+                        # Skip internal properties as they are handled by the Cloud platform
+                        if config_def.get('required', False) and not config_def.get('internal', False):
+                            required_props[config_def['name']] = config_def
+        
         return required_props
 
     def _generate_fm_config(self, connector: Dict[str, Any]) -> Dict[str, Any]:
@@ -437,10 +470,15 @@ class ConnectorComparator:
             }
         
         # Get templates based on connector class
-        sm_template, fm_template = self._get_templates_for_connector(connector_class)
+        sm_template, fm_template = self._get_templates_for_connector(connector_class, name)
         
         # Initialize mapped config with name
         mapped_config = {'name': name}
+        
+        # Always include connector.class as it's required
+        if connector_class:
+            mapped_config['connector.class'] = connector_class
+        
         mapping_errors = []
         unmapped_configs = []
         
@@ -456,7 +494,20 @@ class ConnectorComparator:
             
             # Get required properties from FM template
             required_props = self._get_required_properties(fm_template)
-            plugin_type = fm_template.get('template_id', {})
+            
+            # Extract template_id from the correct location
+            plugin_type = "Unknown"
+            if fm_template.get('template_id'):
+                plugin_type = fm_template.get('template_id')
+            elif 'templates' in fm_template and len(fm_template['templates']) > 0:
+                plugin_type = fm_template['templates'][0].get('template_id', 'Unknown')
+            
+            self.logger.info(f"Using template_id for transforms: {plugin_type}")
+            
+            # Update connector.class to use template_id
+            if plugin_type != "Unknown":
+                mapped_config['connector.class'] = plugin_type
+                self.logger.info(f"Updated connector.class to template_id: {plugin_type}")
             
             # First handle required properties
             for prop_name, prop_info in required_props.items():
@@ -477,7 +528,7 @@ class ConnectorComparator:
                     error_msg = f"Required property '{prop_name}' needs a value but none was provided in input config or default value"
                     mapping_errors.append(error_msg)
                     self.logger.error(error_msg)
-            transforms_data = get_transforms_config(config, plugin_type)
+            transforms_data = self.get_transforms_config(config, plugin_type)
             mapped_config.update(transforms_data['allowed'])
             for key, value in transforms_data['disallowed'].items():
                 if key.endswith(".type"):
@@ -499,11 +550,22 @@ class ConnectorComparator:
                     self.logger.debug(f"Property value: {sm_prop_value}")
                     
                     # Step 1: Try exact name match first
-                    if sm_prop_name in fm_template.get('properties', {}):
-                        # Direct match found
-                        mapped_config[sm_prop_name] = sm_prop_value
-                        self.logger.info(f"Direct match found for property: {sm_prop_name}")
-                    else:
+                    property_found = False
+                    if 'templates' in fm_template:
+                        for template in fm_template['templates']:
+                            # Check config_defs first
+                            if 'config_defs' in template:
+                                for config_def in template['config_defs']:
+                                    if config_def['name'] == sm_prop_name:
+                                        # Direct match found
+                                        mapped_config[sm_prop_name] = sm_prop_value
+                                        self.logger.info(f"Direct match found for property: {sm_prop_name}")
+                                        property_found = True
+                                        break
+                            if property_found:
+                                break
+                    
+                    if not property_found:
                         # Step 2: Try semantic matching
                         sm_prop = {
                             'name': sm_prop_name,
@@ -512,33 +574,38 @@ class ConnectorComparator:
                             'section': sm_template.get('group', 'General')
                         }
                         
-                        # Create property object for semantic matching
-                        sm_property = Property(
-                            name=sm_prop_name,
-                            description=sm_template.get('documentation', ''),
-                            type=sm_template.get('type', 'STRING'),
-                            section=sm_template.get('group', 'General')
-                        )
-                        
-                        # Get FM properties for matching
-                        fm_properties = []
-                        for prop_name, prop_info in fm_template.get('properties', {}).items():
-                            fm_properties.append(Property(
-                                name=prop_name,
-                                description=prop_info.get('description', ''),
-                                type=prop_info.get('type', 'STRING'),
-                                section=prop_info.get('section', 'General')
-                            ))
+                        # Get FM properties for matching (as dictionary)
+                        fm_properties_dict = {}
+                        if 'templates' in fm_template:
+                            for template in fm_template['templates']:
+                                # Add config_defs properties
+                                if 'config_defs' in template:
+                                    for config_def in template['config_defs']:
+                                        fm_properties_dict[config_def['name']] = config_def
                         
                         # Find best match using semantic matching
-                        result = self.semantic_matcher.find_best_match(sm_property, fm_properties)
+                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict)
                         
                         if result and result.matched_fm_property:
-                            fm_prop_name = result.matched_fm_property.name
-                            mapped_config[fm_prop_name] = sm_prop_value
-                            self.logger.info(f"Successfully mapped {sm_prop_name} to {fm_prop_name} using {result.match_type} matching")
+                            # result.matched_fm_property is now a dictionary, so we need to get the property name
+                            # The find_best_match method returns the property info, but we need the property name
+                            # We'll need to find the property name by matching the property info
+                            fm_prop_name = None
+                            for prop_name, prop_info in fm_properties_dict.items():
+                                if prop_info == result.matched_fm_property:
+                                    fm_prop_name = prop_name
+                                    break
+                            
+                            if fm_prop_name:
+                                mapped_config[fm_prop_name] = sm_prop_value
+                                self.logger.info(f"Successfully mapped {sm_prop_name} to {fm_prop_name} using {result.match_type} matching")
+                            else:
+                                error_msg = f"Could not determine property name for matched property: {sm_prop_name}"
+                                mapping_errors.append(error_msg)
+                                unmapped_configs.append(sm_prop_name)
+                                self.logger.warning(f"Failed to map property '{sm_prop_name}' - could not determine property name")
                         else:
-                            error_msg = f"No match found for property: {sm_prop_name}"
+                            error_msg = f"no FM Config found for {sm_prop_name}"
                             mapping_errors.append(error_msg)
                             unmapped_configs.append(sm_prop_name)
                             self.logger.warning(f"Failed to map property '{sm_prop_name}'")

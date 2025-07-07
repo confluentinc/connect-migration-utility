@@ -24,8 +24,6 @@ def main():
     parser.add_argument('--worker-urls-file', type=str, help='Path to file containing worker URLs')
     parser.add_argument('--redact', action='store_true', help='Redact sensitive configurations')
     parser.add_argument('--output-dir', type=str, default='output', help='Output directory for all files')
-    parser.add_argument('--sm-templates', type=str, help='Directory containing SM template files')
-    parser.add_argument('--fm-templates', type=str, help='Directory containing FM template files')
     args = parser.parse_args()
 
     # Create output directory if it doesn't exist
@@ -54,8 +52,7 @@ def main():
         comparator = ConnectorComparator(
             input_file=connectors_json,
             output_dir=output_dir,
-            sm_template_dir=Path(args.sm_templates) if args.sm_templates else None,
-            fm_template_dir=Path(args.fm_templates) if args.fm_templates else None
+            worker_urls=discovery.worker_urls
         )
         comparator.process_connectors()
         logger.info("Connector processing completed successfully")
