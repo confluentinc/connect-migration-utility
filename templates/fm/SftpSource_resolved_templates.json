@@ -1,0 +1,1346 @@
+{
+  "templates": [
+    {
+      "template_id": "SftpSource",
+      "connector_type": "SOURCE",
+      "connector.class": "io.confluent.connect.sftp.SftpGenericSourceConnector",
+      "config_defs": [
+        {
+          "name": "input.file.parser.format",
+          "type": "STRING",
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "display_name": "Input file parser format",
+          "group": "Input file parser format",
+          "order_in_group": 1,
+          "documentation": "Parser that should be used to parse fetched files from sftp directory",
+          "recommended_values": [
+            "JSON",
+            "CSV",
+            "SCHEMALESS_JSON",
+            "BINARY"
+          ]
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Output message format",
+          "alias": "data.format",
+          "documentation": "Sets the output message format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON, STRING or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "STRING",
+            "BYTES"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "input.file.parser.format"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "kafka.topic"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "value.converter",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter",
+              "STRING": "org.apache.kafka.connect.storage.StringConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "output.data.format": {
+              "JSON": false,
+              "STRING": false,
+              "BYTES": false
+            }
+          }
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "true",
+              "PROTOBUF": "false"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ]
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": []
+    },
+    {
+      "template_id": "sftp-common",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "sftp.host",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "SFTP Details",
+          "order_in_group": 1,
+          "display_name": "SFTP Host",
+          "documentation": "Host address of the SFTP server."
+        },
+        {
+          "name": "sftp.port",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "SFTP Details",
+          "order_in_group": 2,
+          "default_value": 22,
+          "display_name": "SFTP Port",
+          "documentation": "Port number of the SFTP server."
+        },
+        {
+          "name": "sftp.username",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "SFTP Details",
+          "order_in_group": 3,
+          "display_name": "Username",
+          "documentation": "Username for the SFTP connection."
+        },
+        {
+          "name": "sftp.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "SFTP Details",
+          "order_in_group": 4,
+          "display_name": "Password",
+          "documentation": "Password for the SFTP connection (not required if using TLS)."
+        },
+        {
+          "name": "tls.pemfile",
+          "type": "PASSWORD",
+          "required": "false",
+          "importance": "HIGH",
+          "group": "SFTP Details",
+          "order_in_group": 5,
+          "display_name": "PEM File",
+          "documentation": "PEM file to be used for authentication via TLS."
+        },
+        {
+          "name": "tls.passphrase",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "SFTP Details",
+          "order_in_group": 6,
+          "display_name": "TLS passphrase",
+          "documentation": "Passphrase that will be used to decrypt the private key if the given private key is encrypted."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "sftp.host"
+        },
+        {
+          "name": "sftp.port"
+        },
+        {
+          "name": "sftp.username"
+        },
+        {
+          "name": "sftp.password"
+        },
+        {
+          "name": "tls.passphrase"
+        },
+        {
+          "name": "tls.pemfile"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${sftp.host}"
+        }
+      ]
+    },
+    {
+      "template_id": "sftp-source-common-schema",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "timestamp.mode",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Timestamps",
+          "order_in_group": 1,
+          "display_name": "Timestamp mode",
+          "documentation": "Determines how the connector will set the timestamp for the ConnectRecord. If set to `FIELD` then the timestamp will be read from a field in the value. This field cannot be optional and must be a Timestamp. Specify the field in `timestamp.field`. If set to `FILE_TIME` then the last modified time of the file will be used. If set to `PROCESS_TIME` the time the record is read will be used.",
+          "recommended_values": [
+            "FIELD",
+            "FILE_TIME",
+            "PROCESS_TIME"
+          ]
+        },
+        {
+          "name": "timestamp.field",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Timestamps",
+          "order_in_group": 2,
+          "display_name": "Timestamp field",
+          "documentation": "The field in the value schema that will contain the parsed timestamp for the record. This field cannot be marked as optional and must be a [Timestamp] (https://kafka.apache.org/0102/javadoc/org/apache/kafka/connect/data/Schema.html)"
+        },
+        {
+          "name": "parser.timestamp.timezone",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Timestamps",
+          "order_in_group": 3,
+          "display_name": "Parser timestamp timezone",
+          "documentation": "The timezone that all of the dates will be parsed with.",
+          "recommender": {
+            "name": "timezone"
+          }
+        },
+        {
+          "name": "parser.timestamp.date.formats",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Timestamps",
+          "order_in_group": 4,
+          "display_name": "Parser timestamp date format",
+          "documentation": "The date formats that are expected in the file. This is a list of strings that will be used to parse the date fields in order. The most accurate date format should be the first in the list. Take a look at the Java documentation for more info. https://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html"
+        },
+        {
+          "name": "key.schema",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Schema",
+          "order_in_group": 1,
+          "display_name": "Key schema",
+          "documentation": "The schema for the key written to Kafka. Set the actual schema, not the schema ID. To generate the schema, use the tool available here: https://github.com/jcustenborder/kafka-connect-spooldir?tab=readme-ov-file#tip-1"
+        },
+        {
+          "name": "value.schema",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Schema",
+          "order_in_group": 2,
+          "display_name": "Value schema",
+          "documentation": "The schema for the value written to Kafka. Set the actual schema, not the schema ID. To generate the schema, use the tool available here: https://github.com/jcustenborder/kafka-connect-spooldir?tab=readme-ov-file#tip-1"
+        },
+        {
+          "name": "schema.generation.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Schema Generation",
+          "order_in_group": 1,
+          "display_name": "Schema generation enabled",
+          "documentation": "Flag to determine if schemas should be dynamically generated. If set  to true, `key.schema` and `value.schema` can be omitted, but `schema.generation.key.name` and `schema.generation.value.name` must be set."
+        },
+        {
+          "name": "schema.generation.key.fields",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Schema Generation",
+          "order_in_group": 2,
+          "display_name": "Schema generation key fields",
+          "documentation": "The field(s) to use to build a key schema. This is only used during schema generation."
+        },
+        {
+          "name": "schema.generation.key.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Schema Generation",
+          "order_in_group": 3,
+          "display_name": "Schema generation key name",
+          "documentation": "The name of the generated key schema."
+        },
+        {
+          "name": "schema.generation.value.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Schema Generation",
+          "order_in_group": 4,
+          "display_name": "Schema generation value name",
+          "documentation": "The name of the generated value schema."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "key.schema"
+        },
+        {
+          "name": "value.schema"
+        },
+        {
+          "name": "parser.timestamp.timezone"
+        },
+        {
+          "name": "parser.timestamp.date.formats"
+        },
+        {
+          "name": "timestamp.field"
+        },
+        {
+          "name": "timestamp.mode"
+        },
+        {
+          "name": "schema.generation.enabled"
+        },
+        {
+          "name": "schema.generation.key.fields"
+        },
+        {
+          "name": "schema.generation.key.name"
+        },
+        {
+          "name": "schema.generation.value.name"
+        }
+      ]
+    },
+    {
+      "template_id": "sftp-source-common",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "batch.size",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 1,
+          "default_value": 1000,
+          "display_name": "Batch size",
+          "documentation": "The number of records that should be returned with each batch."
+        },
+        {
+          "name": "empty.poll.wait.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "default_value": 250,
+          "display_name": "Empty poll wait (ms)",
+          "documentation": "The amount of time to wait if a poll returns an empty list of records."
+        },
+        {
+          "name": "input.path",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "SFTP directory",
+          "order_in_group": 1,
+          "display_name": "Input path",
+          "documentation": "The SFTP directory to read files that will be processed.This directory must exist and be writable by the user running Kafka Connect."
+        },
+        {
+          "name": "finished.path",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "SFTP directory",
+          "order_in_group": 2,
+          "display_name": "Finished path",
+          "documentation": "The SFTP directory to place files that have been successfully processed. This directory must exist and be writable by the user running Kafka Connect."
+        },
+        {
+          "name": "error.path",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "SFTP directory",
+          "order_in_group": 3,
+          "display_name": "Error path",
+          "documentation": "The SFTP directory to place files in which there are error(s). This directory must exist and be writable by the user running Kafka Connect."
+        },
+        {
+          "name": "cleanup.policy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "MOVE",
+          "importance": "MEDIUM",
+          "group": "File System",
+          "order_in_group": 1,
+          "display_name": "Cleanup policy",
+          "documentation": "Determines how the connector should cleanup the files that have been successfully processed. NONE leaves the files in place which could cause them to be reprocessed if the connector is restarted. DELETE removes the file from the filesystem. MOVE will move the file to a finished directory.",
+          "recommended_values": [
+            "NONE",
+            "DELETE",
+            "MOVE"
+          ]
+        },
+        {
+          "name": "input.file.pattern",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "File System",
+          "order_in_group": 2,
+          "display_name": "Input file pattern (regex)",
+          "documentation": "Regular expression to check input file names against. This expression must match the entire filename. The equivalent of Matcher.matches()."
+        },
+        {
+          "name": "behavior.on.error",
+          "type": "STRING",
+          "required": false,
+          "default_value": "FAIL",
+          "importance": "HIGH",
+          "group": "File System",
+          "order_in_group": 3,
+          "display_name": "Behavior on error",
+          "documentation": "Should the task halt when it encounters an error or continue to the next file.",
+          "recommended_values": [
+            "FAIL",
+            "IGNORE"
+          ]
+        },
+        {
+          "name": "file.minimum.age.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "File System",
+          "order_in_group": 4,
+          "display_name": "File minimum age (ms)",
+          "default_value": 0,
+          "documentation": "The amount of time in milliseconds after the file was last written to before the file can be processed. For default 0, connector processes all files irrespective of age"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "batch.size"
+        },
+        {
+          "name": "empty.poll.wait.ms"
+        },
+        {
+          "name": "input.path"
+        },
+        {
+          "name": "finished.path"
+        },
+        {
+          "name": "error.path"
+        },
+        {
+          "name": "cleanup.policy"
+        },
+        {
+          "name": "input.file.pattern"
+        },
+        {
+          "name": "behavior.on.error"
+        },
+        {
+          "name": "file.minimum.age.ms"
+        }
+      ]
+    },
+    {
+      "template_id": "sftp-source-csv",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csv.skip.lines",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 1,
+          "default_value": 0,
+          "display_name": "Skip lines",
+          "documentation": "Number of lines to skip in the beginning of the file."
+        },
+        {
+          "name": "csv.separator.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 2,
+          "default_value": 44,
+          "display_name": "Separator character",
+          "documentation": "The character that separates each field in the form of an integer. Typically in a CSV this is a ,(44) character. A TSV would use a tab(9) character. If `csv.separator.char` is defined as a null(0), then the RFC 4180 parser must be utilized by default. This is the equivalent of `csv.rfc.4180.parser.enabled = true`."
+        },
+        {
+          "name": "csv.quote.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 3,
+          "default_value": 34,
+          "display_name": "Quote character",
+          "documentation": "The character that is used to quote a field. Typically in a CSV this is a \"(34) character. This typically happens when the csv.separator.char character is within the data."
+        },
+        {
+          "name": "csv.escape.char",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 4,
+          "default_value": 92,
+          "display_name": "Escape character",
+          "documentation": "The character as an integer to use when a special character is encountered. The default escape character is typically a \\(92)"
+        },
+        {
+          "name": "csv.strict.quotes",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 5,
+          "default_value": "false",
+          "display_name": "Strict quotes",
+          "documentation": "Sets the strict quotes setting - if true, characters outside the quotes are ignored."
+        },
+        {
+          "name": "csv.ignore.leading.whitespace",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 6,
+          "display_name": "Ignore leading whitespace",
+          "documentation": "Sets the ignore leading whitespace setting - if true, white space in front of a quote in a field is ignored."
+        },
+        {
+          "name": "csv.ignore.quotations",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Ignore quotations",
+          "documentation": "Sets the ignore quotations mode - if true, quotations are ignored."
+        },
+        {
+          "name": "csv.keep.carriage.return",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 8,
+          "default_value": "false",
+          "display_name": "Preserve carriage return?",
+          "documentation": "Flag to determine if the carriage return at the end of the line should be maintained. "
+        },
+        {
+          "name": "csv.null.field.indicator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "NEITHER",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 9,
+          "display_name": "Null field indicator",
+          "documentation": "Indicator to determine how the CSV Reader can determine if a field is null. Valid values are EMPTY_SEPARATORS, EMPTY_QUOTES, BOTH, NEITHER. For more information see http://opencsv.sourceforge.net/apidocs/com/opencsv/enums/CSVReaderNullFieldIndicator.html."
+        },
+        {
+          "name": "csv.first.row.as.header",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "CSV Parsing",
+          "order_in_group": 10,
+          "display_name": "Treat first row as header.",
+          "documentation": "Flag to indicate if the fist row of data contains the header of the file. If true the position of the columns will be determined by the first row to the CSV. The column position will be inferred from the position of the schema supplied in `value.schema`. If set to true the number of columns must be greater than or equal to the number of fields in the schema."
+        },
+        {
+          "name": "csv.file.charset",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UTF-8",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 11,
+          "display_name": "File character set.",
+          "documentation": "Character set to read wth file with.",
+          "recommender": {
+            "name": "character.encoding"
+          }
+        },
+        {
+          "name": "ui.csv.pre.validate.file.enabled",
+          "type": "STRING",
+          "required": false,
+          "default_value": "NO",
+          "importance": "LOW",
+          "group": "CSV Parsing",
+          "order_in_group": 12,
+          "display_name": "Pre-validate the CSV file before processing file records.",
+          "documentation": "Flag to enable validating the integrity of all records in the CSV file before processing any of its records.  For example, if any of the records have a linefeed within an unquoted field, which would incorrectly break the record at that point, then the entire fil will  be considered erroneous and no records from that file will be processed.  The failed file would be moved to the configured error path.  Important: If the number of records in a file is larger than the configured batch size, then portions of the file may be retrieved from the sftp server by the connector more than once.",
+          "recommended_values": [
+            "YES",
+            "NO"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "producer.override.bootstrap.servers",
+          "value": "${kafka.endpoint}"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "value": "${kafka.endpoint}"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "kafka.topic"
+        },
+        {
+          "name": "csv.skip.lines"
+        },
+        {
+          "name": "csv.separator.char"
+        },
+        {
+          "name": "csv.quote.char"
+        },
+        {
+          "name": "csv.escape.char"
+        },
+        {
+          "name": "csv.strict.quotes"
+        },
+        {
+          "name": "csv.ignore.leading.whitespace"
+        },
+        {
+          "name": "csv.ignore.quotations"
+        },
+        {
+          "name": "csv.keep.carriage.return"
+        },
+        {
+          "name": "csv.verify.reader",
+          "value": "true"
+        },
+        {
+          "name": "csv.null.field.indicator"
+        },
+        {
+          "name": "csv.first.row.as.header"
+        },
+        {
+          "name": "csv.file.charset"
+        },
+        {
+          "name": "csv.case.sensitive.field.names"
+        },
+        {
+          "name": "csv.rfc.4180.parser.enabled"
+        },
+        {
+          "name": "csv.pre.validate.file.enabled",
+          "switch": {
+            "ui.csv.pre.validate.file.enabled": {
+              "YES": "true",
+              "NO": "false"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "kafka-topic-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.topic",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topic do you want to send data to?",
+          "order_in_group": 1,
+          "display_name": "Topic name",
+          "documentation": "Identifies the topic name to write the data to."
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "common-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "datapreview.schemas.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "display_name": "Show schemas in data preview request output",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 4,
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "none",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        },
+        {
+          "name": "producer.override.linger.ms",
+          "type": "LONG",
+          "required": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "producer.override.linger.ms",
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topic.creation.default.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "topic.creation.default.partitions",
+          "value": "1"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "producer.override.max.request.size",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971610",
+              "false": "8388698"
+            }
+          }
+        },
+        {
+          "name": "topic.creation.default.max.message.bytes",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971520",
+              "false": "8388608"
+            }
+          }
+        },
+        {
+          "name": "datapreview.schemas.enable"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.linger.ms"
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas"
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version"
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ]
+}

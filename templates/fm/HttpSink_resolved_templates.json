@@ -1,0 +1,1788 @@
+{
+  "templates": [
+    {
+      "template_id": "HttpSink",
+      "connector_type": "SINK",
+      "connector.class": "io.confluent.connect.http.HttpSinkConnector",
+      "config_defs": [
+        {
+          "name": "http.api.url",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "HTTP server details",
+          "order_in_group": 1,
+          "display_name": "HTTP URL",
+          "documentation": "Specifies the API endpoint to which connector should write to."
+        },
+        {
+          "name": "request.method",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server details",
+          "order_in_group": 2,
+          "display_name": "HTTP Request Method",
+          "default_value": "POST",
+          "recommended_values": [
+            "POST",
+            "PUT",
+            "PATCH"
+          ],
+          "documentation": "Specifies the HTTP request method (POST, PUT, PATCH) the connector should use for sending API request.",
+          "dependents": [
+            "http.api.url"
+          ]
+        },
+        {
+          "name": "headers",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server details",
+          "order_in_group": 3,
+          "display_name": "HTTP Headers",
+          "documentation": "HTTP headers to be included in all requests. Individual headers should be separated by the Header Separator"
+        },
+        {
+          "name": "header.separator",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server details",
+          "order_in_group": 4,
+          "display_name": "HTTP Headers Separator",
+          "documentation": "Separator character used in headers"
+        },
+        {
+          "name": "sensitive.headers",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server details",
+          "order_in_group": 5,
+          "display_name": "Sensitive HTTP Headers",
+          "documentation": "Sensitive HTTP headers (eg: credentials) to be included in all requests. Individual headers should be separated by the Header Separator"
+        },
+        {
+          "name": "behavior.on.null.values",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "HTTP server details",
+          "order_in_group": 5,
+          "display_name": "Behavior for null valued records",
+          "documentation": "How to handle records with a non-null key and a null value (i.e. Kafka tombstone records). Valid options are ``ignore``, ``delete`` and ``fail``",
+          "default_value": "ignore",
+          "recommended_values": [
+            "ignore",
+            "delete",
+            "fail"
+          ]
+        },
+        {
+          "name": "auth.type",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 1,
+          "display_name": "Endpoint Authentication type",
+          "documentation": "Specifies the authentication type of the API endpoint. Valid values are ``NONE``, ``BASIC``, ``OAUTH2`` (Client Credentials grant type only).",
+          "default_value": "NONE",
+          "recommended_values": [
+            "NONE",
+            "BASIC",
+            "OAUTH2"
+          ]
+        },
+        {
+          "name": "connection.user",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 2,
+          "display_name": "Auth username",
+          "documentation": "The username to be used with an endpoint requiring authentication"
+        },
+        {
+          "name": "connection.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 3,
+          "display_name": "Auth password",
+          "documentation": "The password to be used with an endpoint requiring authentication"
+        },
+        {
+          "name": "oauth2.token.url",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 4,
+          "display_name": "OAuth2 token URL",
+          "documentation": "The URL to be used for fetching OAuth2 token. Client Credentials is the only supported grant type."
+        },
+        {
+          "name": "oauth2.client.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 5,
+          "display_name": "OAuth2 client ID",
+          "documentation": "The client id used when fetching OAuth2 token"
+        },
+        {
+          "name": "oauth2.client.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 6,
+          "display_name": "OAuth2 secret",
+          "documentation": "The secret used when fetching OAuth2 token"
+        },
+        {
+          "name": "oauth2.token.property",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server authentication",
+          "order_in_group": 7,
+          "display_name": "OAuth2 token property name",
+          "default_value": "access_token",
+          "documentation": "The name of the property containing the OAuth2 token returned by the http proxy."
+        },
+        {
+          "name": "oauth2.client.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "HTTP server authentication",
+          "order_in_group": 8,
+          "display_name": "OAuth2 auth mode mechanism",
+          "documentation": "Specifies how to encode ``client_id`` and ``client_secret`` in the OAuth2 authorization request. If set to 'header', the credentials are encoded as an ``'Authorization: Basic <base-64 encoded client_id:client_secret>'`` HTTP header. If set to 'url', then ``client_id`` and ``client_secret`` are sent in body as URL encoded parameters.",
+          "default_value": "header",
+          "recommended_values": [
+            "header",
+            "url"
+          ]
+        },
+        {
+          "name": "oauth2.client.scope",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "HTTP server authentication",
+          "order_in_group": 9,
+          "display_name": "OAuth2 scope",
+          "default_value": "any",
+          "documentation": "The scope used when fetching OAuth2 token. If empty, this parameter is not set in the authorization request"
+        },
+        {
+          "name": "oauth2.jwt.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server authentication",
+          "order_in_group": 10,
+          "display_name": "Add JWT token",
+          "default_value": "false",
+          "documentation": "Whether to generate and add JWT token to request. If selected, JWT token will be added as 'jwt_token' request param"
+        },
+        {
+          "name": "oauth2.jwt.keystore.path",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server authentication",
+          "order_in_group": 11,
+          "display_name": "JWT keystore",
+          "default_value": "",
+          "documentation": "Keystore containing private key to use to sign JWT."
+        },
+        {
+          "name": "oauth2.jwt.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server authentication",
+          "order_in_group": 12,
+          "display_name": "JWT keystore password",
+          "default_value": "",
+          "documentation": "Password to access keystore"
+        },
+        {
+          "name": "oauth2.jwt.keystore.type",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server authentication",
+          "order_in_group": 13,
+          "display_name": "JWT keystore type",
+          "default_value": "JKS",
+          "documentation": "JWT keystore type",
+          "recommended_values": [
+            "JKS",
+            "PKCS12"
+          ]
+        },
+        {
+          "name": "oauth2.jwt.claimset",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server authentication",
+          "order_in_group": 14,
+          "display_name": "JWT JSON claims",
+          "default_value": "",
+          "documentation": "JSON containing JWT claims"
+        },
+        {
+          "name": "oauth2.client.headers",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "HTTP server authentication",
+          "order_in_group": 15,
+          "display_name": "OAuth2 Client Headers",
+          "documentation": "HTTP headers to be included in the OAuth2 client endpoint. Individual headers should be separated by OAuth2 Client Headers Separator"
+        },
+        {
+          "name": "oauth2.client.header.separator",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "HTTP server authentication",
+          "order_in_group": 16,
+          "display_name": "OAuth2 Client Headers Separator",
+          "documentation": "Separator character used in OAuth2 Client Headers"
+        },
+        {
+          "name": "behavior.on.error",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server error handling",
+          "order_in_group": 1,
+          "display_name": "Behavior on errors",
+          "default_value": "ignore",
+          "recommended_values": [
+            "ignore",
+            "fail"
+          ],
+          "documentation": "Describes the error handling behavior configuration for handling error responses from HTTP requests. Accepted values are ``ignore`` and ``fail``."
+        },
+        {
+          "name": "report.errors.as",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server error handling",
+          "order_in_group": 2,
+          "display_name": "Report errors as",
+          "default_value": "error_string",
+          "recommended_values": [
+            "error_string",
+            "http_response"
+          ],
+          "documentation": "Dictates the content of records produced to the error topic. Accepted values are ``error_string`` and ``http_response``. If set to ``error_string``, the value would be a human readable string describing the failure. The value will include some or all of the following information if available: http response code, reason phrase, submitted payload, url, response content, exception and error message. If set to ``http_response``, the value would be the plain response content for the request which failed to write the record. In both modes, any information about the failure will also be included in the error record's headers."
+        },
+        {
+          "name": "retry.on.status.codes",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 1,
+          "display_name": "Retry on HTTP codes",
+          "default_value": "400-",
+          "documentation": "The HTTP error codes to retry on. Comma-separated list of codes or range of codes to retry on. Ranges are specified with start and optional end code. Range boundaries are inclusive. For instance, '400-' includes all codes greater than or equal to 400. '400-500' includes codes from 400 to 500, including 500. Multiple ranges and single codes can be specified together to achieve fine grained control over retry behavior. For example, '404,408,500-' will retry on 404 NOT FOUND, 408 REQUEST TIMEOUT, and all 5xx error codes"
+        },
+        {
+          "name": "max.retries",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 2,
+          "display_name": "Maximum Retries",
+          "default_value": 3,
+          "documentation": "The maximum number of times to retry on errors before failing the task"
+        },
+        {
+          "name": "retry.backoff.ms",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 3,
+          "display_name": "Retry Backoff (milliseconds)",
+          "default_value": 3000,
+          "documentation": "The initial duration in milliseconds to wait following an error before a retry attempt is made. Subsequent backoff attempts will be exponentially larger than the first duration. Note that this value is the initial backoff before retrying. After that, the connector will retry using exponential jitter. Jitter adds randomness to the exponential backoff algorithm to prevent synchronized retries."
+        },
+        {
+          "name": "http.connect.timeout.ms",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 4,
+          "display_name": "Connect timeout (milliseconds)",
+          "default_value": 30000,
+          "documentation": "The time in milliseconds to wait for a connection to be established"
+        },
+        {
+          "name": "http.request.timeout.ms",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 5,
+          "display_name": "Request timeout (milliseconds)",
+          "default_value": 30000,
+          "documentation": "The time in milliseconds to wait for a request response from the server"
+        },
+        {
+          "name": "request.body.format",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server batches",
+          "order_in_group": 1,
+          "display_name": "Request Body Format",
+          "default_value": "string",
+          "documentation": "Used to produce request body in either JSON or String format",
+          "recommended_values": [
+            "string",
+            "json"
+          ]
+        },
+        {
+          "name": "batch.key.pattern",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 2,
+          "display_name": "Batch key pattern",
+          "documentation": "Pattern used to build the key for a given batch. ${key} and ${topic} can be used to include message attributes here"
+        },
+        {
+          "name": "batch.max.size",
+          "type": "INT",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 3,
+          "display_name": "Batch max size",
+          "default_value": 1,
+          "documentation": "The number of records accumulated in a batch before the HTTP API is invoked"
+        },
+        {
+          "name": "batch.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 4,
+          "display_name": "Batch prefix",
+          "documentation": "Prefix added to record batches. This is applied once at the beginning of the batch of records"
+        },
+        {
+          "name": "batch.suffix",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 5,
+          "display_name": "Batch suffix",
+          "documentation": "Suffix added to record batches. This is applied once at the end of the batch of records"
+        },
+        {
+          "name": "batch.separator",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 6,
+          "display_name": "Batch separator",
+          "documentation": "Separator for records in a batch"
+        },
+        {
+          "name": "batch.json.as.array",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server batches",
+          "order_in_group": 7,
+          "display_name": "Batch json as array",
+          "documentation": "Whether or not to use an array to bundle json records. Only used when request.body.format is set to json. This can be disabled only when batch.max.size is set to 1."
+        },
+        {
+          "name": "regex.patterns",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server regular expressions",
+          "order_in_group": 1,
+          "display_name": "Regular expression patterns",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``"
+        },
+        {
+          "name": "regex.replacements",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server regular expressions",
+          "order_in_group": 2,
+          "display_name": "Regular expression replacements",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here."
+        },
+        {
+          "name": "regex.separator",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "HTTP server regular expressions",
+          "order_in_group": 3,
+          "display_name": "Regular expression separator",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property."
+        },
+        {
+          "name": "retry.backoff.policy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "EXPONENTIAL_WITH_JITTER",
+          "importance": "MEDIUM",
+          "group": "HTTP server retries",
+          "order_in_group": 6,
+          "display_name": "Retry Backoff Policy",
+          "documentation": "The backoff policy to use in terms of retry - CONSTANT_VALUE or EXPONENTIAL_WITH_JITTER",
+          "recommended_values": [
+            "CONSTANT_VALUE",
+            "EXPONENTIAL_WITH_JITTER"
+          ]
+        },
+        {
+          "name": "https.ssl.key.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server SSL",
+          "order_in_group": 1,
+          "display_name": "Key password",
+          "documentation": "The password of the private key in the key store file. This is optional for client"
+        },
+        {
+          "name": "https.ssl.keystorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "HTTP server SSL",
+          "order_in_group": 2,
+          "display_name": "Key Store",
+          "documentation": "The key store containing server certificate. Only required if using https"
+        },
+        {
+          "name": "https.ssl.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server SSL",
+          "order_in_group": 3,
+          "display_name": "Keystore Password",
+          "documentation": "The store password for the key store file. This is optional for a client and is only needed if https.ssl.keystore.location is configured"
+        },
+        {
+          "name": "https.ssl.truststorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "HTTP server SSL",
+          "order_in_group": 4,
+          "display_name": "Trust store",
+          "documentation": "The trust store containing server CA certificate. Only required if using https"
+        },
+        {
+          "name": "https.ssl.truststore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "HTTP server SSL",
+          "order_in_group": 5,
+          "display_name": "Trust store password",
+          "documentation": "The trust store password containing server CA certificate. Only required if using https"
+        },
+        {
+          "name": "https.ssl.protocol",
+          "type": "STRING",
+          "required": false,
+          "default_value": "TLSv1.3",
+          "importance": "MEDIUM",
+          "group": "HTTP server SSL",
+          "order_in_group": 6,
+          "display_name": "SSL Protocol",
+          "documentation": "The protocol to use for SSL connections"
+        },
+        {
+          "name": "https.host.verifier.enabled",
+          "type": "STRING",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "HTTP server SSL",
+          "order_in_group": 7,
+          "display_name": "Enable host verification",
+          "documentation": "True if SSL host verification should be enabled",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "topics"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "http.api.url"
+        },
+        {
+          "name": "request.method"
+        },
+        {
+          "name": "headers"
+        },
+        {
+          "name": "header.separator"
+        },
+        {
+          "name": "sensitive.headers"
+        },
+        {
+          "name": "auth.type"
+        },
+        {
+          "name": "connection.user"
+        },
+        {
+          "name": "connection.password"
+        },
+        {
+          "name": "oauth2.token.url"
+        },
+        {
+          "name": "oauth2.client.id"
+        },
+        {
+          "name": "oauth2.client.scope"
+        },
+        {
+          "name": "oauth2.client.secret"
+        },
+        {
+          "name": "oauth2.token.property"
+        },
+        {
+          "name": "oauth2.jwt.enabled"
+        },
+        {
+          "name": "oauth2.jwt.keystore.path"
+        },
+        {
+          "name": "oauth2.jwt.keystore.password"
+        },
+        {
+          "name": "oauth2.jwt.keystore.type"
+        },
+        {
+          "name": "oauth2.jwt.claimset"
+        },
+        {
+          "name": "oauth2.jwt.signature.algorithm",
+          "value": "RS256"
+        },
+        {
+          "name": "oauth2.client.auth.mode"
+        },
+        {
+          "name": "retry.on.status.codes"
+        },
+        {
+          "name": "max.retries"
+        },
+        {
+          "name": "retry.backoff.ms"
+        },
+        {
+          "name": "retry.backoff.policy"
+        },
+        {
+          "name": "http.connect.timeout.ms"
+        },
+        {
+          "name": "http.request.timeout.ms"
+        },
+        {
+          "name": "request.body.format"
+        },
+        {
+          "name": "batch.key.pattern"
+        },
+        {
+          "name": "batch.max.size"
+        },
+        {
+          "name": "batch.prefix"
+        },
+        {
+          "name": "batch.suffix"
+        },
+        {
+          "name": "batch.separator"
+        },
+        {
+          "name": "batch.json.as.array"
+        },
+        {
+          "name": "regex.patterns"
+        },
+        {
+          "name": "regex.replacements"
+        },
+        {
+          "name": "regex.separator"
+        },
+        {
+          "name": "https.ssl.key.password"
+        },
+        {
+          "name": "https.ssl.keystore.location",
+          "value": "${https.ssl.keystorefile}"
+        },
+        {
+          "name": "https.ssl.keystore.password"
+        },
+        {
+          "name": "https.ssl.truststore.location",
+          "value": "${https.ssl.truststorefile}"
+        },
+        {
+          "name": "https.ssl.truststore.password"
+        },
+        {
+          "name": "https.ssl.protocol"
+        },
+        {
+          "name": "https.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "https.host.verifier.enabled": {
+              "true": "https",
+              "false": ""
+            }
+          }
+        },
+        {
+          "name": "behavior.on.error",
+          "switch": {
+            "behavior.on.error": {
+              "ignore": "log",
+              "fail": "fail"
+            }
+          }
+        },
+        {
+          "name": "schema.cache.size",
+          "value": "1000"
+        },
+        {
+          "name": "key.converter.schemas.enable",
+          "value": "false"
+        },
+        {
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.converters.ByteArrayConverter"
+        },
+        {
+          "name": "enhanced.avro.schema.support",
+          "value": "true"
+        },
+        {
+          "name": "behavior.on.null.values"
+        },
+        {
+          "name": "transforms",
+          "value": "requireTimestampTransform"
+        },
+        {
+          "name": "connect.meta.data",
+          "value": "false"
+        },
+        {
+          "name": "transforms.requireTimestampTransform.type",
+          "value": "io.confluent.cctransforms.RequireTimestampTransform"
+        },
+        {
+          "name": "report.errors.as"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${http.api.url}"
+        },
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "sensitive.headers.list"
+        },
+        {
+          "name": "sensitive.headers.validation.enabled"
+        },
+        {
+          "name": "regex.timeout.ms",
+          "value": 100
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ]
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": []
+    },
+    {
+      "template_id": "common-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "all",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        }
+      ]
+    },
+    {
+      "template_id": "csfle-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csfle.enabled",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 1,
+          "docs_hidden": true,
+          "display_name": "Enable Client-Side Field Level Encryption",
+          "documentation": "Determines whether the connector honours CSFLE rules or not",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "csfle.configs.visible",
+                "values": "false"
+              }
+            }
+          ]
+        },
+        {
+          "name": "csfle.onFailure",
+          "type": "STRING",
+          "required": false,
+          "default_value": "ERROR",
+          "importance": "MEDIUM",
+          "group": "CSFLE",
+          "order_in_group": 3,
+          "docs_hidden": true,
+          "display_name": "Connector behaviour on data decryption failure",
+          "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
+          "recommended_values": [
+            "ERROR",
+            "NONE"
+          ]
+        },
+        {
+          "name": "sr.service.account.id",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 2,
+          "docs_hidden": true,
+          "display_name": "Schema Registry Service Account",
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "value.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "key.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "key.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "http-network-restrictions-common",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": [
+        {
+          "name": "connection.disallow.class.e.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.local.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.private.ips"
+        },
+        {
+          "name": "connection.disallow.cidr.ranges"
+        },
+        {
+          "name": "connection.allow.cidr.ranges"
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "reporter",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": [
+        {
+          "name": "reporter.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.producer.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.admin.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.admin.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.result.topic.name",
+          "value": "success-${connector}"
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "value": "error-${connector}"
+        },
+        {
+          "name": "reporter.admin.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "input-data-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas"
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version"
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ]
+}

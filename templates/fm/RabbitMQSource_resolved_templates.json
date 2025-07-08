@@ -1,0 +1,863 @@
+{
+  "templates": [
+    {
+      "template_id": "RabbitMQSource",
+      "connector_type": "SOURCE",
+      "connector.class": "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
+      "config_defs": [
+        {
+          "name": "rabbitmq.host",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to RabbitMQ?",
+          "order_in_group": 1,
+          "display_name": "RabbitMQ host",
+          "documentation": "RabbitMQ host to connect to."
+        },
+        {
+          "name": "rabbitmq.username",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to RabbitMQ?",
+          "order_in_group": 2,
+          "display_name": "RabbitMQ username",
+          "documentation": "Username to authenticate with RabbitMQ."
+        },
+        {
+          "name": "rabbitmq.password",
+          "type": "PASSWORD",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to RabbitMQ?",
+          "order_in_group": 3,
+          "display_name": "RabbitMQ password",
+          "documentation": "Password to authenticate with RabbitMQ."
+        },
+        {
+          "name": "rabbitmq.virtual.host",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "How should we connect to RabbitMQ?",
+          "order_in_group": 4,
+          "default_value": "/",
+          "display_name": "RabbitMQ virtual host",
+          "documentation": "The virtual host to use when connecting to the RabbitMQ broker."
+        },
+        {
+          "name": "rabbitmq.port",
+          "type": "INT",
+          "importance": "HIGH",
+          "group": "How should we connect to RabbitMQ?",
+          "order_in_group": 5,
+          "default_value": 5672,
+          "display_name": "RabbitMQ port",
+          "documentation": "RabbitMQ port to connect to. This should be set in accordance with chosen Security protocol."
+        },
+        {
+          "name": "rabbitmq.queue",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "RabbitMQ details",
+          "order_in_group": 1,
+          "display_name": "RabbitMQ queue(s)",
+          "documentation": "RabbitMQ queue(s) to read from."
+        },
+        {
+          "name": "batch.size",
+          "type": "INT",
+          "importance": "MEDIUM",
+          "group": "RabbitMQ details",
+          "order_in_group": 2,
+          "display_name": "RabbitMQ batch size",
+          "default_value": 1024,
+          "documentation": "The maximum number of records to return to Connect for each poll, if there are more than this number of records already available from RabbitMQ."
+        },
+        {
+          "name": "backoff.time.ms",
+          "type": "INT",
+          "importance": "MEDIUM",
+          "group": "RabbitMQ details",
+          "order_in_group": 3,
+          "display_name": "RabbitMQ backoff time (in milliseconds)",
+          "default_value": 100,
+          "documentation": "The number of milliseconds to wait when no records are returned from the RabbitMQ queue."
+        },
+        {
+          "name": "rabbitmq.security.protocol",
+          "type": "STRING",
+          "default_value": "PLAINTEXT",
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 1,
+          "display_name": "Security protocol",
+          "documentation": "The security protocol to use when connecting to RabbitMQ. Valid values are PLAINTEXT and SSL.",
+          "recommended_values": [
+            "PLAINTEXT",
+            "SSL"
+          ]
+        },
+        {
+          "name": "rabbitmq.https.ssl.key.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 2,
+          "display_name": "SSL key password",
+          "documentation": "The password of the private key in the key store file. This is optional for client."
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 3,
+          "display_name": "Key Store",
+          "documentation": "The key store containing server certificate. Only required if using SSL."
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 4,
+          "display_name": "Key Store password",
+          "documentation": "The store password for the key store file. This is optional for a client and is only needed if key store is configured."
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystore.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "JKS",
+          "importance": "MEDIUM",
+          "group": "Security",
+          "order_in_group": 5,
+          "display_name": "Key Store type",
+          "documentation": "The file format of the key store file. This is optional for client."
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 6,
+          "display_name": "Trust Store",
+          "documentation": "The trust store containing server CA certificate. Only required if using SSL."
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Security",
+          "order_in_group": 7,
+          "display_name": "Trust Store password",
+          "documentation": "The password for the trust store file. If a password is not set, trust store file configured will still be used, but integrity checking is disabled. Trust store password is not supported for PEM format."
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststore.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "JKS",
+          "importance": "MEDIUM",
+          "group": "Security",
+          "order_in_group": 8,
+          "display_name": "Trust Store type",
+          "documentation": "The file format of the trust store file."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.storage.StringConverter"
+        },
+        {
+          "name": "value.converter",
+          "value": "org.apache.kafka.connect.converters.ByteArrayConverter"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "kafka.topic"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "rabbitmq.host"
+        },
+        {
+          "name": "rabbitmq.virtual.host"
+        },
+        {
+          "name": "rabbitmq.port"
+        },
+        {
+          "name": "rabbitmq.username"
+        },
+        {
+          "name": "rabbitmq.password"
+        },
+        {
+          "name": "rabbitmq.security.protocol"
+        },
+        {
+          "name": "rabbitmq.queue"
+        },
+        {
+          "name": "rabbitmq.https.ssl.key.password"
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystore.location"
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystore.password"
+        },
+        {
+          "name": "rabbitmq.https.ssl.keystore.type"
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststore.location"
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststore.password"
+        },
+        {
+          "name": "rabbitmq.https.ssl.truststore.type"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "backoff.time.ms"
+        },
+        {
+          "name": "batch.size"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${rabbitmq.host}"
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ]
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": []
+    },
+    {
+      "template_id": "kafka-topic-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.topic",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topic do you want to send data to?",
+          "order_in_group": 1,
+          "display_name": "Topic name",
+          "documentation": "Identifies the topic name to write the data to."
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "common-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "datapreview.schemas.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "display_name": "Show schemas in data preview request output",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 4,
+          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "none",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        },
+        {
+          "name": "producer.override.linger.ms",
+          "type": "LONG",
+          "required": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "producer.override.linger.ms",
+          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topic.creation.default.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "topic.creation.default.partitions",
+          "value": "1"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "producer.override.max.request.size",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971610",
+              "false": "8388698"
+            }
+          }
+        },
+        {
+          "name": "topic.creation.default.max.message.bytes",
+          "switch": {
+            "kafka.dedicated": {
+              "true": "20971520",
+              "false": "8388608"
+            }
+          }
+        },
+        {
+          "name": "datapreview.schemas.enable"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.linger.ms"
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas"
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version"
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        }
+      ]
+    }
+  ]
+}
