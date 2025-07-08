@@ -1,184 +1,319 @@
-# Connector Migration Tool
+# Kafka Connector Migration Utility
 
-This tool automates the process of discovering connector configurations from Kafka Connect workers and generating corresponding FM configurations.
+A powerful tool to migrate Self-Managed (SM) Kafka Connect configurations to Fully Managed (FM) configurations on Confluent Cloud. This utility intelligently maps SM connector configs to FM configs using semantic matching, template-based mappings, and comprehensive error reporting.
 
-## Features
+## 🚀 Features
 
-- Discovers connector configurations from multiple Kafka Connect workers
-- **Advanced sensitive data redaction** with 100+ predefined sensitive config keys
-- **Worker health checking** to ensure only reachable workers are processed
-- **Pattern-based sensitive data detection** for comprehensive security
-- **Worker config extraction** and merging capabilities
-- **File-based sensitive config loading** for custom sensitive keys
-- Parses JDBC URLs to extract connection details
-- Generates FM-compatible configurations
-- Comprehensive logging of the migration process
+- **Intelligent Mapping**: Uses semantic matching with configurable thresholds to map SM properties to FM properties
+- **Template-Based Processing**: Leverages FM templates to understand supported configurations and mappings
+- **Transform & Predicate Filtering**: Automatically filters out unsupported transforms and their associated predicates
+- **JDBC URL Parsing**: Automatically extracts database connection details from JDBC URLs
+- **Comprehensive Error Reporting**: Detailed mapping errors with actionable guidance
+- **HTTP Integration**: Fetches SM templates from worker URLs and FM transforms from Confluent Cloud API
+- **Fallback Support**: Uses local fallback files when HTTP calls fail
 
-## Directory Structure
+## 📋 Prerequisites
+
+- Python 3.8+
+- Self-Managed Kafka Connect worker URLs
+- Confluent Cloud environment with API access(optional)
+
+## 🛠️ Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd connect-migration-utility
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+## 📁 Project Structure
 
 ```
 connect-migration-utility/
 ├── src/
-│   ├── main.py              # Main script orchestrating the migration
-│   ├── config_discovery.py  # Handles discovering connector configs
-│   └── connector_comparator.py  # Processes and maps connector configs
-├── output/
-│   ├── connectors.json      # Discovered connector configurations
-│   ├── all_fm_configs.json  # All generated FM configurations
-│   └── fm_configs/          # Individual FM configuration files
-├── templates/               # Template files (if needed)
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+│   ├── connector_comparator.py    # Main migration logic
+│   ├── config_discovery.py        # HTTP client for fetching templates
+│   ├── semantic_matcher.py        # Semantic matching engine
+│   └── main.py                    # CLI entry point
+├── templates/
+│   ├── fm/                        # FM template files
+│   └── sm/                        # SM template files (optional)
+├── output/                        # Generated FM configs
+├── fm_transforms_list.json        # Fallback FM transforms
+└── README.md
 ```
 
-## Installation
+## 🎯 Usage
 
-1. Create a virtual environment (recommended):
+### Basic Usage - From Config File
+
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python src/main.py --config-file connectors.json --output-dir output/
 ```
 
-2. Install dependencies:
+### Basic Usage - From Worker Discovery
+
 ```bash
-pip install -r requirements.txt
+python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
 ```
 
-## Usage
+### Advanced Usage with Confluent Cloud Integration
 
-### Basic Usage
-```bash
-python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083"
-```
-
-### Advanced Usage Examples
-
-**With worker URLs from a file:**
-```bash
-python src/main.py --worker-urls-file workers.txt
-```
-
-**With redaction of sensitive information:**
-```bash
-python src/main.py --worker-urls "http://worker1:8083" --redact
-```
-
-**With custom sensitive config file:**
-```bash
-python src/main.py --worker-urls "http://worker1:8083" --sensitive-file sensitive_keys.txt
-```
-
-**With worker config file:**
-```bash
-python src/main.py --worker-urls "http://worker1:8083" --worker-config-file worker_configs.txt
-```
-
-**Complete example with all options:**
 ```bash
 python src/main.py \
-  --worker-urls "http://worker1:8083,http://worker2:8083" \
-  --redact \
-  --sensitive-file custom_sensitive_keys.txt \
-  --worker-config-file worker_configs.txt \
-  --output-dir custom_output \
-  --sm-templates templates/sm \
-  --fm-templates templates/fm
+  --config-file connectors.json \
+  --output-dir output/ \
+  --env-id <environment-id> \
+  --lkc-id <lkc-id> \
+  --bearer-token <api-token>
 ```
 
-## Command Line Options
+### Secure Bearer Token Input
 
-| Option | Description |
-|--------|-------------|
-| `--worker-urls` | Comma-separated list of worker URLs |
-| `--worker-urls-file` | Path to file containing worker URLs |
-| `--redact` | Redact sensitive configurations |
-| `--sensitive-file` | Path to file containing sensitive config keys (one per line) |
-| `--worker-config-file` | Path to file containing additional worker configs (key=value format) |
-| `--output-dir` | Output directory for all files (default: output) |
-| `--sm-templates` | Directory containing SM template files |
-| `--fm-templates` | Directory containing FM template files |
-
-## Sensitive Data Handling
-
-The tool includes comprehensive sensitive data detection:
-
-### Predefined Sensitive Keys
-The tool comes with 100+ predefined sensitive configuration keys covering:
-- AWS credentials and keys
-- Azure authentication tokens
-- Database passwords
-- SSL/TLS certificates and passwords
-- OAuth tokens and secrets
-- API keys for various services
-- And many more...
-
-### Pattern-Based Detection
-Automatically detects sensitive data using patterns:
-- `password`
-- `token`
-- `secret`
-- `credential`
-
-### Custom Sensitive Keys
-You can provide additional sensitive keys in a file:
 ```bash
-# sensitive_keys.txt
-custom.api.key
-my.secret.token
-internal.password
+python src/main.py \
+  --config-file connectors.json \
+  --output-dir output/ \
+  --env-id <environment-id> \
+  --lkc-id <lkc-id> \
+  --prompt-bearer-token
 ```
 
-## Worker Configuration
+### Command Line Options
 
-The tool can load additional worker-level configurations from a file:
-```bash
-# worker_configs.txt
-key.converter=org.apache.kafka.connect.json.JsonConverter
-value.converter=org.apache.kafka.connect.json.JsonConverter
-producer.bootstrap.servers=localhost:9092
-consumer.bootstrap.servers=localhost:9092
-```
+| Option | Description | Required |
+|--------|-------------|----------|
+| `--config-file` | Path to JSON file containing connector configurations | No* |
+| `--worker-urls` | Comma-separated list of worker URLs | No* |
+| `--worker-urls-file` | Path to file containing worker URLs | No* |
+| `--output-dir` | Output directory for all files (default: output) | No |
+| `--env-id` | Confluent Cloud environment ID | No |
+| `--lkc-id` | Confluent Cloud LKC cluster ID | No |
+| `--bearer-token` | Confluent Cloud bearer token (api_key:api_secret) | No |
+| `--prompt-bearer-token` | Prompt for bearer token securely | No |
+| `--redact` | Redact sensitive configurations | No |
+| `--sensitive-file` | Path to file containing sensitive config keys | No |
+| `--worker-config-file` | Path to file containing additional worker configs | No |
 
-## Output
+*Either `--config-file` or `--worker-urls`/`--worker-urls-file` is required
 
-The tool generates the following files in the output directory:
+## 📊 Input Format
 
-1. `connectors.json`: Contains all discovered connector configurations and worker configs
-2. `all_fm_configs.json`: Contains all generated FM configurations
-3. `fm_configs/*.json`: Individual FM configuration files for each connector
-4. `migration.log`: Detailed log of the migration process
-
-### Output Structure
+### Single Connector
 ```json
 {
-  "connectors": {
-    "connector_name": {
-      "name": "connector_name",
-      "worker": "http://worker1:8083",
-      "type": "source",
-      "tasks": [...],
-      "config": {...}
-    }
-  },
-  "worker_configs": {
-    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter"
+  "name": "my-connector",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "connection.url": "jdbc:mysql://localhost:3306/mydb",
+    "table.whitelist": "users",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "predicates": "predicate_0",
+    "transforms.unwrap.predicate": "predicate_0",
+    "predicates.predicate_0.type": "org.apache.kafka.connect.transforms.predicates.HasHeaderKey",
+    "predicates.predicate_0.name": "header_key"
   }
 }
 ```
 
-## Error Handling
+### Multiple Connectors
+```json
+[
+  {
+    "name": "connector-1",
+    "config": { ... }
+  },
+  {
+    "name": "connector-2", 
+    "config": { ... }
+  }
+}
+```
 
-The tool includes comprehensive error handling and logging:
-- Failed connector discoveries are logged but don't stop the process
-- Failed connector processing is logged but doesn't stop the process
-- Worker health checking ensures only reachable workers are processed
-- All errors are written to the log file with full stack traces
+## 🔄 Mapping Process
 
-## Contributing
+The migration utility follows a sophisticated multi-step mapping process:
+
+### 1. Direct Matching
+- Exact property name matches between SM and FM configs
+- Validates values against recommended values from FM templates
+
+### 2. Template-Based Mappings
+- **Switch Mappings**: Maps SM values to FM values based on conditions
+- **Value Mappings**: Direct value assignments from SM to FM
+- **Template Variables**: Handles `${variable}` references in mappings
+
+### 3. Static Mappings
+- Predefined mappings for common properties (converters, etc.)
+- Connector-type specific mappings (source vs sink)
+
+### 4. Semantic Matching
+- Uses NLP-based similarity scoring (threshold: 0.7)
+- Matches properties based on name and description similarity
+- Prevents false positives with additional validation
+
+### 5. Transform & Predicate Processing
+- Filters transforms based on FM support
+- Automatically filters predicates associated with unsupported transforms
+- Provides detailed error messages for filtered items
+
+## ⚠️ Mapping Errors
+
+The utility provides comprehensive error reporting to help you understand and resolve mapping issues:
+
+### Transform Errors
+
+**Unsupported Transform Type**
+```
+"Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used."
+```
+*Solution: Consider implementing the transform as a Custom SMT in Confluent Cloud*
+
+**Missing Transform Type**
+```
+"Transform 'transform_1' has no type specified"
+```
+*Solution: Add the missing `transforms.transform_1.type` property*
+
+### Predicate Errors
+
+**Associated with Unsupported Transform**
+```
+"Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
+```
+*Solution: The predicate is automatically filtered when its associated transform is not supported*
+
+### Property Mapping Errors
+
+**Unmapped Properties**
+```
+"Config 'custom.property' not exposed for fully managed connector"
+```
+*Solution: The property is not available in FM - check if it's needed or can be replaced*
+
+**Invalid Values**
+```
+"Value 'invalid_value' for 'property.name' is not in recommended values: ['value1', 'value2']"
+```
+*Solution: Use one of the recommended values or check the default value*
+
+**Required Properties Missing**
+```
+"Required property 'connection.url' needs a value but none was provided"
+```
+*Solution: Add the missing required property to your SM config*
+
+**Semantic Match Failures**
+```
+"Failed to map property 'sm_property' - no semantic match found"
+```
+*Solution: The property couldn't be automatically mapped - may need manual configuration*
+
+### Validation Errors
+
+**Config Defs Filtering**
+```
+"Config 'internal.property' not exposed for fully managed connector"
+```
+*Solution: Property filtered out as it's not in FM template config_defs*
+
+## 🔧 Configuration
+
+### Semantic Matching Threshold
+Adjust the similarity threshold in `connector_comparator.py`:
+```python
+semantic_threshold=0.7  # Default: 0.7 (70% similarity)
+```
+
+
+## 📈 Output Format
+
+### Successful Migration
+```json
+{
+  "name": "my-connector",
+  "sm_config": { /* original SM config */ },
+  "config": {
+    "connector.class": "JdbcSource",
+    "input.key.format": "AVRO",
+    "input.value.format": "AVRO",
+    "connection.url": "jdbc:mysql://localhost:3306/mydb",
+    "table.whitelist": "users"
+  },
+  "mapping_errors": [],
+  "unmapped_configs": []
+}
+```
+
+### Migration with Errors
+```json
+{
+  "name": "my-connector",
+  "sm_config": { /* original SM config */ },
+  "config": { /* successfully mapped config */ },
+  "mapping_errors": [
+    "Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used.",
+    "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
+  ],
+  "unmapped_configs": ["custom.property"]
+}
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**HTTP Connection Errors**
+- Verify worker URLs are accessible
+- Check network connectivity
+- Ensure proper authentication for Confluent Cloud API
+
+**Template Not Found**
+- Verify FM template files exist in `templates/fm/`
+- Check template naming convention
+- Ensure connector.class matches template
+
+**Semantic Matching Issues**
+- Adjust similarity threshold if needed
+- Review property descriptions in templates
+- Consider adding static mappings for common cases
+
+**Transform Filtering**
+- Review FM transform support documentation
+- Consider Custom SMT alternatives
+- Check if transforms are essential for your use case
+
+### Debug Mode
+
+Enable debug logging for detailed processing information:
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request 
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+[Add your license information here]
+
+## 🆘 Support
+
+For issues and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review the mapping errors documentation above
+
+---
+
+**Note**: This utility is designed to assist with migration but may require manual review and adjustment of the generated configurations for production use. 

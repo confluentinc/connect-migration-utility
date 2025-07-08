@@ -228,7 +228,8 @@ class ConnectorComparator:
     ) -> Dict[str, Dict[str, Any]]:
         result: Dict[str, Dict[str, Any]] = {
             'allowed': {},
-            'disallowed': {}
+            'disallowed': {},
+            'mapping_errors': []
         }
 
         transform_chain = config.get("transforms", "")
@@ -236,6 +237,9 @@ class ConnectorComparator:
 
         allowed_aliases = []
         disallowed_aliases = []
+        
+        # Track which predicates are associated with disallowed transforms
+        disallowed_predicates = set()
 
         for alias in aliases:
             type_key = f"transforms.{alias}.type"
@@ -243,9 +247,15 @@ class ConnectorComparator:
 
             if not transform_type:
                 disallowed_aliases.append(alias)
+                error_msg = f"Transform '{alias}' has no type specified"
+                result['mapping_errors'].append(error_msg)
+                self.logger.warning(error_msg)
                 for k, v in config.items():
                     if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
                         result['disallowed'][k] = v
+                        # Check if this transform references a predicate
+                        if k == f"transforms.{alias}.predicate":
+                            disallowed_predicates.add(v)
                 continue
 
             if transform_type in allowed_transform_types:
@@ -255,14 +265,50 @@ class ConnectorComparator:
                         result['allowed'][k] = v
             else:
                 disallowed_aliases.append(alias)
+                error_msg = f"Transform '{alias}' of type '{transform_type}' is not supported in Fully Managed Connector. Potentially Custom SMT can be used."
+                result['mapping_errors'].append(error_msg)
+                self.logger.warning(error_msg)
                 for k, v in config.items():
                     if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
                         result['disallowed'][k] = v
+                        # Check if this transform references a predicate
+                        if k == f"transforms.{alias}.predicate":
+                            disallowed_predicates.add(v)
+                            self.logger.info(f"Transform {alias} of type {transform_type} is not supported, so its predicate {v} will also be filtered out")
+
+        # Handle predicates
+        predicates_chain = config.get("predicates", "")
+        predicate_aliases = [alias.strip() for alias in predicates_chain.split(",") if alias.strip()]
+        
+        allowed_predicate_aliases = []
+        disallowed_predicate_aliases = []
+
+        for predicate_alias in predicate_aliases:
+            # Check if this predicate is associated with a disallowed transform
+            if predicate_alias in disallowed_predicates:
+                disallowed_predicate_aliases.append(predicate_alias)
+                predicate_error_msg = f"Predicate '{predicate_alias}' is filtered out because it's associated with an unsupported transform."
+                result['mapping_errors'].append(predicate_error_msg)
+                for k, v in config.items():
+                    if isinstance(k, str) and k.startswith(f"predicates.{predicate_alias}."):
+                        result['disallowed'][k] = v
+                self.logger.info(f"Predicate {predicate_alias} is associated with a disallowed transform, so it will be filtered out")
+            else:
+                # This predicate is not associated with any disallowed transform, so it's allowed
+                allowed_predicate_aliases.append(predicate_alias)
+                for k, v in config.items():
+                    if isinstance(k, str) and k.startswith(f"predicates.{predicate_alias}."):
+                        result['allowed'][k] = v
 
         if allowed_aliases:
             result['allowed']["transforms"] = ", ".join(allowed_aliases)
         if disallowed_aliases:
             result['disallowed']["transforms"] = ", ".join(disallowed_aliases)
+            
+        if allowed_predicate_aliases:
+            result['allowed']["predicates"] = ", ".join(allowed_predicate_aliases)
+        if disallowed_predicate_aliases:
+            result['disallowed']["predicates"] = ", ".join(disallowed_predicate_aliases)
 
         return result
 
@@ -861,11 +907,10 @@ class ConnectorComparator:
                     self.logger.info(f"Using default value for required property: {prop_name}")
             transforms_data = self.get_transforms_config(config, plugin_type)
             mapped_config.update(transforms_data['allowed'])
-            for key, value in transforms_data['disallowed'].items():
-                if key.endswith(".type"):
-                    alias = key.split(".")[1]
-                    error_msg = f"Transform not allowed in Cloud '{alias}:{value}'. Potentially Custom SMT can be used."
-                    mapping_errors.append(error_msg)
+            
+            # Add mapping errors from transforms processing
+            if 'mapping_errors' in transforms_data:
+                mapping_errors.extend(transforms_data['mapping_errors'])
             # Step 1: Try direct mappings from template connector_configs first
             direct_mapped, direct_mapping_errors = self._map_using_template_direct_mappings(config, fm_template)
             for fm_prop_name, value in direct_mapped.items():
