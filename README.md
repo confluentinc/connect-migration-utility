@@ -115,7 +115,7 @@ python src/main.py --config-file connectors.json --output-dir output/
 python src/main.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
 ```
 
-⚠️ **Security Warning**: Disabling SSL verification reduces security and makes your application vulnerable to man-in-the-middle attacks. Only use this option in development/testing environments or when connecting to trusted internal services.
+
 
 ## 📊 Input Format
 

@@ -25,7 +25,7 @@ class ConfigDiscovery:
         
         # Log SSL verification status
         if self.disable_ssl_verify:
-            self.logger.warning("SSL certificate verification is DISABLED - this reduces security")
+            self.logger.info("SSL certificate verification is DISABLED")
         else:
             self.logger.info("SSL certificate verification is ENABLED")
         
