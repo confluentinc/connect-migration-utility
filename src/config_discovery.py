@@ -13,13 +13,21 @@ class ConfigDiscovery:
         redact: bool = False,
         output_dir: Path = Path('output'),
         sensitive_file: Optional[str] = None,
-        worker_config_file: Optional[str] = None
+        worker_config_file: Optional[str] = None,
+        disable_ssl_verify: bool = False
     ):
         self.logger = logging.getLogger(__name__)
         self.redact = redact
         self.output_dir = output_dir
         self.sensitive_file = sensitive_file
         self.worker_config_file = worker_config_file
+        self.disable_ssl_verify = disable_ssl_verify
+        
+        # Log SSL verification status
+        if self.disable_ssl_verify:
+            self.logger.warning("SSL certificate verification is DISABLED - this reduces security")
+        else:
+            self.logger.info("SSL certificate verification is ENABLED")
         
         # Initialize sensitive config handling
         self.static_sensitive_configs = [
@@ -209,7 +217,7 @@ class ConfigDiscovery:
         """Checks if a Kafka Connect worker is alive by pinging /connectors."""
         test_url = f"{full_url}/connectors"
         try:
-            response = requests.get(test_url, timeout=3, verify=False)
+            response = requests.get(test_url, timeout=3, verify=not self.disable_ssl_verify)
             if response.status_code == 200:
                 return True
             else:
@@ -265,7 +273,7 @@ class ConfigDiscovery:
     def _get_json_from_url(self, url: str) -> Optional[Dict[str, Any]]:
         """Makes an HTTP GET request and returns JSON data."""
         try:
-            response = requests.get(url, timeout=5, verify=False)
+            response = requests.get(url, timeout=5, verify=not self.disable_ssl_verify)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
