@@ -151,7 +151,7 @@ class ConnectorComparator:
             
             self.logger.info(f"Fetching SM template for {connector_class} from {url}")
             self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-            response = requests.put(url, json=data, headers=headers)
+            response = requests.put(url, json=data, headers=headers, verify=False)
             response.raise_for_status()
             
             template_data = response.json()
@@ -195,7 +195,7 @@ class ConnectorComparator:
                     "Content-Type": "application/json",
                     "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
                 }
-                response = requests.put(url, params=params, json=data, headers=headers)
+                response = requests.put(url, params=params, json=data, headers=headers, verify=False)
                 response.raise_for_status()
                 recommended_values = self.extract_recommended_transform_types(response.json())
                 if recommended_values:

@@ -265,7 +265,7 @@ class ConfigDiscovery:
     def _get_json_from_url(self, url: str) -> Optional[Dict[str, Any]]:
         """Makes an HTTP GET request and returns JSON data."""
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(url, timeout=5, verify=False)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
