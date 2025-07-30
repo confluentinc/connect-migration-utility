@@ -97,8 +97,25 @@ python src/main.py \
 | `--redact` | Redact sensitive configurations | No |
 | `--sensitive-file` | Path to file containing sensitive config keys | No |
 | `--worker-config-file` | Path to file containing additional worker configs | No |
+| `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
 
 *Either `--config-file` or `--worker-urls`/`--worker-urls-file` is required
+
+## 🔒 SSL Certificate Verification
+
+The utility makes HTTPS requests to fetch templates and configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services.
+
+### Enable SSL Verification (Default - Recommended)
+```bash
+python src/main.py --config-file connectors.json --output-dir output/
+```
+
+### Disable SSL Verification
+```bash
+python src/main.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
+```
+
+
 
 ## 📊 Input Format
 

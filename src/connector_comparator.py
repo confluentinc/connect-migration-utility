@@ -10,7 +10,7 @@ import requests
 
 class ConnectorComparator:
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None, 
-                 env_id: str = None, lkc_id: str = None, bearer_token: str = None):
+                 env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
@@ -24,6 +24,13 @@ class ConnectorComparator:
         self.env_id = env_id
         self.lkc_id = lkc_id
         self.bearer_token = bearer_token
+        self.disable_ssl_verify = disable_ssl_verify
+        
+        # Log SSL verification status
+        if self.disable_ssl_verify:
+            self.logger.info("SSL certificate verification is DISABLED")
+        else:
+            self.logger.info("SSL certificate verification is ENABLED")
         
         # Log credential status (without exposing sensitive data)
         if env_id and lkc_id and bearer_token:
@@ -151,7 +158,7 @@ class ConnectorComparator:
             
             self.logger.info(f"Fetching SM template for {connector_class} from {url}")
             self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-            response = requests.put(url, json=data, headers=headers)
+            response = requests.put(url, json=data, headers=headers, verify=not self.disable_ssl_verify)
             response.raise_for_status()
             
             template_data = response.json()

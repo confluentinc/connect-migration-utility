@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--lkc-id', type=str, help='Confluent Cloud LKC cluster ID')
     parser.add_argument('--bearer-token', type=str, help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
+    parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
     
     args = parser.parse_args()
 
@@ -70,7 +71,8 @@ def main():
                 redact=args.redact,
                 output_dir=output_dir,
                 sensitive_file=args.sensitive_file,
-                worker_config_file=args.worker_config_file
+                worker_config_file=args.worker_config_file,
+                disable_ssl_verify=args.disable_ssl_verify
             )
             connectors_json = discovery.discover_and_save()
             logger.info(f"Connector discovery completed. Configs saved to {connectors_json}")
@@ -92,7 +94,8 @@ def main():
             worker_urls=worker_urls_list,
             env_id=args.env_id,
             lkc_id=args.lkc_id,
-            bearer_token=bearer_token
+            bearer_token=bearer_token,
+            disable_ssl_verify=args.disable_ssl_verify
         )
         comparator.process_connectors()
         logger.info("Connector processing completed successfully")
