@@ -195,7 +195,7 @@ class ConnectorComparator:
                     "Content-Type": "application/json",
                     "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
                 }
-                response = requests.put(url, params=params, json=data, headers=headers, verify=False)
+                response = requests.put(url, params=params, json=data, headers=headers)
                 response.raise_for_status()
                 recommended_values = self.extract_recommended_transform_types(response.json())
                 if recommended_values:
