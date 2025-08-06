@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 import re
 from datetime import datetime
 from semantic_matcher import SemanticMatcher, Property
@@ -147,6 +147,11 @@ class ConnectorComparator:
             self.logger.info(f"No worker URL provided - skipping SM template fetch for {connector_class}")
             return {}
         
+        # Add http:// protocol if not present
+        if not worker_url.startswith(('http://', 'https://')):
+            worker_url = f"http://{worker_url}"
+            self.logger.info(f"Added http:// protocol to worker URL: {worker_url}")
+        
         try:
             url = f"{worker_url}/connector-plugins/{connector_class}/config/validate"
             data = {
@@ -163,6 +168,92 @@ class ConnectorComparator:
             
             template_data = response.json()
             self.logger.info(f"Successfully fetched SM template for {connector_class} from {worker_url}")
+            
+            # Log detailed information about the SM template structure
+            self.logger.info(f"=== SM Template Analysis for {connector_class} ===")
+            self.logger.info(f"Template data type: {type(template_data)}")
+            
+            if isinstance(template_data, dict):
+                self.logger.info(f"Template keys: {list(template_data.keys())}")
+                
+                # Log configs (newer format)
+                if 'configs' in template_data:
+                    configs = template_data['configs']
+                    self.logger.info(f"Number of configs: {len(configs) if isinstance(configs, list) else 'Not a list'}")
+                    
+                    if isinstance(configs, list) and configs:
+                        self.logger.info(f"Sample configs (first 5):")
+                        for i, config_def in enumerate(configs[:5]):
+                            if isinstance(config_def, dict):
+                                name = config_def.get('name', 'Unknown')
+                                config_type = config_def.get('type', 'Unknown')
+                                required = config_def.get('required', False)
+                                default_value = config_def.get('default_value', 'None')
+                                self.logger.info(f"  {i+1}. {name} (type: {config_type}, required: {required}, default: {default_value})")
+                
+                # Log groups (newer format)
+                if 'groups' in template_data:
+                    groups = template_data['groups']
+                    self.logger.info(f"Number of groups: {len(groups) if isinstance(groups, list) else 'Not a list'}")
+                    
+                    if isinstance(groups, list):
+                        for i, group in enumerate(groups):
+                            if isinstance(group, dict):
+                                group_name = group.get('name', 'Unknown')
+                                group_configs = group.get('configs', [])
+                                self.logger.info(f"  Group {i+1}: {group_name} ({len(group_configs)} configs)")
+                                
+                                # Log sample configs from each group
+                                if group_configs:
+                                    self.logger.info(f"    Sample configs in {group_name}:")
+                                    for j, config_def in enumerate(group_configs[:3]):
+                                        if isinstance(config_def, dict):
+                                            name = config_def.get('name', 'Unknown')
+                                            config_type = config_def.get('type', 'Unknown')
+                                            self.logger.info(f"      {j+1}. {name} (type: {config_type})")
+                
+                # Log config definitions (older format)
+                if 'config' in template_data:
+                    config_defs = template_data['config']
+                    self.logger.info(f"Number of config definitions: {len(config_defs) if isinstance(config_defs, list) else 'Not a list'}")
+                    
+                    if isinstance(config_defs, list) and config_defs:
+                        self.logger.info(f"Sample config definitions (first 5):")
+                        for i, config_def in enumerate(config_defs[:5]):
+                            if isinstance(config_def, dict):
+                                name = config_def.get('name', 'Unknown')
+                                config_type = config_def.get('type', 'Unknown')
+                                required = config_def.get('required', False)
+                                default_value = config_def.get('default_value', 'None')
+                                self.logger.info(f"  {i+1}. {name} (type: {config_type}, required: {required}, default: {default_value})")
+                
+                # Log sections (older format)
+                if 'sections' in template_data:
+                    sections = template_data['sections']
+                    self.logger.info(f"Number of sections: {len(sections) if isinstance(sections, list) else 'Not a list'}")
+                    
+                    if isinstance(sections, list):
+                        for i, section in enumerate(sections):
+                            if isinstance(section, dict):
+                                section_name = section.get('name', 'Unknown')
+                                section_configs = section.get('config_defs', [])
+                                self.logger.info(f"  Section {i+1}: {section_name} ({len(section_configs)} configs)")
+                                
+                                # Log sample configs from each section
+                                if section_configs:
+                                    self.logger.info(f"    Sample configs in {section_name}:")
+                                    for j, config_def in enumerate(section_configs[:3]):
+                                        if isinstance(config_def, dict):
+                                            name = config_def.get('name', 'Unknown')
+                                            config_type = config_def.get('type', 'Unknown')
+                                            self.logger.info(f"      {j+1}. {name} (type: {config_type})")
+                
+                # Log any other important fields
+                for key in ['name', 'version', 'type']:
+                    if key in template_data:
+                        self.logger.info(f"{key.capitalize()}: {template_data[key]}")
+            
+            self.logger.info(f"=== End SM Template Analysis for {connector_class} ===")
             return template_data
             
         except requests.exceptions.RequestException as e:
@@ -421,7 +512,8 @@ class ConnectorComparator:
             'mysql': ['MySqlSource', 'MySqlSink'],
             'postgresql': ['PostgresSource', 'PostgresSink'],
             'oracle': ['OracleDatabaseSource', 'OracleDatabaseSink'],
-            'sqlserver': ['MicrosoftSqlServerSource', 'MicrosoftSqlServerSink']
+            'sqlserver': ['MicrosoftSqlServerSource', 'MicrosoftSqlServerSink'],
+            'snowflake': ['SnowflakeSource']
         }
         
         # Get expected template names for this database type
@@ -591,6 +683,97 @@ class ConnectorComparator:
             self.logger.debug(f"Extracted password: {connection_info['password']}")
         
         self.logger.debug(f"Final connection_info: {connection_info}")
+        return connection_info
+
+    def _parse_mongodb_connection_string(self, url: str) -> Dict[str, str]:
+        """Parse MongoDB connection string to extract connection details"""
+        original_url = url
+        url = url.lower()
+        connection_info = {}
+        
+        self.logger.debug(f"Parsing MongoDB connection string: {original_url}")
+        
+        # Handle MongoDB Atlas connection strings (mongodb+srv://)
+        # Format: mongodb+srv://username:password@cluster.mongodb.net/database?options
+        if 'mongodb+srv://' in url:
+            # Extract the part after mongodb+srv://
+            srv_part = url.replace('mongodb+srv://', '')
+            
+            # Split by @ to separate credentials from host
+            if '@' in srv_part:
+                credentials_part, host_part = srv_part.split('@', 1)
+                
+                # Extract username and password from credentials
+                if ':' in credentials_part:
+                    user, password = credentials_part.split(':', 1)
+                    connection_info['user'] = user
+                    connection_info['password'] = password
+                    self.logger.debug(f"Extracted user: {connection_info['user']}")
+                    self.logger.debug(f"Extracted password: {connection_info['password']}")
+                
+                # Extract host from host part
+                host = host_part.split('/')[0].split('?')[0]
+                connection_info['host'] = host
+                self.logger.debug(f"Extracted host: {connection_info['host']}")
+                
+                # Extract database if present
+                if '/' in host_part:
+                    db_part = host_part.split('/', 1)[1]
+                    if '?' in db_part:
+                        db_name = db_part.split('?')[0]
+                    else:
+                        db_name = db_part
+                    connection_info['database'] = db_name
+                    self.logger.debug(f"Extracted database: {connection_info['database']}")
+        
+        # Handle regular MongoDB connection strings (mongodb://)
+        elif 'mongodb://' in url:
+            # Extract the part after mongodb://
+            mongo_part = url.replace('mongodb://', '')
+            
+            # Split by @ to separate credentials from host
+            if '@' in mongo_part:
+                credentials_part, host_part = mongo_part.split('@', 1)
+                
+                # Extract username and password from credentials
+                if ':' in credentials_part:
+                    user, password = credentials_part.split(':', 1)
+                    connection_info['user'] = user
+                    connection_info['password'] = password
+                    self.logger.debug(f"Extracted user: {connection_info['user']}")
+                    self.logger.debug(f"Extracted password: {connection_info['password']}")
+                
+                # Extract host from host part
+                host = host_part.split('/')[0].split('?')[0]
+                connection_info['host'] = host
+                self.logger.debug(f"Extracted host: {connection_info['host']}")
+                
+                # Extract database if present
+                if '/' in host_part:
+                    db_part = host_part.split('/', 1)[1]
+                    if '?' in db_part:
+                        db_name = db_part.split('?')[0]
+                    else:
+                        db_name = db_part
+                    connection_info['database'] = db_name
+                    self.logger.debug(f"Extracted database: {connection_info['database']}")
+            else:
+                # No credentials, just host
+                host = mongo_part.split('/')[0].split('?')[0]
+                connection_info['host'] = host
+                self.logger.debug(f"Extracted host: {connection_info['host']}")
+                
+                # Extract database if present
+                if '/' in mongo_part:
+                    db_part = mongo_part.split('/', 1)[1]
+                    if '?' in db_part:
+                        db_name = db_part.split('?')[0]
+                    else:
+                        db_name = db_part
+                    connection_info['database'] = db_name
+                    self.logger.debug(f"Extracted database: {connection_info['database']}")
+        
+        self.logger.debug(f"Final MongoDB connection_info: {connection_info}")
         return connection_info
 
     def _map_jdbc_properties(self, config: Dict[str, Any], db_type: str) -> Dict[str, Any]:
@@ -1141,7 +1324,18 @@ class ConnectorComparator:
                     self.logger.error(f"Connector at index {i} missing required fields 'name' or 'config'")
                     continue
                 
-                fm_config = self._generate_fm_config(connector)
+                # Transform SM to FM using the new method
+                result = self.transformSMToFm(connector['name'], connector['config'])
+                
+                # Create FM config object in the expected format
+                fm_config = {
+                    'name': result['name'],
+                    'sm_config': connector['config'],
+                    'config': result['fm_configs'],
+                    'mapping_errors': result['errors'],
+                    'mapping_warnings': result['warnings'],
+                }
+                
                 fm_configs.append(fm_config)
                 
                 # Save individual FM config
@@ -1161,3 +1355,1285 @@ class ConnectorComparator:
             json.dump(fm_configs, f, indent=2)
         
         self.logger.info(f"Saved {len(fm_configs)} FM configurations to {all_configs_file}") 
+
+    def transformSMToFm(self, connector_name:str, user_configs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Transform Self-Managed (SM) connector configurations to Fully Managed (FM) configurations.
+        
+        Args:
+            user_configs: Dictionary of configuration key-value pairs where:
+                - Key: Configuration property name (string)
+                - Value: Configuration property value (will be converted to string)
+                Example: {"connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector", "connection.url": "jdbc:mysql://localhost:3306/mydb"}
+        
+        Returns:
+            Dictionary containing:
+                - 'fm_configs': List of successfully transformed FM configurations
+                - 'warnings': List of warning messages
+                - 'errors': List of error messages
+        """
+        result = {
+            'fm_configs': [],
+            'warnings': [],
+            'errors': []
+        }
+        
+        # Validate input
+        if not isinstance(user_configs, dict):
+            result['errors'].append("Input must be a dictionary of configuration key-value pairs")
+            return result
+        
+        if not user_configs:
+            result['warnings'].append("No configuration properties provided")
+            return result
+        
+        # Convert all values to strings
+        config_dict = {}
+        for key, value in user_configs.items():
+            config_dict[key] = str(value)
+        
+        # Check for required connector.class
+        if 'connector.class' not in config_dict:
+            result['errors'].append("Missing required 'connector.class' configuration")
+            return result
+        
+        # Get template ID (connector class)
+        template_id = config_dict.get('connector.class')
+        
+        sm_template, fm_template = self._get_templates_for_connector(template_id, connector_name, config_dict)
+    
+        
+        if fm_template is None:
+            result['errors'].append(f"No FM template found for connector class: {template_id}")
+            return result
+        
+        # Extract template components (following Java TemplateEngine pattern)
+        connector_config_defs = self._extract_connector_config_defs(fm_template)
+        template_config_defs = self._extract_template_config_defs(fm_template)
+        
+        # Initialize FM configs and message lists (following Java pattern)
+        fm_configs = {}
+        transforms_configs = {}  # Separate dictionary for transforms and predicates
+        warnings = []
+        errors = []
+        semantic_match_list = set()  # Track configs that need semantic matching
+        
+        # Step 1: Handle connector.class and name (following Java pattern)
+        if 'connector.class' in config_dict:
+            fm_configs['connector.class'] = fm_template.get('template_id')
+        else:
+            errors.append(f"connector.class property is required.")
+        
+        if 'name' in config_dict:
+            fm_configs['name'] = config_dict['name']
+        
+        # Step 2: Process user configs (following Java pattern)
+        for user_config_key, user_config_value in config_dict.items():
+            # Check if this is a transforms or predicates config
+            if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
+                transforms_configs[user_config_key] = user_config_value
+                continue
+
+            if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
+                transforms_configs[user_config_key] = user_config_value
+                continue
+            
+            # Find if user config is present in Connector config def
+            matching_connector_config_def = None
+            for connector_config_def in connector_config_defs:
+                if connector_config_def.get('name') == user_config_key:
+                    matching_connector_config_def = connector_config_def
+                    break
+            
+            if matching_connector_config_def is not None:
+                # User config present in Connector config def
+                self._process_user_config_in_connector_config_def(
+                    matching_connector_config_def,
+                    user_config_value,
+                    template_config_defs,
+                    fm_configs,
+                    warnings,
+                    errors,
+                    config_dict,
+                    semantic_match_list
+                )
+            else:
+                # User config not present in Connector config def - warn
+                warnings.append(f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any.")
+        
+        # Step 3: Process template configs using config derivation methods
+        for template_config_def in template_config_defs:
+            template_config_name = template_config_def.get('name')
+            
+            # Get the method to derive this config from user configs
+            derivation_method = self._get_config_derivation_method(template_config_name, template_config_def)
+            
+            if derivation_method:
+                derived_value = derivation_method(config_dict, fm_configs)
+                if derived_value is not None:
+                    fm_configs[template_config_name] = derived_value
+
+                    
+        
+        # Step 4: Before semantic matching, check if user config keys directly match template config def names
+        for user_config_key, user_config_value in config_dict.items():
+            # Skip if already in fm_configs
+            if user_config_key in fm_configs:
+                if user_config_key in semantic_match_list:
+                    semantic_match_list.remove(user_config_key)
+                continue
+                
+            # Check if user config key matches any template config def name
+            for template_config_def in template_config_defs:
+                template_config_name = template_config_def.get('name')
+                if template_config_name == user_config_key:
+                    # Direct match found - add to fm_configs
+                    fm_configs[user_config_key] = user_config_value
+                    self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
+                    if user_config_key in semantic_match_list:
+                        semantic_match_list.remove(user_config_key)
+                    break
+        
+        # Step 5: do semantic matching for the configs that are not present in the template
+        self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
+
+        # Check for required configs that are missing after semantic matching
+        self._check_required_configs(fm_configs, template_config_defs, errors)
+
+        # Process transforms configs
+        # Extract template_id from the correct location
+        plugin_type = "Unknown"
+        if fm_template.get('template_id'):
+            plugin_type = fm_template.get('template_id')
+        elif 'templates' in fm_template and len(fm_template['templates']) > 0:
+            plugin_type = fm_template['templates'][0].get('template_id', 'Unknown')
+        
+        transforms_data = self.get_transforms_config(config_dict, plugin_type)
+        fm_configs.update(transforms_data['allowed'])
+        
+        # Add mapping errors from transforms processing
+        if 'mapping_errors' in transforms_data:
+            errors.extend(transforms_data['mapping_errors'])
+
+        # Return the result in the required format
+        result = {
+            "name": connector_name,
+            "fm_configs": fm_configs,
+            "warnings": warnings,
+            "errors": errors
+        }
+    
+        return result 
+
+    def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract connector config definitions from FM template (following Java pattern)"""
+        connector_config_defs = []
+        if 'templates' in fm_template:
+            for template in fm_template['templates']:
+                if 'connector_configs' in template:
+                    connector_config_defs.extend(template['connector_configs'])
+        return connector_config_defs
+    
+    def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract template config definitions from FM template (following Java pattern)"""
+        template_config_defs = []
+        if 'templates' in fm_template:
+            for template in fm_template['templates']:
+                if 'config_defs' in template:
+                    template_config_defs.extend(template['config_defs'])
+        return template_config_defs
+    
+    def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
+        """
+        Get the method to derive a template config from user configs.
+        This maps template config names to their derivation methods.
+        """
+        # Map of template config names to their derivation methods
+        config_derivation_methods = {
+            # JDBC-related configs
+            'connection.host': self._derive_connection_host,
+            'connection.port': self._derive_connection_port,
+            'connection.user': self._derive_connection_user,
+            'connection.password': self._derive_connection_password,
+            'connection.database': self._derive_connection_database,
+            'db.name': self._derive_db_name,
+            'database.server.name': self._derive_database_server_name,
+            'database.sslmode': self._derive_database_sslmode,
+        
+            
+            # Data format configs
+            'input.key.format': self._derive_input_key_format,
+            'input.data.format': self._derive_input_data_format,
+            'output.key.format': self._derive_output_key_format,
+            'output.data.format': self._derive_output_data_format,
+            'output.data.key.format': self._derive_output_data_key_format,
+            'output.data.value.format': self._derive_output_data_value_format,
+            
+            
+            # SSL configs
+            'ssl.mode': self._derive_ssl_mode,
+            
+            # Redis configs
+            'redis.hostname': self._derive_redis_hostname,
+            'redis.portnumber': self._derive_redis_portnumber,
+            'redis.ssl.mode': self._derive_redis_ssl_mode,
+            
+            # CSFL configs
+            'csfle.enabled': self._derive_csfle_enabled,
+            'csfle.onFailure': self._derive_csfle_on_failure,
+            
+            # Add more mappings as needed
+        }
+        
+        return config_derivation_methods.get(template_config_name)
+    
+    def _process_user_config_in_connector_config_def(
+        self,
+        connector_config_def: Dict[str, Any],
+        user_config_value: str,
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, str],
+        warnings: List[str],
+        errors: List[str],
+        user_configs: Dict[str, str],
+        semantic_match_list: set
+    ):
+        """Process a user config that is present in connector config def (following Java pattern)"""
+        
+        # Case 1: value is constant string
+        if connector_config_def.get('value') is not None:
+            self._process_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings, user_configs, semantic_match_list)
+            return
+        
+        # Case 2: Connector config value is switch case
+        if connector_config_def.get('switch') is not None:
+            self._process_switch_case(connector_config_def, user_configs, template_config_defs, fm_configs, warnings, errors, semantic_match_list)
+            return
+        
+        # Case 3: Connector config def is a dynamic mapper
+        if connector_config_def.get('dynamic_mapper') is not None:
+            self._process_dynamic_mapper_case(connector_config_def, user_config_value, user_configs, template_config_defs, fm_configs, warnings, semantic_match_list)
+            return
+        
+        # Case 4: Value is null
+        if connector_config_def.get('value') is None:
+            self._process_null_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings)
+            return
+    
+    def _process_value_case(
+        self,
+        connector_config_def: Dict[str, Any],
+        user_config_value: str,
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, str],
+        warnings: List[str],
+        user_configs: Dict[str, str],
+        semantic_match_list: set
+    ):
+        """Process value case (following Java pattern)"""
+        value = connector_config_def.get('value')
+        
+        # Check if value contains {{.logicalClusterId}} - this indicates internal config
+        if value is not None and (
+            'org.apache.kafka.common.security.plain.PlainLoginModule' in value or 
+            '/mnt/secrets/connect-sr' in value or 
+            ('{{.logicalClusterId}}' in value and not '/mnt/secrets/connect-external-secrets' in value)
+        ):
+            warnings.append(f"{connector_config_def.get('name')} is internal. User given value will be ignored.")
+            return
+        
+        # Check if the value matches DEFAULT_PATTERN (contains ${CONFIG_KEY} references)
+        import re
+        default_pattern = re.compile(r'\$\{([^}]+)\}')
+        matcher = default_pattern.search(value)
+        
+        if matcher:
+            # It's not a true constant, it's a combination of multiple high level keys
+            referenced_keys = self._find_referenced_keys(value, {td.get('name') for td in template_config_defs})
+            
+            # Process each referenced key
+            for referenced_key in referenced_keys:
+                config_name = connector_config_def.get('name')
+                if fm_configs.get(config_name) is not None:
+                    #we already have found value for this config, no need to reprocess.
+                    return
+                # Check if user config already has a value for this config - if yes, copy it
+                if referenced_key in user_configs and user_configs[referenced_key].strip():
+                    fm_configs[config_name] = user_config_value
+                    return
+                
+                referenced_template_config_def = self._find_template_config_def_by_name(referenced_key, template_config_defs)
+                
+                if referenced_template_config_def is not None and not referenced_template_config_def.get('internal', False):
+                    # Check if there's a derivation method defined for this referenced key
+                    derivation_method = self._get_config_derivation_method(referenced_key, referenced_template_config_def)
+                    if derivation_method:
+                        # If there's a derivation method, return early as it will be handled later
+                        return
+                    
+                    # Check if connector config def value is of format ${<template def name>}
+                    if value == f"${{{referenced_key}}}":
+                        # Direct reference format, copy the value as is
+                        fm_configs[referenced_key] = user_config_value
+                elif referenced_template_config_def is not None and referenced_template_config_def.get('internal', False):
+                    warnings.append(f"The transformed FM config is internal and will be inferred. User given value will be ignored.")
+                else:
+                    semantic_match_list.add(config_name)
+                    self.logger.warning(f"'{config_name}' : Config transform not present in template for '{referenced_key}' which was referenced by connector config '{connector_config_def.get('name')}'. Will attempt a semantic match.")
+            return
+        else:
+            config_name = connector_config_def.get('name')
+            # It's a true constant value
+            if value != user_config_value:
+                # Case 1.1: not same as the value from user configs - Warn
+                warnings.append(f"{config_name} : FM config has constant value '{value}' but user provided '{user_config_value}'. User given value will be ignored.")
+            # Case 1.2: Same value given by user - Add it to fm key and value
+            fm_configs[connector_config_def.get('name')] = user_config_value
+            return
+    
+    def _process_switch_case(
+        self,
+        connector_config_def: Dict[str, Any],
+        user_configs: Dict[str, str],
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, str],
+        warnings: List[str],
+        errors: List[str],
+        semantic_match_list: set
+    ):
+        """Process switch case (following Java pattern)"""
+        switch_cases = connector_config_def.get('switch', {})
+        
+        for template_config_key, switch_mapping in switch_cases.items():
+            if fm_configs.get(template_config_key) is not None:
+                # we already have found value for this config, no need to reprocess.
+                return
+            # Find corresponding template config def
+            template_config_def = self._find_template_config_def_by_name(template_config_key, template_config_defs)
+            
+            if template_config_def is not None:
+                if template_config_def.get('internal', False):
+                    warnings.append(f"The transformed FM config is internal and will be inferred. User given value will be ignored.")
+                else:
+                    self._process_non_internal_switch_case(connector_config_def, template_config_def, switch_mapping, user_configs, fm_configs, warnings, semantic_match_list)
+            else:
+                self.logger.error(f"Switch case key '{template_config_key}' for config '{connector_config_def.get('name')}' is not part of template configs.")
+    
+    def _process_non_internal_switch_case(
+        self,
+        connector_config_def: Dict[str, Any],
+        template_config_def: Dict[str, Any],
+        switch_mapping: Dict[str, str],
+        user_configs: Dict[str, str],
+        fm_configs: Dict[str, str],
+        warnings: List[str],
+        semantic_match_list: set
+    ):
+        """Process non-internal switch case (following Java pattern)"""
+        import re
+        default_pattern = re.compile(r'\$\{([^}]+)\}')
+        
+        has_matchers = any(
+            value is not None and default_pattern.search(value)
+            for value in switch_mapping.values()
+        )
+        
+        if has_matchers:
+            # Check for derivation method for the template config
+            template_config_name = template_config_def.get('name')
+            derivation_method = self._get_config_derivation_method(template_config_name, template_config_def)
+            if derivation_method:
+                # If there's a derivation method, return early as it will be handled later
+                return
+            # If no derivation method, continue with normal switch processing
+            # (This would be the complex matcher logic in the real implementation)
+            config_name = connector_config_def.get('name')
+            semantic_match_list.add(config_name)
+            self.logger.error(f"'{config_name}' : Switch case has matchers but no derivation method for '{template_config_name}'. Complex matcher logic not implemented. Will attempt a semantic match.")
+        else:
+            user_value = user_configs.get(connector_config_def.get('name'))
+            if user_value is not None:
+                high_level_value = self._apply_reverse_switch(switch_mapping, user_value)
+                if high_level_value is not None:
+                    fm_configs[template_config_def.get('name')] = high_level_value
+                else:
+                    warnings.append(f"User value '{user_value}' for '{connector_config_def.get('name')}' does not match any value in templateswitch case.")
+                    
+    
+    def _process_dynamic_mapper_case(
+        self,
+        connector_config_def: Dict[str, Any],
+        user_config_value: str,
+        user_configs: Dict[str, str],
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, str],
+        warnings: List[str],
+        semantic_match_list: set
+    ):
+        """Process dynamic mapper case (following Java pattern)"""
+        connector_config_name = connector_config_def.get('name')
+        
+        # Check if the connector config def name is part of template config defs
+        template_config_def = self._find_template_config_def_by_name(connector_config_name, template_config_defs)
+        
+        if template_config_def is not None:
+            # If it exists in template config defs, add to fm_configs
+            fm_configs[connector_config_name] = user_config_value
+        else:
+            # If not found in template config defs, add to semantic matching list
+            semantic_match_list.add(connector_config_name)
+            self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
+    
+    def _process_null_value_case(
+        self,
+        connector_config_def: Dict[str, Any],
+        user_config_value: str,
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, str],
+        warnings: List[str]
+    ):
+        """Process null value case (following Java pattern)"""
+        # This is a simplified implementation - in the real Java code, this would handle null values
+        # For now, we'll just add the value directly
+        fm_configs[connector_config_def.get('name')] = user_config_value
+    
+    def _find_template_config_def_by_name(self, name: str, template_config_defs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Find template config def by name (following Java pattern)"""
+        for template_config_def in template_config_defs:
+            if template_config_def.get('name') == name:
+                return template_config_def
+        return None
+    
+    def _find_referenced_keys(self, value: str, high_level_keys: Set[str]) -> Set[str]:
+        """Find referenced keys in a value (following Java pattern)"""
+        import re
+        default_pattern = re.compile(r'\$\{([^}]+)\}')
+        referenced_keys = set()
+        
+        for match in default_pattern.finditer(value):
+            referenced_key = match.group(1)
+            if referenced_key in high_level_keys:
+                referenced_keys.add(referenced_key)
+        
+        return referenced_keys
+    
+    def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive connection.host from user configs (e.g., from JDBC URL or MongoDB connection string)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('host')
+        
+        # Try to extract from MongoDB connection string
+        if 'connection.uri' in user_configs:
+            mongo_uri = user_configs['connection.uri']
+            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            return parsed.get('host')
+        
+        # Check for MongoDB-specific connection string configs
+        for config_key in ['mongodb.connection.string', 'connection.string']:
+            if config_key in user_configs:
+                mongo_uri = user_configs[config_key]
+                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                return parsed.get('host')
+        
+        return None
+    
+    def _derive_connection_port(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive connection.port from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('port')
+        return None
+    
+    def _derive_connection_user(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive connection.user from user configs (e.g., from JDBC URL or MongoDB connection string)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('user')
+        
+        # Try to extract from MongoDB connection string
+        if 'connection.uri' in user_configs:
+            mongo_uri = user_configs['connection.uri']
+            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            return parsed.get('user')
+        
+        # Check for MongoDB-specific connection string configs
+        for config_key in ['mongodb.connection.string', 'connection.string']:
+            if config_key in user_configs:
+                mongo_uri = user_configs[config_key]
+                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                return parsed.get('user')
+        
+        return None
+    
+    def _derive_connection_password(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive connection.password from user configs (e.g., from JDBC URL or MongoDB connection string)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('password')
+        
+        # Try to extract from MongoDB connection string
+        if 'connection.uri' in user_configs:
+            mongo_uri = user_configs['connection.uri']
+            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            return parsed.get('password')
+        
+        # Check for MongoDB-specific connection string configs
+        for config_key in ['mongodb.connection.string', 'connection.string']:
+            if config_key in user_configs:
+                mongo_uri = user_configs[config_key]
+                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                return parsed.get('password')
+        
+        return None
+    
+    def _derive_connection_database(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive connection.database from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('database')
+        return None
+    
+    def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive db.name from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('database')
+        
+        # Try to extract from MongoDB connection string
+        if 'connection.uri' in user_configs:
+            mongo_uri = user_configs['connection.uri']
+            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            return parsed.get('database')
+        
+        # Check for MongoDB-specific connection string configs
+        for config_key in ['mongodb.connection.string', 'connection.string']:
+            if config_key in user_configs:
+                mongo_uri = user_configs[config_key]
+                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                return parsed.get('database')
+        
+        # Check for direct db.name config
+        if 'db.name' in user_configs:
+            return user_configs['db.name']
+        
+        # Check for database config
+        if 'database' in user_configs:
+            return user_configs['database']
+        
+        return None
+    
+    def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive database.server.name from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('host')
+        
+        # Check for direct database.server.name config
+        if 'database.server.name' in user_configs:
+            return user_configs['database.server.name']
+        
+        # Check for server name config
+        if 'server.name' in user_configs:
+            return user_configs['server.name']
+        
+        return None
+    
+    def _derive_database_sslmode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive database.sslmode from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                # Check for SSL parameters in the URL
+                if 'useSSL=true' in jdbc_url or 'sslmode=require' in jdbc_url:
+                    return 'require'
+                elif 'useSSL=false' in jdbc_url or 'sslmode=disable' in jdbc_url:
+                    return 'disable'
+                elif 'sslmode=prefer' in jdbc_url:
+                    return 'prefer'
+                elif 'sslmode=verify-ca' in jdbc_url:
+                    return 'verify-ca'
+                elif 'sslmode=verify-full' in jdbc_url:
+                    return 'verify-full'
+        
+        # Check for direct database.sslmode config
+        if 'database.sslmode' in user_configs:
+            return user_configs['database.sslmode']
+        
+        # Check for ssl.mode config
+        if 'ssl.mode' in user_configs:
+            return user_configs['ssl.mode']
+        
+        # Check for SSL-related configs
+        if 'useSSL' in user_configs:
+            if user_configs['useSSL'].lower() == 'true':
+                return 'require'
+            else:
+                return 'disable'
+        
+        # Default to prefer for safety
+        return 'prefer'
+    
+    def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive input.key.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'key.converter' in user_configs:
+            converter_class = user_configs['key.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('key.format') or user_configs.get('input.key.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Try to infer from schema registry configs
+        if 'key.converter.schemas.enable' in user_configs:
+            return 'JSON_SR'
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive input.data.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'value.converter' in user_configs:
+            converter_class = user_configs['value.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('value.format') or user_configs.get('input.data.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Try to infer from schema registry configs
+        if 'value.converter.schemas.enable' in user_configs:
+            return 'JSON_SR'
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive output.key.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'key.converter' in user_configs:
+            converter_class = user_configs['key.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('output.key.format') or user_configs.get('key.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive output.data.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'value.converter' in user_configs:
+            converter_class = user_configs['value.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('output.data.format') or user_configs.get('value.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive output.data.key.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'key.converter' in user_configs:
+            converter_class = user_configs['key.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('output.data.key.format') or user_configs.get('key.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Try to infer from output key format if already derived
+        if 'output.key.format' in fm_configs:
+            return fm_configs['output.key.format']
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive output.data.value.format from user configs using reverse format mapping"""
+        # Reverse data format mapping from template (converter class -> format key)
+        reverse_format_mapping = {
+            "io.confluent.connect.avro.AvroConverter": "AVRO",
+            "io.confluent.connect.json.JsonSchemaConverter": "JSON_SR",
+            "io.confluent.connect.protobuf.ProtobufConverter": "PROTOBUF",
+            "org.apache.kafka.connect.converters.ByteArrayConverter": "BYTES",
+            "org.apache.kafka.connect.json.JsonConverter": "JSON",
+            "org.apache.kafka.connect.storage.StringConverter": "STRING"
+        }
+        
+        # Try direct converter mapping first (reverse map)
+        if 'value.converter' in user_configs:
+            converter_class = user_configs['value.converter']
+            if converter_class in reverse_format_mapping:
+                return reverse_format_mapping[converter_class]
+            return converter_class  # Return as-is if not in mapping
+        
+        # Try to get format from user configs (direct format key)
+        format_key = user_configs.get('output.data.value.format') or user_configs.get('value.format')
+        if format_key:
+            return format_key.upper()
+        
+        # Try to infer from output data format if already derived
+        if 'output.data.format' in fm_configs:
+            return fm_configs['output.data.format']
+        
+        # Default fallback
+        return 'JSON'
+    
+    def _derive_authentication_method(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive authentication.method from user configs"""
+        # Check for various authentication-related configs
+        auth_configs = [
+            'security.protocol',
+            'sasl.mechanism',
+            'authentication.type',
+            'auth.method'
+        ]
+        
+        for auth_config in auth_configs:
+            if auth_config in user_configs:
+                auth_value = user_configs[auth_config].lower()
+                if 'plain' in auth_value:
+                    return 'PLAIN'
+                elif 'scram' in auth_value:
+                    return 'SCRAM'
+                elif 'oauth' in auth_value or 'bearer' in auth_value:
+                    return 'OAUTHBEARER'
+                elif 'ssl' in auth_value or 'tls' in auth_value:
+                    return 'SSL'
+                else:
+                    return auth_value.upper()
+        
+        # Default fallback
+        return 'PLAIN'
+    
+    def _derive_csfle_enabled(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive csfle.enabled from user configs"""
+        return 'false'
+    
+    def _derive_csfle_on_failure(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive csfle.onFailure from user configs"""
+        return 'FAIL'
+    
+    def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive ssl.mode from user configs"""
+        # Check for direct ssl.mode config first
+        if 'ssl.mode' in user_configs:
+            value = user_configs['ssl.mode'].lower()
+            # Map common SSL mode values
+            if value in ['prefer', 'preferred']:
+                return 'prefer'
+            elif value in ['require', 'required']:
+                return 'require'
+            elif value in ['verify-ca', 'verifyca', 'verify_ca']:
+                return 'verify-ca'
+            elif value in ['verify-full', 'verifyfull', 'verify_full']:
+                return 'verify-full'
+            elif value in ['disabled', 'disable', 'false', 'none']:
+                return 'disabled'
+        
+        # Check for database-specific SSL mode configs
+        for config_key in [
+            'connection.sslmode',  # PostgreSQL
+            'connection.sslMode',  # MySQL
+            'database.ssl.mode',   # MySQL CDC
+            'redis.ssl.mode',      # Redis
+            'ssl.enabled',         # Generic
+            'use.ssl',             # Generic
+            'ssl.use'              # Generic
+        ]:
+            if config_key in user_configs:
+                value = user_configs[config_key].lower()
+                # Map boolean values
+                if value in ['true', 'yes', '1', 'enabled']:
+                    return 'require'  # Default to require when SSL is enabled
+                elif value in ['false', 'no', '0', 'disabled']:
+                    return 'disabled'
+                # Map string values
+                elif value in ['prefer', 'preferred']:
+                    return 'prefer'
+                elif value in ['require', 'required']:
+                    return 'require'
+                elif value in ['verify-ca', 'verifyca', 'verify_ca']:
+                    return 'verify-ca'
+                elif value in ['verify-full', 'verifyfull', 'verify_full']:
+                    return 'verify-full'
+        
+        # Check for SSL-related configs that might indicate SSL usage
+        ssl_indicators = [
+            'ssl.truststorefile', 'ssl.truststorepassword', 'ssl.rootcertfile',
+            'connection.javax.net.ssl.trustStore', 'connection.javax.net.ssl.trustStorePassword',
+            'ssl.truststore.file', 'ssl.truststore.password', 'ssl.cert.file',
+            'ssl.key.file', 'ssl.ca.file', 'ssl.certificate.file'
+        ]
+        
+        for indicator in ssl_indicators:
+            if indicator in user_configs and user_configs[indicator]:
+                # If SSL certificates/truststores are provided, likely need verify-ca or verify-full
+                cert_value = user_configs[indicator].lower()
+                if 'verify' in cert_value or 'cert' in cert_value:
+                    return 'verify-ca'  # Default to verify-ca when certificates are provided
+                else:
+                    return 'require'  # Default to require when SSL files are provided
+        
+        # Check for connection URL that might indicate SSL
+        if 'connection.url' in user_configs:
+            url = user_configs['connection.url'].lower()
+            if 'ssl=true' in url or 'sslmode=' in url or 'useSSL=true' in url:
+                # Extract SSL mode from URL if present
+                if 'sslmode=prefer' in url:
+                    return 'prefer'
+                elif 'sslmode=require' in url:
+                    return 'require'
+                elif 'sslmode=verify-ca' in url:
+                    return 'verify-ca'
+                elif 'sslmode=verify-full' in url:
+                    return 'verify-full'
+                elif 'sslmode=disable' in url or 'sslmode=disabled' in url:
+                    return 'disabled'
+                else:
+                    return 'require'  # Default to require when SSL is enabled in URL
+        
+        # Default to prefer if no SSL configuration is found
+        return 'prefer'
+    
+    def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive redis.hostname from user configs"""
+        # Check for direct redis.hostname config first
+        if 'redis.hostname' in user_configs:
+            return user_configs['redis.hostname']
+        
+        # Check for common Redis host configurations
+        for config_key in [
+            'redis.host', 'redis.server', 'redis.address', 'redis.endpoint',
+            'host', 'server', 'address', 'endpoint'
+        ]:
+            if config_key in user_configs:
+                value = user_configs[config_key]
+                # If it's a host:port format, extract just the host
+                if ':' in value:
+                    host = value.split(':')[0]
+                    return host
+                return value
+        
+        # Check for redis.hosts config (format: host:port)
+        if 'redis.hosts' in user_configs:
+            hosts_value = user_configs['redis.hosts']
+            if ':' in hosts_value:
+                host = hosts_value.split(':')[0]
+                return host
+        
+        # Check for connection URL that might contain Redis host
+        for config_key in ['connection.url', 'connection.uri', 'redis.connection.url']:
+            if config_key in user_configs:
+                url = user_configs[config_key].lower()
+                if 'redis://' in url:
+                    # Extract host from Redis URL
+                    # Format: redis://host:port/db
+                    redis_part = url.replace('redis://', '')
+                    if '@' in redis_part:
+                        # Handle authentication: redis://user:pass@host:port/db
+                        auth_part, host_part = redis_part.split('@', 1)
+                        host = host_part.split('/')[0].split(':')[0]
+                        return host
+                    else:
+                        host = redis_part.split('/')[0].split(':')[0]
+                        return host
+        
+        return None
+    
+    def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive redis.portnumber from user configs"""
+        # Check for direct redis.portnumber config first
+        if 'redis.portnumber' in user_configs:
+            return user_configs['redis.portnumber']
+        
+        # Check for common Redis port configurations
+        for config_key in [
+            'redis.port', 'redis.server.port', 'port', 'server.port'
+        ]:
+            if config_key in user_configs:
+                return user_configs[config_key]
+        
+        # Check for redis.hosts config (format: host:port)
+        if 'redis.hosts' in user_configs:
+            hosts_value = user_configs['redis.hosts']
+            if ':' in hosts_value:
+                port = hosts_value.split(':')[1]
+                # Remove any additional path or query parameters
+                if '/' in port:
+                    port = port.split('/')[0]
+                return port
+        
+        # Check for connection URL that might contain Redis port
+        for config_key in ['connection.url', 'connection.uri', 'redis.connection.url']:
+            if config_key in user_configs:
+                url = user_configs[config_key].lower()
+                if 'redis://' in url:
+                    # Extract port from Redis URL
+                    # Format: redis://host:port/db
+                    redis_part = url.replace('redis://', '')
+                    if '@' in redis_part:
+                        # Handle authentication: redis://user:pass@host:port/db
+                        auth_part, host_part = redis_part.split('@', 1)
+                        host_port = host_part.split('/')[0]
+                        if ':' in host_port:
+                            port = host_port.split(':')[1]
+                            return port
+                    else:
+                        host_port = redis_part.split('/')[0]
+                        if ':' in host_port:
+                            port = host_port.split(':')[1]
+                            return port
+        
+        # Default Redis port
+        return '6379'
+    
+    def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
+        """Derive redis.ssl.mode from user configs"""
+        # Check for direct redis.ssl.mode config first
+        if 'redis.ssl.mode' in user_configs:
+            value = user_configs['redis.ssl.mode'].lower()
+            # Map common SSL mode values to Redis SSL mode values
+            if value in ['disabled', 'disable', 'false', 'none', 'off']:
+                return 'disabled'
+            elif value in ['enabled', 'enable', 'true', 'on']:
+                return 'enabled'
+            elif value in ['server', 'server-only', 'verify-server']:
+                return 'server'
+            elif value in ['server+client', 'server+client', 'mutual', 'two-way']:
+                return 'server+client'
+            else:
+                # Return as-is if it's already a valid Redis SSL mode
+                return user_configs['redis.ssl.mode']
+        
+        # Check for Redis SSL enabled flag
+        for config_key in ['redis.ssl.enabled', 'redis.ssl', 'ssl.enabled', 'use.ssl']:
+            if config_key in user_configs:
+                value = user_configs[config_key].lower()
+                if value in ['true', 'yes', '1', 'enabled', 'on']:
+                    return 'enabled'
+                elif value in ['false', 'no', '0', 'disabled', 'off']:
+                    return 'disabled'
+        
+        # Check for SSL-related configs that might indicate SSL usage
+        ssl_indicators = [
+            'redis.ssl.keystore.file', 'redis.ssl.keystore.password',
+            'redis.ssl.truststore.file', 'redis.ssl.truststore.password',
+            'redis.ssl.cert.file', 'redis.ssl.key.file', 'redis.ssl.ca.file'
+        ]
+        
+        for indicator in ssl_indicators:
+            if indicator in user_configs and user_configs[indicator]:
+                # If SSL certificates/keystores are provided, determine the mode
+                cert_value = user_configs[indicator].lower()
+                if 'client' in cert_value or 'keystore' in indicator:
+                    return 'server+client'  # Client certificates indicate mutual auth
+                else:
+                    return 'server'  # Server certificates only
+        
+        # Check for connection URL that might indicate SSL
+        for config_key in ['connection.url', 'connection.uri', 'redis.connection.url']:
+            if config_key in user_configs:
+                url = user_configs[config_key].lower()
+                if 'rediss://' in url:  # Redis with SSL
+                    return 'enabled'
+                elif 'redis://' in url and 'ssl=true' in url:
+                    return 'enabled'
+                elif 'redis://' in url and 'ssl=false' in url:
+                    return 'disabled'
+        
+        # Default to disabled if no SSL configuration is found
+        return 'disabled'
+    
+    def _apply_reverse_switch(self, switch_mapping: Dict[str, str], user_value: str) -> Optional[str]:
+        """Apply reverse switch (following Java pattern)"""
+        for switch_key, switch_value in switch_mapping.items():
+            if switch_value == user_value:
+                # If the matched key is "default", return None
+                if switch_key == "default":
+                    return None
+                return switch_key
+        return None 
+
+    def _do_semantic_matching(self, fm_configs: Dict[str, str], semantic_match_list: set, user_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], sm_template: Dict[str, Any]):
+        """
+        Perform semantic matching for configs that are not found in the template.
+        
+        Args:
+            fm_configs: Dictionary of FM configurations
+            semantic_match_list: Set of config names that need semantic matching
+            user_configs: Dictionary of user configurations
+            template_config_defs: List of template config definitions
+        """
+        if not semantic_match_list:
+            self.logger.info("No configs require semantic matching")
+            return
+        
+        self.logger.info(f"Performing semantic matching for {len(semantic_match_list)} configs: {', '.join(semantic_match_list)}")
+        
+        # Log SM template information
+        self.logger.info(f"SM Template info for semantic matching:")
+        if sm_template:
+            self.logger.info(f"  - SM template type: {type(sm_template)}")
+            self.logger.info(f"  - SM template keys: {list(sm_template.keys()) if isinstance(sm_template, dict) else 'Not a dict'}")
+            if isinstance(sm_template, dict) and 'config_defs' in sm_template:
+                self.logger.info(f"  - SM config_defs count: {len(sm_template['config_defs'])}")
+            if isinstance(sm_template, dict) and 'sections' in sm_template:
+                self.logger.info(f"  - SM sections count: {len(sm_template['sections'])}")
+        else:
+            self.logger.info(f"  - SM template is None/empty")
+        
+        # Get FM properties for matching (as dictionary)
+        fm_properties_dict = {}
+        for template_config_def in template_config_defs:
+            fm_properties_dict[template_config_def.get('name')] = template_config_def
+        
+        self.logger.info(f"FM properties available for matching: {len(fm_properties_dict)}")
+        
+        # Perform semantic matching for each config in the list
+        for config_name in semantic_match_list:
+            if config_name in user_configs:
+                user_value = user_configs[config_name]
+                self.logger.info(f"Processing semantic match for '{config_name}' = '{user_value}'")
+                
+                # Get SM property from SM template
+                sm_prop = self._get_sm_property_from_template(config_name, sm_template)
+                
+                if not sm_prop:
+                    # Fallback to generic property if not found in SM template
+                    self.logger.info(f"SM property '{config_name}' not found in template, using fallback")
+                    sm_prop = {
+                        'name': config_name,
+                        'description': f"User config: {config_name}",
+                        'type': 'STRING',
+                        'section': 'General'
+                    }
+                else:
+                    self.logger.info(f"Found SM property '{config_name}' in template: {sm_prop}")
+                
+                # Find best match using semantic matching with threshold
+                result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.7)
+                
+                if result and result.matched_fm_property:
+                    # Find the property name from the matched property info
+                    fm_prop_name = None
+                    for prop_name, prop_info in fm_properties_dict.items():
+                        if prop_info == result.matched_fm_property:
+                            fm_prop_name = prop_name
+                            break
+                    
+                    if fm_prop_name and fm_prop_name not in fm_configs:
+                        fm_configs[fm_prop_name] = user_value
+                        self.logger.info(f"Semantic match: {config_name} -> {fm_prop_name} (score: {result.similarity_score:.3f})")
+                    elif fm_prop_name in fm_configs:
+                        self.logger.debug(f"Skipping semantic mapping for {config_name} -> {fm_prop_name} as {fm_prop_name} is already mapped")
+                    else:
+                        self.logger.warning(f"Could not determine property name for matched property: {config_name}")
+                else:
+                    self.logger.warning(f"No semantic match found for config: {config_name}")
+            else:
+                self.logger.warning(f"Config {config_name} not found in user configs for semantic matching")
+        
+        self.logger.info(f"Semantic matching completed for {len(semantic_match_list)} configs") 
+
+    def _check_required_configs(self, fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], errors: List[str]):
+        """
+        Check for required configs that are missing from FM configs after semantic matching.
+        
+        Args:
+            fm_configs: Dictionary of FM configurations
+            template_config_defs: List of template config definitions
+            errors: List to add error messages to
+        """
+        self.logger.info("Checking for required configs that are missing from FM configs")
+        
+        for template_config_def in template_config_defs:
+            config_name = template_config_def.get('name')
+            required_value = template_config_def.get('required', False)
+            is_internal = template_config_def.get('internal', False)
+            
+            # Handle both string and boolean values for 'required' field
+            is_required = False
+            if isinstance(required_value, bool):
+                is_required = required_value
+            elif isinstance(required_value, str):
+                is_required = required_value.lower() == 'true'
+            
+            # Skip internal configs as they are handled automatically
+            if is_internal:
+                continue
+                
+            # Check if this required config is missing from FM configs
+            if is_required and config_name not in fm_configs:
+                error_msg = f"Required FM Config '{config_name}' cound not be derived from given configs."
+                errors.append(error_msg)
+            
+            # Check if FM config value is part of recommended values (if config exists and has recommended values)
+            if config_name in fm_configs:
+                fm_config_value = fm_configs[config_name]
+                recommended_values = template_config_def.get('recommended_values', [])
+                
+                if recommended_values and fm_config_value not in recommended_values:
+                    error_msg = f"FM Config '{config_name}' value '{fm_config_value}' is not in the recommended values list: {recommended_values}"
+                    errors.append(error_msg)
+        
+    def _get_sm_property_from_template(self, config_name: str, sm_template: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Get SM property definition from SM template.
+        
+        Args:
+            config_name: Name of the config to find
+            sm_template: SM template dictionary
+            
+        Returns:
+            SM property definition or None if not found
+        """
+        self.logger.debug(f"Looking for SM property '{config_name}' in template")
+        
+        if not sm_template:
+            self.logger.debug(f"SM template is empty or None")
+            return None
+        
+        # Handle different SM template structures
+        available_keys = list(sm_template.keys()) if isinstance(sm_template, dict) else []
+        self.logger.debug(f"SM template keys: {available_keys}")
+        
+        # Try configs (newer format)
+        if 'configs' in sm_template:
+            self.logger.debug(f"Searching in 'configs' (count: {len(sm_template['configs'])})")
+            for config_def in sm_template['configs']:
+                if isinstance(config_def, dict) and config_def.get('name') == config_name:
+                    self.logger.debug(f"Found SM property '{config_name}' in configs")
+                    self.logger.debug(f"Property details: {config_def}")
+                    return config_def
+        
+        # Try groups (newer format)
+        if 'groups' in sm_template:
+            groups = sm_template['groups']
+            self.logger.debug(f"Searching in 'groups' (count: {len(groups)})")
+            for group in groups:
+                if isinstance(group, dict):
+                    group_name = group.get('name', 'Unknown')
+                    group_configs = group.get('configs', [])
+                    self.logger.debug(f"Searching in group '{group_name}' (configs: {len(group_configs)})")
+                    
+                    for config_def in group_configs:
+                        if isinstance(config_def, dict) and config_def.get('name') == config_name:
+                            self.logger.debug(f"Found SM property '{config_name}' in group '{group_name}'")
+                            self.logger.debug(f"Property details: {config_def}")
+                            return config_def
+        
+        # Try sections (older format)
+        if 'sections' in sm_template:
+            sections = sm_template['sections']
+            self.logger.debug(f"Searching in 'sections' (count: {len(sections)})")
+            for section in sections:
+                if isinstance(section, dict):
+                    section_name = section.get('name', 'Unknown')
+                    section_configs = section.get('config_defs', [])
+                    self.logger.debug(f"Searching in section '{section_name}' (configs: {len(section_configs)})")
+                    
+                    for config_def in section_configs:
+                        if isinstance(config_def, dict) and config_def.get('name') == config_name:
+                            self.logger.debug(f"Found SM property '{config_name}' in section '{section_name}'")
+                            self.logger.debug(f"Property details: {config_def}")
+                            return config_def
+        
+        self.logger.debug(f"SM property '{config_name}' not found in template")
+        return None
