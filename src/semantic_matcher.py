@@ -9,16 +9,44 @@ try:
     from sentence_transformers import SentenceTransformer
     from sklearn.metrics.pairwise import cosine_similarity
     sentence_transformers_available = True
-    try:
-        # Using a smaller, faster model suitable for description similarity
-        semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
-    except Exception as e:
-        logging.error(f"Failed to load SentenceTransformer model 'all-MiniLM-L6-v2'. Semantic matching disabled. Error: {e}")
-        sentence_transformers_available = False
 except ImportError:
     logging.warning("sentence-transformers or scikit-learn not found. Semantic matching strategy will be disabled. Install with: pip install sentence-transformers scikit-learn torch")
     sentence_transformers_available = False
 
+# Global variable to hold the semantic model
+_semantic_model = None
+
+def initialize_semantic_model(model_path: str = None):
+    """Initialize the semantic model from a local path only"""
+    global _semantic_model, sentence_transformers_available
+    
+    if not sentence_transformers_available:
+        return False
+        
+    try:
+        if model_path:
+            # Load from specified path
+            logger.info(f"Loading sentence transformer model from: {model_path}")
+            _semantic_model = SentenceTransformer(model_path)
+        else:
+            # Load from local models directory only
+            from pathlib import Path
+            local_model_path = Path('models/sentence_transformer/current')
+            if local_model_path.exists():
+                logger.info(f"Loading local sentence transformer model from: {local_model_path}")
+                _semantic_model = SentenceTransformer(str(local_model_path))
+            else:
+                logger.error("Local model not found at models/sentence_transformer/current")
+                logger.error("Please run download_model.py first to download the model")
+                sentence_transformers_available = False
+                return False
+        
+        logger.info("Sentence transformer model loaded successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to load sentence transformer model. Error: {e}")
+        sentence_transformers_available = False
+        return False
 logger = logging.getLogger(__name__)
 
 # Cache for embeddings to avoid re-computation
@@ -42,13 +70,15 @@ class MatchResult:
 
 def _get_embedding(text: str, cache: Dict[str, np.ndarray]) -> Optional[np.ndarray]:
     """Gets or computes sentence embedding for a given text."""
-    if not sentence_transformers_available or not text:
+    global _semantic_model
+    
+    if not sentence_transformers_available or not text or _semantic_model is None:
         return None
     if text in cache:
         return cache[text]
     try:
         # Encode expects a list
-        embedding = semantic_model.encode([text], convert_to_numpy=True)[0]
+        embedding = _semantic_model.encode([text], convert_to_numpy=True)[0]
         cache[text] = embedding
         return embedding
     except Exception as e:
@@ -83,6 +113,10 @@ class SemanticMatcher:
     def __init__(self):
         self.fm_embeddings = {}
         self.fm_properties = {}
+        
+        # Initialize the semantic model
+        if not initialize_semantic_model():
+            logger.warning("Failed to initialize semantic model. Semantic matching will be disabled.")
 
     def preload_fm_embeddings(self, fm_properties: Dict[str, Any]):
         """Preload embeddings for FM properties"""
