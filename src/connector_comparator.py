@@ -15,7 +15,10 @@ class ConnectorComparator:
         self.input_file = input_file
         self.output_dir = output_dir
         self.fm_configs_dir = output_dir / 'fm_configs'
+        # Use local model
         self.semantic_matcher = SemanticMatcher()
+        
+
         
         # Worker URLs for fetching SM templates
         self.worker_urls = worker_urls or []
@@ -1420,7 +1423,18 @@ class ConnectorComparator:
         
         # Step 1: Handle connector.class and name (following Java pattern)
         if 'connector.class' in config_dict:
-            fm_configs['connector.class'] = fm_template.get('template_id')
+            # Get template_id from the first template in the templates array
+            template_id = None
+            if 'templates' in fm_template and len(fm_template['templates']) > 0:
+                template_id = fm_template['templates'][0].get('template_id')
+            
+            if template_id:
+                fm_configs['connector.class'] = template_id
+                self.logger.info(f"Set connector.class to template_id: {template_id}")
+            else:
+                # Fallback to the original connector.class if template_id is not found
+                fm_configs['connector.class'] = config_dict['connector.class']
+                self.logger.info(f"Set connector.class to original value: {config_dict['connector.class']}")
         else:
             errors.append(f"connector.class property is required.")
         
@@ -1431,7 +1445,7 @@ class ConnectorComparator:
         for user_config_key, user_config_value in config_dict.items():
             # Check if this is a transforms or predicates config
             if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
-                transforms_configs[user_config_key] = user_config_value
+                
                 continue
 
             if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
@@ -1482,6 +1496,10 @@ class ConnectorComparator:
                 if user_config_key in semantic_match_list:
                     semantic_match_list.remove(user_config_key)
                 continue
+            
+            # Debug logging for connector.class
+            if user_config_key == 'connector.class':
+                self.logger.info(f"Processing connector.class in Step 4: {user_config_value}")
                 
             # Check if user config key matches any template config def name
             for template_config_def in template_config_defs:
@@ -1515,6 +1533,12 @@ class ConnectorComparator:
         if 'mapping_errors' in transforms_data:
             errors.extend(transforms_data['mapping_errors'])
 
+        # Debug logging for final connector.class value
+        if 'connector.class' in fm_configs:
+            self.logger.info(f"Final connector.class value: {fm_configs['connector.class']}")
+        else:
+            self.logger.warning("connector.class not found in final fm_configs")
+        
         # Return the result in the required format
         result = {
             "name": connector_name,
@@ -1557,8 +1581,6 @@ class ConnectorComparator:
             'connection.password': self._derive_connection_password,
             'connection.database': self._derive_connection_database,
             'db.name': self._derive_db_name,
-            'database.server.name': self._derive_database_server_name,
-            'database.sslmode': self._derive_database_sslmode,
         
             
             # Data format configs
@@ -1960,42 +1982,7 @@ class ConnectorComparator:
         
         return None
     
-    def _derive_database_sslmode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
-        """Derive database.sslmode from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
-                # Check for SSL parameters in the URL
-                if 'useSSL=true' in jdbc_url or 'sslmode=require' in jdbc_url:
-                    return 'require'
-                elif 'useSSL=false' in jdbc_url or 'sslmode=disable' in jdbc_url:
-                    return 'disable'
-                elif 'sslmode=prefer' in jdbc_url:
-                    return 'prefer'
-                elif 'sslmode=verify-ca' in jdbc_url:
-                    return 'verify-ca'
-                elif 'sslmode=verify-full' in jdbc_url:
-                    return 'verify-full'
-        
-        # Check for direct database.sslmode config
-        if 'database.sslmode' in user_configs:
-            return user_configs['database.sslmode']
-        
-        # Check for ssl.mode config
-        if 'ssl.mode' in user_configs:
-            return user_configs['ssl.mode']
-        
-        # Check for SSL-related configs
-        if 'useSSL' in user_configs:
-            if user_configs['useSSL'].lower() == 'true':
-                return 'require'
-            else:
-                return 'disable'
-        
-        # Default to prefer for safety
-        return 'prefer'
+
     
     def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
         """Derive input.key.format from user configs using reverse format mapping"""
@@ -2492,6 +2479,8 @@ class ConnectorComparator:
                 user_value = user_configs[config_name]
                 self.logger.info(f"Processing semantic match for '{config_name}' = '{user_value}'")
                 
+
+                
                 # Get SM property from SM template
                 sm_prop = self._get_sm_property_from_template(config_name, sm_template)
                 
@@ -2554,6 +2543,14 @@ class ConnectorComparator:
                 is_required = required_value
             elif isinstance(required_value, str):
                 is_required = required_value.lower() == 'true'
+            
+            # Debug logging for database.sslmode
+            if config_name == 'database.sslmode':
+                self.logger.info(f"DEBUG: database.sslmode - required_value: {required_value} (type: {type(required_value)})")
+                self.logger.info(f"DEBUG: database.sslmode - is_required: {is_required}")
+                self.logger.info(f"DEBUG: database.sslmode - is_internal: {is_internal}")
+                self.logger.info(f"DEBUG: database.sslmode - in fm_configs: {config_name in fm_configs}")
+                self.logger.info(f"DEBUG: database.sslmode - full template_config_def: {template_config_def}")
             
             # Skip internal configs as they are handled automatically
             if is_internal:
@@ -2637,3 +2634,34 @@ class ConnectorComparator:
         
         self.logger.debug(f"SM property '{config_name}' not found in template")
         return None
+
+    def _load_semantic_matcher_from_path(self):
+        """Load semantic matcher class from the specified path"""
+        if not self.semantic_matcher_path:
+            return
+            
+        try:
+            semantic_matcher_file = Path(self.semantic_matcher_path)
+            if not semantic_matcher_file.exists():
+                self.logger.warning(f"Semantic matcher file not found: {self.semantic_matcher_path}")
+                return
+                
+            self.logger.info(f"Loading semantic matcher from: {self.semantic_matcher_path}")
+            
+            # Import the custom semantic matcher module
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("custom_semantic_matcher", semantic_matcher_file)
+            custom_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(custom_module)
+            
+            # Get the SemanticMatcher class from the custom module
+            if hasattr(custom_module, 'SemanticMatcher'):
+                CustomSemanticMatcher = custom_module.SemanticMatcher
+                self.semantic_matcher = CustomSemanticMatcher()
+                self.logger.info(f"Successfully loaded custom semantic matcher from {self.semantic_matcher_path}")
+            else:
+                self.logger.error(f"SemanticMatcher class not found in {self.semantic_matcher_path}")
+                
+        except Exception as e:
+            self.logger.error(f"Error loading semantic matcher from {self.semantic_matcher_path}: {e}")
+            # Continue with default semantic matcher
