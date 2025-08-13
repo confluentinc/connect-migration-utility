@@ -1289,28 +1289,59 @@ class ConnectorComparator:
             'unmapped_configs': unmapped_configs
         }
 
+    @staticmethod
+    def parse_connector_file(file, all_connectors_dict, logger):
+        if not (file.suffix == '.json' and file.is_file()):
+            return
+        try:
+            with open(file, 'r') as f:
+                data = json.load(f)
+                if isinstance(data, dict) and 'connectors' in data:
+                    # Structure: {"connectors": {"connector_name": {"name":"", "config":""}, ...}}
+                    all_connectors_dict.update(data['connectors'])
+                elif isinstance(data, list):
+                    # Structure: [ {"connector_name_02": {"name":"", "config":""} }, ... ]
+                    for item in data:
+                        if isinstance(item, dict):
+                            all_connectors_dict.update(item)
+                        else:
+                            logger.warning(f"Skipping non-dict item in list in {file}: {item}")
+                elif isinstance(data, dict) and 'name' in data and 'config' in data:
+                    # Structure: {"name": ..., "config": ...} (single connector config)
+                    connector_name = data['name']
+                    all_connectors_dict[connector_name] = data
+                elif isinstance(data, dict):
+                    # Structure: {"connector1": {...}, "connector2": {...}} (or just one)
+                    for connector_name, connector_val in data.items():
+                        if isinstance(connector_val, dict) and 'name' in connector_val and 'config' in connector_val:
+                            # Structure: {"connector_name": {"name":"", "config":""}}
+                            all_connectors_dict[connector_name] = connector_val
+                        elif (
+                                isinstance(connector_val, dict)
+                                and 'Info' in connector_val
+                                and isinstance(connector_val['Info'], dict)
+                                and 'name' in connector_val['Info']
+                                and 'config' in connector_val['Info']
+                        ):
+                            # Structure: {"connector_name": {"Info": {"name":"", "config":""}}}
+                            all_connectors_dict[connector_name] = connector_val['Info']
+                        else:
+                            logger.warning(
+                                f"Skipping connector '{connector_name}' in {file}: missing 'name' and 'config'")
+                else:
+                    logger.warning(f"Skipping unrecognized format in {file}")
+        except Exception as e:
+            logger.error(f"Failed to parse {file}: {e}")
+
     def process_connectors(self):
         """Process all connectors and generate FM configurations"""
-        # Read input file
-        with open(self.input_file, 'r') as f:
-            data = json.load(f)
+        connectors_dict = {}
+        ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
 
-        # Handle different input file structures
-        if isinstance(data, dict) and 'connectors' in data:
-            # Structure: {"connectors": {"connector_name": connector_data, ...}}
-            connectors_dict = data['connectors']
-            connectors = list(connectors_dict.values())
-        elif isinstance(data, list):
-            # Structure: [connector_data, ...]
-            connectors = data
-        else:
-            self.logger.error(f"Unexpected input file structure: {type(data)}")
+        if not connectors_dict:
+            self.logger.error("No connectors found after parsing the input file.")
             return
-
-        # Ensure connectors is a list
-        if not isinstance(connectors, list):
-            self.logger.error(f"Expected list of connectors, got {type(connectors)}")
-            return
+        connectors = list(connectors_dict.values())
 
         # Process each connector
         fm_configs = []

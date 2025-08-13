@@ -78,45 +78,7 @@ def main():
             merged_dir.mkdir(exist_ok=True)
             all_connectors_dict = {}  # Accumulate all connectors here
             for file in sorted(config_dir.iterdir()):
-                if file.suffix == '.json' and file.is_file():
-                    try:
-                        with open(file, 'r') as f:
-                            data = json.load(f)
-                            if isinstance(data, dict) and 'connectors' in data:
-                                # Structure: {"connectors": {"connector_name": {"name":"", "config":""}, ...}}
-                                all_connectors_dict.update(data['connectors'])
-                            elif isinstance(data, list):
-                                # Structure: [ {"connector_name_02": {"name":"", "config":""} }, ... ]
-                                for item in data:
-                                    if isinstance(item, dict):
-                                        all_connectors_dict.update(item)
-                                    else:
-                                        logger.warning(f"Skipping non-dict item in list in {file}: {item}")
-                            elif isinstance(data, dict) and 'name' in data and 'config' in data:
-                                # Structure: {"name": ..., "config": ...} (single connector config)
-                                connector_name = data['name']
-                                all_connectors_dict[connector_name] = data
-                            elif isinstance(data, dict):
-                                # Structure: {"connector1": {...}, "connector2": {...}} (or just one)
-                                for connector_name, connector_val in data.items():
-                                    if isinstance(connector_val, dict) and 'name' in connector_val and 'config' in connector_val:
-                                        # Structure: {"connector_name": {"name":"", "config":""}}
-                                        all_connectors_dict[connector_name] = connector_val
-                                    elif (
-                                        isinstance(connector_val, dict)
-                                        and 'Info' in connector_val
-                                        and isinstance(connector_val['Info'], dict)
-                                        and 'name' in connector_val['Info']
-                                        and 'config' in connector_val['Info']
-                                    ):
-                                        # Structure: {"connector_name": {"Info": {"name":"", "config":""}}}
-                                        all_connectors_dict[connector_name] = connector_val['Info']
-                                    else:
-                                        logger.warning(f"Skipping connector '{connector_name}' in {file}: missing 'name' and 'config'")
-                            else:
-                                logger.warning(f"Skipping unrecognized format in {file}")
-                    except Exception as e:
-                        logger.error(f"Failed to parse {file}: {e}")
+                ConnectorComparator.parse_connector_file(file, all_connectors_dict, logger)
             # Validation: ensure at least one connector was found
             if not all_connectors_dict:
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
