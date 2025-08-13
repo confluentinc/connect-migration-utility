@@ -1456,7 +1456,6 @@ class ConnectorComparator:
         for user_config_key, user_config_value in config_dict.items():
             # Check if this is a transforms or predicates config
             if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
-
                 continue
 
             if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
@@ -1614,6 +1613,12 @@ class ConnectorComparator:
             # CSFL configs
             'csfle.enabled': self._derive_csfle_enabled,
             'csfle.onFailure': self._derive_csfle_on_failure,
+
+            # Service Bus configs
+            'azure.servicebus.namespace': self._derive_servicebus_namespace,
+            'azure.servicebus.sas.keyname': self._derive_azure_servicebus_sas_keyname,
+            'azure.servicebus.sas.key': self._derive_azure_servicebus_sas_key,
+            'azure.servicebus.entity.name': self._derive_azure_servicebus_entity_name,
 
             # Add more mappings as needed
         }
@@ -2438,6 +2443,54 @@ class ConnectorComparator:
 
         # Default to disabled if no SSL configuration is found
         return 'disabled'
+
+    def _derive_servicebus_namespace(self, user_configs: dict, fm_configs: dict) -> str:
+        if 'azure.servicebus.namespace' in user_configs:
+            return user_configs['azure.servicebus.namespace']
+
+        # Try to extract from connection string if present
+        conn_str = user_configs.get('azure.servicebus.connection.string')
+        if conn_str:
+            match = re.search(r'Endpoint=sb://([^.]+)\.servicebus\.windows\.net/', conn_str)
+            if match:
+                return match.group(1)
+        return user_configs.get('azure.servicebus.namespace')
+
+    def _derive_azure_servicebus_sas_keyname(self, user_configs: dict, fm_configs: dict) -> str:
+        if 'azure.servicebus.sas.keyname' in user_configs:
+            return user_configs['azure.servicebus.sas.keyname']
+
+        # Try to extract from connection string if present
+        conn_str = user_configs.get('azure.servicebus.connection.string')
+        if conn_str:
+            match = re.search(r'SharedAccessKeyName=([^;]+)', conn_str)
+            if match:
+                return match.group(1)
+        return user_configs.get('azure.servicebus.sas.keyname')
+
+    def _derive_azure_servicebus_sas_key(self, user_configs: dict, fm_configs: dict) -> str:
+        if 'azure.servicebus.sas.key' in user_configs:
+            return user_configs['azure.servicebus.sas.key']
+
+        # Try to extract from connection string if present
+        conn_str = user_configs.get('azure.servicebus.connection.string')
+        if conn_str:
+            match = re.search(r'SharedAccessKey=([^;]+)', conn_str)
+            if match:
+                return match.group(1)
+        return user_configs.get('azure.servicebus.sas.key')
+
+    def _derive_azure_servicebus_entity_name(self, user_configs: dict, fm_configs: dict) -> str:
+        if 'azure.servicebus.entity.name' in user_configs:
+            return user_configs['azure.servicebus.entity.name']
+
+        # Try to extract from connection string if present
+        conn_str = user_configs.get('azure.servicebus.connection.string')
+        if conn_str:
+            match = re.search(r'EntityPath=([^;]+)', conn_str)
+            if match:
+                return match.group(1)
+        return user_configs.get('azure.servicebus.entity.name')
 
     def _apply_reverse_switch(self, switch_mapping: Dict[str, str], user_value: str) -> Optional[str]:
         """Apply reverse switch (following Java pattern)"""
