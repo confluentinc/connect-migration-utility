@@ -101,7 +101,7 @@ def main():
                                 for connector_name, connector_val in data.items():
                                     if isinstance(connector_val, dict) and 'name' in connector_val and 'config' in connector_val:
                                         # Structure: {"connector_name": {"name":"", "config":""}}
-                                        all_connectors_dict[connector_val['name']] = connector_val
+                                        all_connectors_dict[connector_name] = connector_val
                                     elif (
                                         isinstance(connector_val, dict)
                                         and 'Info' in connector_val
@@ -110,7 +110,7 @@ def main():
                                         and 'config' in connector_val['Info']
                                     ):
                                         # Structure: {"connector_name": {"Info": {"name":"", "config":""}}}
-                                        all_connectors_dict[connector_val['Info']['name']] = connector_val['Info']
+                                        all_connectors_dict[connector_name] = connector_val['Info']
                                     else:
                                         logger.warning(f"Skipping connector '{connector_name}' in {file}: missing 'name' and 'config'")
                             else:
