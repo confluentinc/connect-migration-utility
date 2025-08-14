@@ -17,7 +17,7 @@ try:
         logger.warning(f"Failed to load SentenceTransformer model 'all-MiniLM-L6-v2'. Error: {e}")
         sentence_transformers_available = False
 except ImportError:
-    logger.warning("sentence-transformers or scikit-learn not found. Install with: pip install sentence-transformers scikit-learn torch")
+    logger.warning("sentence-transformers or scikit-learn not found. Install with: python download_model.py")
     sentence_transformers_available = False
 
 
