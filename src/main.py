@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
+import json
 
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
@@ -23,11 +24,12 @@ def main():
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs')
     parser.add_argument('--worker-urls-file', type=str, help='Path to file containing worker URLs')
     parser.add_argument('--config-file', type=str, help='Path to JSON file containing connector configurations')
+    parser.add_argument('--config-dir', type=str, help='Path to directory containing connector config JSON files')
     parser.add_argument('--redact', action='store_true', help='Redact sensitive configurations')
     parser.add_argument('--sensitive-file', type=str, help='Path to file containing sensitive config keys')
     parser.add_argument('--worker-config-file', type=str, help='Path to file containing additional worker configs (key=value)')
     parser.add_argument('--output-dir', type=str, default='output', help='Output directory for all files')
-    
+
     # Confluent Cloud credentials for FM transforms (optional)
     parser.add_argument('--env-id', type=str, help='Confluent Cloud environment ID')
     parser.add_argument('--lkc-id', type=str, help='Confluent Cloud LKC cluster ID')
@@ -35,7 +37,7 @@ def main():
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
 
-    
+
     args = parser.parse_args()
 
     # Create output directory if it doesn't exist
@@ -57,13 +59,36 @@ def main():
             sys.exit(1)
 
     try:
-        # Step 1: Get Connector Configs (either from discovery or file)
-        if args.config_file:
+        # Step 1: Get Connector Configs (either from discovery, file, or directory)
+        if args.config_file and args.config_dir:
+            logger.error("Cannot specify both --config-file and --config-dir. Please use only one.")
+            sys.exit(1)
+        elif args.config_file:
             logger.info(f"Reading connector configurations from file: {args.config_file}")
             connectors_json = Path(args.config_file)
             if not connectors_json.exists():
                 raise FileNotFoundError(f"Config file not found: {args.config_file}")
             logger.info(f"Using config file: {connectors_json}")
+        elif args.config_dir:
+            logger.info(f"Reading connector configurations from directory: {args.config_dir}")
+            config_dir = Path(args.config_dir)
+            if not config_dir.exists() or not config_dir.is_dir():
+                raise FileNotFoundError(f"Config directory not found or is not a directory: {args.config_dir}")
+            merged_dir = output_dir / 'sm_configs_compiled'
+            merged_dir.mkdir(exist_ok=True)
+            all_connectors_dict = {}  # Accumulate all connectors here
+            for file in sorted(config_dir.iterdir()):
+                ConnectorComparator.parse_connector_file(file, all_connectors_dict, logger)
+            # Validation: ensure at least one connector was found
+            if not all_connectors_dict:
+                logger.error(f"No valid connector configs found in directory: {args.config_dir}")
+                sys.exit(1)
+            # Write all connectors to a single file
+            all_connectors_path = merged_dir / 'combined_connectors_sm_configs.json'
+            with open(all_connectors_path, 'w') as all_f:
+                json.dump({"connectors": all_connectors_dict}, all_f, indent=2)
+            logger.info(f"Wrote all connectors to {all_connectors_path}")
+            connectors_json = all_connectors_path
         else:
             logger.info("Starting connector discovery...")
             discovery = ConfigDiscovery(
@@ -80,7 +105,7 @@ def main():
 
         # Step 2: Process Each Connector
         logger.info("Starting connector processing...")
-        
+
         # Parse worker URLs for the comparator
         worker_urls_list = []
         if args.worker_urls:
@@ -88,7 +113,7 @@ def main():
         elif hasattr(args, 'worker_urls_file') and args.worker_urls_file:
             with open(args.worker_urls_file, 'r') as f:
                 worker_urls_list = [line.strip() for line in f if line.strip()]
-        
+
         comparator = ConnectorComparator(
             input_file=connectors_json,
             output_dir=output_dir,
@@ -106,4 +131,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()
