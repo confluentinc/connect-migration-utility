@@ -2632,7 +2632,7 @@ class ConnectorComparator:
         # Default to disabled if no SSL configuration is found
         return 'disabled'
 
-    def _derive_servicebus_namespace(self, user_configs: dict, fm_configs: dict) -> str:
+    def _derive_servicebus_namespace(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
         if 'azure.servicebus.namespace' in user_configs:
             return user_configs['azure.servicebus.namespace']
 
@@ -2644,7 +2644,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.namespace')
 
-    def _derive_azure_servicebus_sas_keyname(self, user_configs: dict, fm_configs: dict) -> str:
+    def _derive_azure_servicebus_sas_keyname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
         if 'azure.servicebus.sas.keyname' in user_configs:
             return user_configs['azure.servicebus.sas.keyname']
 
@@ -2656,7 +2656,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.sas.keyname')
 
-    def _derive_azure_servicebus_sas_key(self, user_configs: dict, fm_configs: dict) -> str:
+    def _derive_azure_servicebus_sas_key(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
         if 'azure.servicebus.sas.key' in user_configs:
             return user_configs['azure.servicebus.sas.key']
 
@@ -2668,7 +2668,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.sas.key')
 
-    def _derive_azure_servicebus_entity_name(self, user_configs: dict, fm_configs: dict) -> str:
+    def _derive_azure_servicebus_entity_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
         if 'azure.servicebus.entity.name' in user_configs:
             return user_configs['azure.servicebus.entity.name']
 
