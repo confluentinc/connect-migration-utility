@@ -4,24 +4,29 @@ from dataclasses import dataclass
 from rapidfuzz import fuzz
 import logging
 
+logger = logging.getLogger(__name__)
 # Import third-party libraries, making them optional
 try:
     from sentence_transformers import SentenceTransformer
     from sklearn.metrics.pairwise import cosine_similarity
     sentence_transformers_available = True
+    try:
+        # Using a smaller, faster model suitable for description similarity
+        semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+    except Exception as e:
+        logger.warning(f"Failed to load SentenceTransformer model 'all-MiniLM-L6-v2'. Error: {e}")
+        sentence_transformers_available = False
 except ImportError:
-    logging.warning("sentence-transformers or scikit-learn not found. Semantic matching strategy will be disabled. Install with: pip install sentence-transformers scikit-learn torch")
+    logger.warning("sentence-transformers or scikit-learn not found. Install with: python download_model.py")
     sentence_transformers_available = False
 
-# Global variable to hold the semantic model
-_semantic_model = None
 
 def initialize_semantic_model(model_path: str = None):
     """Initialize the semantic model from a local path only"""
     global _semantic_model, sentence_transformers_available
     
-    if not sentence_transformers_available:
-        return False
+    if sentence_transformers_available:
+        return True
         
     try:
         if model_path:
@@ -31,12 +36,12 @@ def initialize_semantic_model(model_path: str = None):
         else:
             # Load from local models directory only
             from pathlib import Path
-            local_model_path = Path('models/sentence_transformer/current')
+            local_model_path = Path('models/sentence_transformer/all-MiniLM-L6-v2')
             if local_model_path.exists():
                 logger.info(f"Loading local sentence transformer model from: {local_model_path}")
                 _semantic_model = SentenceTransformer(str(local_model_path))
             else:
-                logger.error("Local model not found at models/sentence_transformer/current")
+                logger.error("Local model not found at models/sentence_transformer/all-MiniLM-L6-v2")
                 logger.error("Please run download_model.py first to download the model")
                 sentence_transformers_available = False
                 return False
@@ -47,7 +52,6 @@ def initialize_semantic_model(model_path: str = None):
         logger.error(f"Failed to load sentence transformer model. Error: {e}")
         sentence_transformers_available = False
         return False
-logger = logging.getLogger(__name__)
 
 # Cache for embeddings to avoid re-computation
 _fm_embeddings_cache: Dict[str, np.ndarray] = {}
@@ -114,9 +118,11 @@ class SemanticMatcher:
         self.fm_embeddings = {}
         self.fm_properties = {}
         
-        # Initialize the semantic model
+        # # Initialize the semantic model
         if not initialize_semantic_model():
             logger.warning("Failed to initialize semantic model. Semantic matching will be disabled.")
+        else:
+            logger.info("Semantic model initialized successfully.")
 
     def preload_fm_embeddings(self, fm_properties: Dict[str, Any]):
         """Preload embeddings for FM properties"""
