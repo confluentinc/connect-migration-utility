@@ -1562,9 +1562,9 @@ class ConnectorComparator:
             
             connector_config_defs = self._extract_connector_config_defs(fm_template)
             template_config_defs = self._extract_template_config_defs(fm_template)
-            
+
             self.logger.debug(f"Extracted {len(connector_config_defs)} connector config defs and {len(template_config_defs)} template config defs")
-            
+
         except Exception as e:
             self.logger.error(f"Error extracting template components: {str(e)}")
             # Return basic structure with error
@@ -1615,21 +1615,21 @@ class ConnectorComparator:
             self.logger.error(f"template_config_defs is not a list, got {type(template_config_defs)}: {template_config_defs}")
             errors.append(f"Invalid template_config_defs type: {type(template_config_defs)}")
             return result
-        
+
         # Validate connector_config_defs is a list
         if not isinstance(connector_config_defs, (list, tuple)):
             self.logger.error(f"connector_config_defs is not a list, got {type(connector_config_defs)}: {connector_config_defs}")
             errors.append(f"Invalid connector_config_defs type: {type(connector_config_defs)}")
             return result
-        
+
         # Additional safety check - ensure template_config_defs is not empty
         if not template_config_defs:
             self.logger.error("template_config_defs is empty or None")
             errors.append("template_config_defs is empty or None")
             return result
-        
 
-        
+
+
         try:
             for user_config_key, user_config_value in config_dict.items():
 
@@ -1667,7 +1667,7 @@ class ConnectorComparator:
                 else:
                     # Check if this config is defined in template_config_defs
                     config_found_in_template = False
-                    
+
                     try:
                         for template_config_def in template_config_defs:
                             if isinstance(template_config_def, dict) and template_config_def.get('name') == user_config_key:
@@ -1677,7 +1677,7 @@ class ConnectorComparator:
                         self.logger.error(f"Error iterating over template_config_defs for {user_config_key}: {str(e)}")
                         self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
                         config_found_in_template = False
-                    
+
                     if not config_found_in_template:
                         # User config not present in either Connector config def or template config defs - warn
                         warning_msg = f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any."
@@ -1803,17 +1803,18 @@ class ConnectorComparator:
     def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract connector config definitions from FM template (following Java pattern)"""
         connector_config_defs = []
-
+        
+        if 'templates' in fm_template:
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
                 return connector_config_defs
-                
+
             for i, template in enumerate(fm_template['templates']):
                 self.logger.debug(f"Processing template {i}: {type(template)}")
                 if not isinstance(template, dict):
                     self.logger.warning(f"Template {i} is not a dict: {type(template)}")
                     continue
-                    
+
                 if 'connector_configs' in template:
                     self.logger.debug(f"Template {i} has connector_configs: {type(template['connector_configs'])}")
                     # Ensure connector_configs is a list/iterable, not a boolean or other type
@@ -1825,13 +1826,14 @@ class ConnectorComparator:
                         continue
         else:
             self.logger.warning("No 'templates' key found in fm_template")
-            
+
         return connector_config_defs
 
     def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract template config definitions from FM template (following Java pattern)"""
         template_config_defs = []
-
+        
+        if 'templates' in fm_template:
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
                 return template_config_defs
