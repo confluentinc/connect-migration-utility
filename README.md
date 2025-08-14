@@ -139,14 +139,79 @@ python src/main.py --config-file connectors.json --output-dir output/ --disable-
 
 ### Multiple Connectors
 ```json
+{
+  "connectors": {
+    "my_connector1": {
+      "name": "my_connector1",
+      "config": {
+        "connector.class": "MyClass1"
+      }
+    },
+    "my_connector2": {
+      "name": "my_connector2",
+      "config": {
+        "connector.class": "MyClass2"
+      }
+    }
+  }
+}
+```
+
+```json
 [
   {
-    "name": "connector-1",
-    "config": { ... }
+    "another_connector1": {
+      "name": "another_connector1",
+      "config": {
+        "connector.class": "AnotherClass1"
+      }
+    }
   },
   {
-    "name": "connector-2", 
-    "config": { ... }
+    "another_connector2": {
+      "name": "another_connector2",
+      "config": {
+        "connector.class": "AnotherClass2"
+      }
+    }
+  }
+]
+```
+
+```json
+{
+  "conn1": {
+    "name": "conn1",
+    "config": {
+      "connector.class": "Class1"
+    }
+  },
+  "conn2": {
+    "name": "conn2",
+    "config": {
+      "connector.class": "Class2"
+    }
+  }
+}
+```
+
+```json
+{
+  "special_connector1": {
+    "Info": {
+      "name": "special_connector1",
+      "config": {
+        "connector.class": "SpecialClass1"
+      }
+    }
+  },
+  "special_connector2": {
+    "Info": {
+      "name": "special_connector2",
+      "config": {
+        "connector.class": "SpecialClass2"
+      }
+    }
   }
 }
 ```
