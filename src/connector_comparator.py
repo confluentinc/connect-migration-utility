@@ -1610,8 +1610,6 @@ class ConnectorComparator:
         self.logger.info(f"Set name in fm_configs from connector_name parameter: {connector_name}")
 
         # Step 2: Process user configs (following Java pattern)
-        self.logger.info(f"DEBUG: Processing user configs: {list(config_dict.keys())}")
-        
         # Validate template_config_defs is a list
         if not isinstance(template_config_defs, (list, tuple)):
             self.logger.error(f"template_config_defs is not a list, got {type(template_config_defs)}: {template_config_defs}")
@@ -1630,13 +1628,7 @@ class ConnectorComparator:
             errors.append("template_config_defs is empty or None")
             return result
         
-        # Debug: Log the structure of template_config_defs
-        self.logger.info(f"DEBUG: template_config_defs type: {type(template_config_defs)}")
-        self.logger.info(f"DEBUG: template_config_defs length: {len(template_config_defs)}")
-        if template_config_defs and len(template_config_defs) > 0:
-            self.logger.info(f"DEBUG: First template_config_def type: {type(template_config_defs[0])}")
-            if isinstance(template_config_defs[0], dict):
-                self.logger.info(f"DEBUG: First template_config_def keys: {list(template_config_defs[0].keys())}")
+
         
         try:
             for user_config_key, user_config_value in config_dict.items():
@@ -1691,9 +1683,7 @@ class ConnectorComparator:
                         warning_msg = f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any."
                         warnings.append(warning_msg)
                         self.logger.warning(warning_msg)
-                        self.logger.info(f"DEBUG: Added warning for unused config: {user_config_key}")
-                    else:
-                        self.logger.info(f"DEBUG: Config {user_config_key} found in template_config_defs")
+
         except Exception as e:
             self.logger.error(f"Error processing user configs: {str(e)}")
             errors.append(f"Error processing user configs {user_config_key}: {str(e)}")
@@ -1813,11 +1803,7 @@ class ConnectorComparator:
     def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract connector config definitions from FM template (following Java pattern)"""
         connector_config_defs = []
-        self.logger.info(f"DEBUG: _extract_connector_config_defs called with fm_template type: {type(fm_template)}")
-        self.logger.info(f"DEBUG: fm_template keys: {list(fm_template.keys()) if isinstance(fm_template, dict) else 'Not a dict'}")
-        
-        if 'templates' in fm_template:
-            self.logger.info(f"DEBUG: templates key found, type: {type(fm_template['templates'])}")
+
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
                 return connector_config_defs
@@ -1840,17 +1826,12 @@ class ConnectorComparator:
         else:
             self.logger.warning("No 'templates' key found in fm_template")
             
-        self.logger.info(f"DEBUG: _extract_connector_config_defs returning {len(connector_config_defs)} connector_configs")
         return connector_config_defs
 
     def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract template config definitions from FM template (following Java pattern)"""
         template_config_defs = []
-        self.logger.info(f"DEBUG: _extract_template_config_defs called with fm_template type: {type(fm_template)}")
-        self.logger.info(f"DEBUG: fm_template keys: {list(fm_template.keys()) if isinstance(fm_template, dict) else 'Not a dict'}")
-        
-        if 'templates' in fm_template:
-            self.logger.info(f"DEBUG: templates key found, type: {type(fm_template['templates'])}")
+
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
                 return template_config_defs
@@ -1873,7 +1854,6 @@ class ConnectorComparator:
         else:
             self.logger.warning("No 'templates' key found in fm_template")
             
-        self.logger.info(f"DEBUG: _extract_template_config_defs returning {len(template_config_defs)} config_defs")
         return template_config_defs
 
     def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
@@ -1972,7 +1952,7 @@ class ConnectorComparator:
 
         # Handle non-string values (like validate.non.null: false, numbers, etc.)
         if not isinstance(value, str):
-            self.logger.info(f"DEBUG: Processing non-string value for {config_name}: {value} (type: {type(value)})")
+
             # For non-string values, just set the config directly
             fm_configs[config_name] = str(value).lower() if isinstance(value, bool) else str(value)
             return
@@ -2995,13 +2975,7 @@ class ConnectorComparator:
             elif isinstance(required_value, str):
                 is_required = required_value.lower() == 'true'
 
-            # Debug logging for database.sslmode
-            if config_name == 'database.sslmode':
-                self.logger.info(f"DEBUG: database.sslmode - required_value: {required_value} (type: {type(required_value)})")
-                self.logger.info(f"DEBUG: database.sslmode - is_required: {is_required}")
-                self.logger.info(f"DEBUG: database.sslmode - is_internal: {is_internal}")
-                self.logger.info(f"DEBUG: database.sslmode - in fm_configs: {config_name in fm_configs}")
-                self.logger.info(f"DEBUG: database.sslmode - full template_config_def: {template_config_def}")
+
 
             # Skip internal configs as they are handled automatically
             if is_internal:
