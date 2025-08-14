@@ -638,6 +638,17 @@ class ConnectorComparator:
 
         # Handle FM templates - find by connector.class
         fm_template_path = self._find_fm_template_by_connector_class(connector_class, connector_name, config)
+        
+        # Special mapping for SFTP connectors
+        if not fm_template_path and connector_class == 'io.confluent.connect.sftp.SftpCsvSourceConnector':
+            # Map to SftpSource template
+            sftp_template_path = self.fm_template_dir / 'SftpSource_resolved_templates.json'
+            if sftp_template_path.exists():
+                fm_template_path = str(sftp_template_path)
+                self.logger.info(f"Mapped SFTP connector to SftpSource template: {fm_template_path}")
+            else:
+                self.logger.warning(f"SftpSource template not found at expected path: {sftp_template_path}")
+        
         if fm_template_path:
             try:
                 with open(fm_template_path, 'r') as f:
@@ -1692,8 +1703,8 @@ class ConnectorComparator:
         self.logger.info(f"Processing {len(template_config_defs)} template config definitions")
         try:
             for template_config_def in template_config_defs:
-                template_config_name = template_config_def.get('name')
-                is_required = template_config_def.get('required', False)
+                template_config_name = template_config_def.get("name")
+                is_required = template_config_def.get("required", False)
                 self.logger.debug(f"Processing template config: {template_config_name}, required: {is_required}")
 
                 # Get the method to derive this config from user configs
@@ -1713,6 +1724,30 @@ class ConnectorComparator:
         # Step 4: Before semantic matching, check if user config keys directly match template config def names
         for user_config_key, user_config_value in config_dict.items():
             # Skip if already in fm_configs
+            if user_config_key in fm_configs:
+                if user_config_key in semantic_match_list:
+                    semantic_match_list.remove(user_config_key)
+                continue
+
+            # Debug logging for connector.class
+            if user_config_key == "connector.class":
+                self.logger.info(f"Processing connector.class in Step 4: {user_config_value}")
+
+            # Check if user config key matches any template config def name
+            try:
+                for template_config_def in template_config_defs:
+                    if isinstance(template_config_def, dict):
+                        template_config_name = template_config_def.get("name")
+                        if template_config_name == user_config_key:
+                            # Direct match found - add to fm_configs
+                            fm_configs[user_config_key] = user_config_value
+                            self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
+                            if user_config_key in semantic_match_list:
+                                semantic_match_list.remove(user_config_key)
+                            break
+            except Exception as e:
+                self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
+                self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
             if user_config_key in fm_configs:
                 if user_config_key in semantic_match_list:
                     semantic_match_list.remove(user_config_key)
