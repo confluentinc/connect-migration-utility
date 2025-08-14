@@ -1609,6 +1609,11 @@ class ConnectorComparator:
         fm_configs['name'] = connector_name
         self.logger.info(f"Set name in fm_configs from connector_name parameter: {connector_name}")
 
+        if 'tasks.max' in config_dict:
+            fm_configs['tasks.max'] = config_dict['tasks.max']
+        else:
+            fm_configs['tasks.max'] = "1"
+
         # Step 2: Process user configs (following Java pattern)
         # Validate template_config_defs is a list
         if not isinstance(template_config_defs, (list, tuple)):
@@ -1719,10 +1724,6 @@ class ConnectorComparator:
                     semantic_match_list.remove(user_config_key)
                 continue
 
-            # Debug logging for connector.class
-            if user_config_key == "connector.class":
-                self.logger.info(f"Processing connector.class in Step 4: {user_config_value}")
-
             # Check if user config key matches any template config def name
             try:
                 for template_config_def in template_config_defs:
@@ -1742,26 +1743,6 @@ class ConnectorComparator:
                 if user_config_key in semantic_match_list:
                     semantic_match_list.remove(user_config_key)
                 continue
-
-            # Debug logging for connector.class
-            if user_config_key == 'connector.class':
-                self.logger.info(f"Processing connector.class in Step 4: {user_config_value}")
-
-            # Check if user config key matches any template config def name
-            try:
-                for template_config_def in template_config_defs:
-                    if isinstance(template_config_def, dict):
-                        template_config_name = template_config_def.get('name')
-                        if template_config_name == user_config_key:
-                            # Direct match found - add to fm_configs
-                            fm_configs[user_config_key] = user_config_value
-                            self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
-                            if user_config_key in semantic_match_list:
-                                semantic_match_list.remove(user_config_key)
-                            break
-            except Exception as e:
-                self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
-                self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
 
         # Step 5: do semantic matching for the configs that are not present in the template
         self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
@@ -2013,8 +1994,9 @@ class ConnectorComparator:
             if value != user_config_value:
                 # Case 1.1: not same as the value from user configs - Warn
                 warnings.append(f"{config_name} : FM config has constant value '{value}' but user provided '{user_config_value}'. User given value will be ignored.")
-            # Case 1.2: Same value given by user - Add it to fm key and value
-            fm_configs[connector_config_def.get('name')] = user_config_value
+            else:
+                # Case 1.2: Same value given by user - Add it to fm key and value
+                fm_configs[connector_config_def.get('name')] = user_config_value
             return
 
     def _process_switch_case(
