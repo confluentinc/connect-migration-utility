@@ -74,7 +74,7 @@ def main():
             config_dir = Path(args.config_dir)
             if not config_dir.exists() or not config_dir.is_dir():
                 raise FileNotFoundError(f"Config directory not found or is not a directory: {args.config_dir}")
-            merged_dir = output_dir / 'merged_connectors'
+            merged_dir = output_dir / 'sm_configs_compiled'
             merged_dir.mkdir(exist_ok=True)
             all_connectors_dict = {}  # Accumulate all connectors here
             for file in sorted(config_dir.iterdir()):
@@ -84,7 +84,7 @@ def main():
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
                 sys.exit(1)
             # Write all connectors to a single file
-            all_connectors_path = merged_dir / 'all_connectors.json'
+            all_connectors_path = merged_dir / 'combined_connectors_sm_configs.json'
             with open(all_connectors_path, 'w') as all_f:
                 json.dump({"connectors": all_connectors_dict}, all_f, indent=2)
             logger.info(f"Wrote all connectors to {all_connectors_path}")
