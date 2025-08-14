@@ -3009,7 +3009,7 @@ class ConnectorComparator:
 
             # Check if this required config is missing from FM configs
             if is_required and config_name not in fm_configs:
-                error_msg = f"Required FM Config '{config_name}' cound not be derived from given configs."
+                error_msg = f"Required FM Config '{config_name}' could not be derived from given configs."
                 # Check if this error message is already in the errors list to prevent duplicates
                 if error_msg not in errors:
                     errors.append(error_msg)
