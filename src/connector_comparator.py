@@ -3009,13 +3009,21 @@ class ConnectorComparator:
 
             # Check if this required config is missing from FM configs
             if is_required and config_name not in fm_configs:
-                error_msg = f"Required FM Config '{config_name}' could not be derived from given configs."
-                # Check if this error message is already in the errors list to prevent duplicates
-                if error_msg not in errors:
-                    errors.append(error_msg)
-                    self.logger.warning(f"Required config '{config_name}' missing from fm_configs. Available keys: {list(fm_configs.keys())}")
+                # Check if this config has a default value
+                default_value = template_config_def.get('default_value')
+                if default_value is not None:
+                    # Use the default value for this required config
+                    fm_configs[config_name] = str(default_value)
+                    self.logger.info(f"Required config '{config_name}' missing but has default value '{default_value}' - using default")
                 else:
-                    self.logger.debug(f"Duplicate error message for '{config_name}' already exists, skipping")
+                    # No default value available, add error
+                    error_msg = f"Required FM Config '{config_name}' could not be derived from given configs."
+                    # Check if this error message is already in the errors list to prevent duplicates
+                    if error_msg not in errors:
+                        errors.append(error_msg)
+                        self.logger.warning(f"Required config '{config_name}' missing from fm_configs and no default value available. Available keys: {list(fm_configs.keys())}")
+                    else:
+                        self.logger.debug(f"Duplicate error message for '{config_name}' already exists, skipping")
             elif is_required and config_name in fm_configs:
                 self.logger.info(f"Required config '{config_name}' found in fm_configs with value: {fm_configs[config_name]}")
 
