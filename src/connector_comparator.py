@@ -600,7 +600,7 @@ class ConnectorComparator:
         # If FM template is missing, return empty templates
         if not fm_template_path:
             self.logger.error(f"Missing required FM template for {connector_class}")
-            return sm_template, {}
+            return sm_template, None  # Return None to indicate missing template
 
         # Log template selection
         self.logger.info(f"Selected templates for {connector_class}:")
@@ -1362,7 +1362,7 @@ class ConnectorComparator:
 
                 # Create FM config object in the expected format
                 fm_config = {
-                    'name': result['name'],
+                    'name': connector['name'],
                     'sm_config': connector['config'],
                     'config': result['fm_configs'],
                     'mapping_errors': result['errors'],
@@ -1429,7 +1429,7 @@ class ConnectorComparator:
             return result
 
         if not user_configs:
-            result['warnings'].append("No configuration properties provided")
+            result['errors'].append("No configuration properties provided")
             return result
 
         # Convert all values to strings
@@ -1450,11 +1450,43 @@ class ConnectorComparator:
 
         if fm_template is None:
             result['errors'].append(f"No FM template found for connector class: {template_id}")
+            # Continue without config processing - just return the basic structure
+            result['fm_configs'] = {
+                'connector.class': template_id,
+                'name': connector_name,
+            }
             return result
 
         # Extract template components (following Java TemplateEngine pattern)
-        connector_config_defs = self._extract_connector_config_defs(fm_template)
-        template_config_defs = self._extract_template_config_defs(fm_template)
+        try:
+            # Validate template structure
+            if not isinstance(fm_template, dict):
+                raise ValueError(f"Expected fm_template to be a dict, got {type(fm_template)}")
+            
+            if 'templates' not in fm_template:
+                raise ValueError("fm_template missing 'templates' key")
+            
+            if not isinstance(fm_template['templates'], (list, tuple)):
+                raise ValueError(f"Expected fm_template['templates'] to be a list, got {type(fm_template['templates'])}")
+            
+            # Log template structure for debugging
+            self.logger.debug(f"Template structure: {list(fm_template.keys())}")
+            self.logger.debug(f"Number of templates: {len(fm_template['templates'])}")
+            
+            connector_config_defs = self._extract_connector_config_defs(fm_template)
+            template_config_defs = self._extract_template_config_defs(fm_template)
+            
+            self.logger.debug(f"Extracted {len(connector_config_defs)} connector config defs and {len(template_config_defs)} template config defs")
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting template components: {str(e)}")
+            # Return basic structure with error
+            result['errors'].append(f"Error extracting template components: {str(e)}")
+            result['fm_configs'] = {
+                'connector.class': template_id,
+                'name': connector_name,
+            }
+            return result
 
         # Initialize FM configs and message lists (following Java pattern)
         fm_configs = {}
@@ -1480,43 +1512,102 @@ class ConnectorComparator:
         else:
             errors.append(f"connector.class property is required.")
 
-        if 'name' in config_dict:
-            fm_configs['name'] = config_dict['name']
+        # Always set the name from connector_name parameter
+        fm_configs['name'] = connector_name
+        self.logger.info(f"Set name in fm_configs from connector_name parameter: {connector_name}")
 
         # Step 2: Process user configs (following Java pattern)
-        for user_config_key, user_config_value in config_dict.items():
-            # Check if this is a transforms or predicates config
-            if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
-                continue
+        self.logger.info(f"DEBUG: Processing user configs: {list(config_dict.keys())}")
+        
+        # Validate template_config_defs is a list
+        if not isinstance(template_config_defs, (list, tuple)):
+            self.logger.error(f"template_config_defs is not a list, got {type(template_config_defs)}: {template_config_defs}")
+            errors.append(f"Invalid template_config_defs type: {type(template_config_defs)}")
+            return result
+        
+        # Validate connector_config_defs is a list
+        if not isinstance(connector_config_defs, (list, tuple)):
+            self.logger.error(f"connector_config_defs is not a list, got {type(connector_config_defs)}: {connector_config_defs}")
+            errors.append(f"Invalid connector_config_defs type: {type(connector_config_defs)}")
+            return result
+        
+        # Additional safety check - ensure template_config_defs is not empty
+        if not template_config_defs:
+            self.logger.error("template_config_defs is empty or None")
+            errors.append("template_config_defs is empty or None")
+            return result
+        
+        # Debug: Log the structure of template_config_defs
+        self.logger.info(f"DEBUG: template_config_defs type: {type(template_config_defs)}")
+        self.logger.info(f"DEBUG: template_config_defs length: {len(template_config_defs)}")
+        if template_config_defs and len(template_config_defs) > 0:
+            self.logger.info(f"DEBUG: First template_config_def type: {type(template_config_defs[0])}")
+            if isinstance(template_config_defs[0], dict):
+                self.logger.info(f"DEBUG: First template_config_def keys: {list(template_config_defs[0].keys())}")
+        
+        try:
+            for user_config_key, user_config_value in config_dict.items():
 
-            if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
-                transforms_configs[user_config_key] = user_config_value
-                continue
+                # Check if this is a transforms or predicates config
+                if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
+                    continue
 
-            # Find if user config is present in Connector config def
-            matching_connector_config_def = None
-            for connector_config_def in connector_config_defs:
-                if connector_config_def.get('name') == user_config_key:
-                    matching_connector_config_def = connector_config_def
-                    break
+                if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
+                    transforms_configs[user_config_key] = user_config_value
+                    continue
 
-            if matching_connector_config_def is not None:
-                # User config present in Connector config def
-                self._process_user_config_in_connector_config_def(
-                    matching_connector_config_def,
-                    user_config_value,
-                    template_config_defs,
-                    fm_configs,
-                    warnings,
-                    errors,
-                    config_dict,
-                    semantic_match_list
-                )
-            else:
-                # User config not present in Connector config def - warn
-                warnings.append(f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any.")
+                # Find if user config is present in Connector config def
+                matching_connector_config_def = None
+                if isinstance(connector_config_defs, (list, tuple)):
+                    for connector_config_def in connector_config_defs:
+                        if isinstance(connector_config_def, dict) and connector_config_def.get('name') == user_config_key:
+                            matching_connector_config_def = connector_config_def
+                            break
+                else:
+                    self.logger.warning(f"Expected connector_config_defs to be a list, got {type(connector_config_defs)}")
+                    continue
+
+                if matching_connector_config_def is not None:
+                    # User config present in Connector config def
+                    self._process_user_config_in_connector_config_def(
+                        matching_connector_config_def,
+                        user_config_value,
+                        template_config_defs,
+                        fm_configs,
+                        warnings,
+                        errors,
+                        config_dict,
+                        semantic_match_list
+                    )
+                else:
+                    # Check if this config is defined in template_config_defs
+                    config_found_in_template = False
+                    
+                    try:
+                        for template_config_def in template_config_defs:
+                            if isinstance(template_config_def, dict) and template_config_def.get('name') == user_config_key:
+                                config_found_in_template = True
+                                break
+                    except Exception as e:
+                        self.logger.error(f"Error iterating over template_config_defs for {user_config_key}: {str(e)}")
+                        self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
+                        config_found_in_template = False
+                    
+                    if not config_found_in_template:
+                        # User config not present in either Connector config def or template config defs - warn
+                        warning_msg = f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any."
+                        warnings.append(warning_msg)
+                        self.logger.warning(warning_msg)
+                        self.logger.info(f"DEBUG: Added warning for unused config: {user_config_key}")
+                    else:
+                        self.logger.info(f"DEBUG: Config {user_config_key} found in template_config_defs")
+        except Exception as e:
+            self.logger.error(f"Error processing user configs: {str(e)}")
+            errors.append(f"Error processing user configs {user_config_key}: {str(e)}")
+            # Continue with basic config
 
         # Step 3: Process template configs using config derivation methods
+<<<<<<< Updated upstream
         for template_config_def in template_config_defs:
             template_config_name = template_config_def.get('name')
 
@@ -1527,8 +1618,28 @@ class ConnectorComparator:
                 derived_value = derivation_method(config_dict, fm_configs)
                 if derived_value is not None:
                     fm_configs[template_config_name] = derived_value
+=======
+        self.logger.info(f"Processing {len(template_config_defs)} template config definitions")
+        try:
+            for template_config_def in template_config_defs:
+                template_config_name = template_config_def.get('name')
+                is_required = template_config_def.get('required', False)
+                self.logger.debug(f"Processing template config: {template_config_name}, required: {is_required}")
+>>>>>>> Stashed changes
 
+                # Get the method to derive this config from user configs
+                derivation_method = self._get_config_derivation_method(template_config_name, template_config_def)
 
+                if derivation_method:
+                    derived_value = derivation_method(config_dict, fm_configs, template_config_defs)
+                    if derived_value is not None:
+                        fm_configs[template_config_name] = derived_value
+                        self.logger.debug(f"Derived value for {template_config_name}: {derived_value}")
+                else:
+                    self.logger.debug(f"No derivation method found for {template_config_name}")
+        except Exception as e:
+            self.logger.error(f"Error processing template configs: {str(e)}")
+            errors.append(f"Error processing template configs: {str(e)}")
 
         # Step 4: Before semantic matching, check if user config keys directly match template config def names
         for user_config_key, user_config_value in config_dict.items():
@@ -1543,15 +1654,20 @@ class ConnectorComparator:
                 self.logger.info(f"Processing connector.class in Step 4: {user_config_value}")
 
             # Check if user config key matches any template config def name
-            for template_config_def in template_config_defs:
-                template_config_name = template_config_def.get('name')
-                if template_config_name == user_config_key:
-                    # Direct match found - add to fm_configs
-                    fm_configs[user_config_key] = user_config_value
-                    self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
-                    if user_config_key in semantic_match_list:
-                        semantic_match_list.remove(user_config_key)
-                    break
+            try:
+                for template_config_def in template_config_defs:
+                    if isinstance(template_config_def, dict):
+                        template_config_name = template_config_def.get('name')
+                        if template_config_name == user_config_key:
+                            # Direct match found - add to fm_configs
+                            fm_configs[user_config_key] = user_config_value
+                            self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
+                            if user_config_key in semantic_match_list:
+                                semantic_match_list.remove(user_config_key)
+                            break
+            except Exception as e:
+                self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
+                self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
 
         # Step 5: do semantic matching for the configs that are not present in the template
         self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
@@ -1593,19 +1709,67 @@ class ConnectorComparator:
     def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract connector config definitions from FM template (following Java pattern)"""
         connector_config_defs = []
+        self.logger.info(f"DEBUG: _extract_connector_config_defs called with fm_template type: {type(fm_template)}")
+        self.logger.info(f"DEBUG: fm_template keys: {list(fm_template.keys()) if isinstance(fm_template, dict) else 'Not a dict'}")
+        
         if 'templates' in fm_template:
-            for template in fm_template['templates']:
+            self.logger.info(f"DEBUG: templates key found, type: {type(fm_template['templates'])}")
+            if not isinstance(fm_template['templates'], (list, tuple)):
+                self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
+                return connector_config_defs
+                
+            for i, template in enumerate(fm_template['templates']):
+                self.logger.debug(f"Processing template {i}: {type(template)}")
+                if not isinstance(template, dict):
+                    self.logger.warning(f"Template {i} is not a dict: {type(template)}")
+                    continue
+                    
                 if 'connector_configs' in template:
-                    connector_config_defs.extend(template['connector_configs'])
+                    self.logger.debug(f"Template {i} has connector_configs: {type(template['connector_configs'])}")
+                    # Ensure connector_configs is a list/iterable, not a boolean or other type
+                    if isinstance(template['connector_configs'], (list, tuple)):
+                        connector_config_defs.extend(template['connector_configs'])
+                    else:
+                        self.logger.warning(f"Expected connector_configs to be a list, got {type(template['connector_configs'])}: {template['connector_configs']}")
+                        # Skip this template's connector_configs
+                        continue
+        else:
+            self.logger.warning("No 'templates' key found in fm_template")
+            
+        self.logger.info(f"DEBUG: _extract_connector_config_defs returning {len(connector_config_defs)} connector_configs")
         return connector_config_defs
 
     def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract template config definitions from FM template (following Java pattern)"""
         template_config_defs = []
+        self.logger.info(f"DEBUG: _extract_template_config_defs called with fm_template type: {type(fm_template)}")
+        self.logger.info(f"DEBUG: fm_template keys: {list(fm_template.keys()) if isinstance(fm_template, dict) else 'Not a dict'}")
+        
         if 'templates' in fm_template:
-            for template in fm_template['templates']:
+            self.logger.info(f"DEBUG: templates key found, type: {type(fm_template['templates'])}")
+            if not isinstance(fm_template['templates'], (list, tuple)):
+                self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
+                return template_config_defs
+                
+            for i, template in enumerate(fm_template['templates']):
+                self.logger.debug(f"Processing template {i} for config_defs: {type(template)}")
+                if not isinstance(template, dict):
+                    self.logger.warning(f"Template {i} is not a dict: {type(template)}")
+                    continue
+                    
                 if 'config_defs' in template:
-                    template_config_defs.extend(template['config_defs'])
+                    self.logger.debug(f"Template {i} has config_defs: {type(template['config_defs'])}")
+                    # Ensure config_defs is a list/iterable, not a boolean or other type
+                    if isinstance(template['config_defs'], (list, tuple)):
+                        template_config_defs.extend(template['config_defs'])
+                    else:
+                        self.logger.warning(f"Expected config_defs to be a list, got {type(template['config_defs'])}: {template['config_defs']}")
+                        # Skip this template's config_defs
+                        continue
+        else:
+            self.logger.warning("No 'templates' key found in fm_template")
+            
+        self.logger.info(f"DEBUG: _extract_template_config_defs returning {len(template_config_defs)} config_defs")
         return template_config_defs
 
     def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
@@ -1669,6 +1833,9 @@ class ConnectorComparator:
     ):
         """Process a user config that is present in connector config def (following Java pattern)"""
 
+        # Special logging for validate.non.null configuration
+        config_name = connector_config_def.get('name')
+        
         # Case 1: value is constant string
         if connector_config_def.get('value') is not None:
             self._process_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings, user_configs, semantic_match_list)
@@ -1701,6 +1868,14 @@ class ConnectorComparator:
     ):
         """Process value case (following Java pattern)"""
         value = connector_config_def.get('value')
+        config_name = connector_config_def.get('name')
+
+        # Handle non-string values (like validate.non.null: false, numbers, etc.)
+        if not isinstance(value, str):
+            self.logger.info(f"DEBUG: Processing non-string value for {config_name}: {value} (type: {type(value)})")
+            # For non-string values, just set the config directly
+            fm_configs[config_name] = str(value).lower() if isinstance(value, bool) else str(value)
+            return
 
         # Check if value contains {{.logicalClusterId}} - this indicates internal config
         if value is not None and (
@@ -1975,7 +2150,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                return parsed.get('database')
+                # The _parse_jdbc_url method returns 'db_name', not 'database'
+                return parsed.get('db_name')
         return None
 
     def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str]) -> Optional[str]:
@@ -1985,7 +2161,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                return parsed.get('database')
+                # The _parse_jdbc_url method returns 'db_name', not 'database'
+                return parsed.get('db_name')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
@@ -2653,8 +2830,20 @@ class ConnectorComparator:
 
             # Check if this required config is missing from FM configs
             if is_required and config_name not in fm_configs:
+<<<<<<< Updated upstream
                 error_msg = f"Required FM Config '{config_name}' cound not be derived from given configs."
                 errors.append(error_msg)
+=======
+                error_msg = f"Required FM Config '{config_name}' could not be derived from given configs."
+                # Check if this error message is already in the errors list to prevent duplicates
+                if error_msg not in errors:
+                    errors.append(error_msg)
+                    self.logger.warning(f"Required config '{config_name}' missing from fm_configs. Available keys: {list(fm_configs.keys())}")
+                else:
+                    self.logger.debug(f"Duplicate error message for '{config_name}' already exists, skipping")
+            elif is_required and config_name in fm_configs:
+                self.logger.info(f"Required config '{config_name}' found in fm_configs with value: {fm_configs[config_name]}")
+>>>>>>> Stashed changes
 
             # Check if FM config value is part of recommended values (if config exists and has recommended values)
             if config_name in fm_configs:
@@ -2662,8 +2851,24 @@ class ConnectorComparator:
                 recommended_values = template_config_def.get('recommended_values', [])
 
                 if recommended_values and fm_config_value not in recommended_values:
-                    error_msg = f"FM Config '{config_name}' value '{fm_config_value}' is not in the recommended values list: {recommended_values}"
-                    errors.append(error_msg)
+                    # Try case-insensitive matching for enum-like values
+                    fm_config_value_lower = fm_config_value.lower() if isinstance(fm_config_value, str) else str(fm_config_value).lower()
+                    recommended_values_lower = [str(v).lower() for v in recommended_values]
+                    
+                    if fm_config_value_lower not in recommended_values_lower:
+                        error_msg = f"FM Config '{config_name}' value '{fm_config_value}' is not in the recommended values list: {recommended_values}"
+                        # Check if this error message is already in the errors list to prevent duplicates
+                        if error_msg not in errors:
+                            errors.append(error_msg)
+                            self.logger.warning(f"Value '{fm_config_value}' for '{config_name}' not in recommended values (case-insensitive check also failed)")
+                        else:
+                            self.logger.debug(f"Duplicate error message for '{config_name}' recommended values already exists, skipping")
+                    else:
+                        # Case-insensitive match found - log this for debugging
+                        self.logger.info(f"Case-insensitive match found for '{config_name}': '{fm_config_value}' matches one of {recommended_values}")
+                else:
+                    # Value is in recommended values (case-sensitive match)
+                    self.logger.debug(f"Value '{fm_config_value}' for '{config_name}' is in recommended values")
 
     def _get_sm_property_from_template(self, config_name: str, sm_template: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
