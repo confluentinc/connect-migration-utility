@@ -10,14 +10,29 @@ import json
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_file = output_dir / 'migration.log'
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
+
+    # Clear any existing handlers to avoid conflicts
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Create file handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+
+    # Create console handler (explicitly for stdout)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
+
+    # Configure root logger
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
 
 def main():
     parser = argparse.ArgumentParser(description="Connector Migration Tool")
@@ -36,6 +51,7 @@ def main():
     parser.add_argument('--bearer-token', type=str, help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
+    parser.add_argument('--semantic-cache-folder', type=str, help='Cache folder for sentence transformer models (default: auto-detected from pip installation)')
 
 
     args = parser.parse_args()
