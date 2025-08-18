@@ -10,25 +10,25 @@ import json
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_file = output_dir / 'migration.log'
-    
+
     # Clear any existing handlers to avoid conflicts
     root_logger = logging.getLogger()
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     # Create file handler
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
-    
+
     # Create console handler (explicitly for stdout)
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)
-    
+
     # Configure root logger
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(file_handler)
