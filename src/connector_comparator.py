@@ -8,6 +8,9 @@ import base64
 import requests
 
 class ConnectorComparator:
+    SUCCESSFUL_CONFIGS_DIR = "successful_configs"
+    UNSUCCESSFUL_CONFIGS_DIR = "unsuccessful_configs_with_errors"
+
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
                  env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False):
         self.logger = logging.getLogger(__name__)
@@ -729,13 +732,46 @@ class ConnectorComparator:
         return 'unknown'
 
     def _parse_jdbc_url(self, url: str) -> Dict[str, str]:
-        """Parse JDBC URL to extract connection details from real JDBC URLs"""
+        """Parse JDBC URL to extract connection details from real JDBC URLs, including Oracle complex formats."""
+
         original_url = url
         url = url.lower()
         connection_info = {}
 
         self.logger.debug(f"Parsing JDBC URL: {original_url}")
 
+        # Detect Oracle complex format by presence of '@(DESCRIPTION='
+        # "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=<span>{connection.host})(PORT=</span>{connection.port}))(CONNECT_DATA=(<span>{db.connection.type}=</span>{db.name}))(SECURITY=(SSL_SERVER_CERT_DN="${ssl.server.cert.dn}")))"
+        if '@(DESCRIPTION=' in original_url:
+            self.logger.debug("Detected Oracle complex format with DESCRIPTION block (uppercase keywords only).")
+            # Extract HOST
+            host_match = re.search(r'\(HOST=([^\)]+)\)', original_url)
+            if host_match:
+                connection_info['host'] = host_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted host: {connection_info['host']}")
+            # Extract PORT
+            port_match = re.search(r'\(PORT=([^\)]+)\)', original_url)
+            if port_match:
+                connection_info['port'] = port_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted port: {connection_info['port']}")
+            # Extract db.connection.type and db.name (fix group assignments)
+            dbtype_dbname_match = re.search(r'\(CONNECT_DATA=\(([^=\)]+)=([^\)]+)\)\)', original_url)
+            if dbtype_dbname_match:
+                connection_info['db.connection.type'] = dbtype_dbname_match.group(1)
+                connection_info['db.name'] = dbtype_dbname_match.group(2)
+                self.logger.debug(f"[ORACLE] Extracted db.connection.type: {connection_info['db.connection.type']}")
+                self.logger.debug(f"[ORACLE] Extracted db.name: {connection_info['db.name']}")
+            # Extract ssl.server.cert.dn
+            ssl_cert_dn_match = re.search(r'SSL_SERVER_CERT_DN=\\?"?([^\)\"]+)\\?"?\)', original_url)
+            if ssl_cert_dn_match:
+                connection_info['ssl.server.cert.dn'] = ssl_cert_dn_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted ssl.server.cert.dn: {connection_info['ssl.server.cert.dn']}")
+            self.logger.debug(f"[ORACLE] Final connection_info: {connection_info}")
+            return connection_info
+        else:
+            self.logger.debug("Using standard JDBC URL parsing logic.")
+
+        # Existing logic for standard format
         # Extract host - look for pattern like jdbc:postgresql://localhost:5432/dbname
         host_match = re.search(r'jdbc:[^:]+://([^:/]+)', url)
         if host_match:
@@ -1092,6 +1128,7 @@ class ConnectorComparator:
 
         return recommended_values
 
+# not being used
     def _generate_fm_config(self, connector: Dict[str, Any]) -> Dict[str, Any]:
         """Generate FM configuration for a connector"""
         name = connector['name']
@@ -1461,13 +1498,13 @@ class ConnectorComparator:
                 # Categorize configs based on mapping_errors
                 if result['errors'] and len(result['errors']) > 0:
                     # There are mapping errors, save to unsuccessful_configs_with_errors
-                    complete_dir = self.fm_configs_dir / "unsuccessful_configs_with_errors"
+                    complete_dir = self.fm_configs_dir / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
                     complete_dir.mkdir(exist_ok=True)
                     config_file = complete_dir / f"{connector['name']}.json"
                     category = "unsuccessful_configs_with_errors"
                 else:
                     # There are no mapping errors, save to successful_configs
-                    error_dir = self.fm_configs_dir / "successful_configs"
+                    error_dir = self.fm_configs_dir / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
                     error_dir.mkdir(exist_ok=True)
                     config_file = error_dir / f"{connector['name']}.json"
                     category = "successful_configs"
@@ -1854,6 +1891,8 @@ class ConnectorComparator:
             'connection.password': self._derive_connection_password,
             'connection.database': self._derive_connection_database,
             'db.name': self._derive_db_name,
+            'db.connection.type': self._derive_db_connection_type,
+            'ssl.server.cert.dn': self._derive_ssl_server_cert_dn,
 
 
             # Data format configs
@@ -2250,7 +2289,39 @@ class ConnectorComparator:
             return user_configs['database']
 
         return None
-    
+
+    def _derive_db_connection_type(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+        """Derive db.connection.type from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('db_type')
+
+        # Check for direct db.connection.type config
+        if 'db.connection.type' in user_configs:
+            return user_configs['db.connection.type']
+
+        # Default fallback
+        return None
+
+    def _derive_ssl_server_cert_dn(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+        """Derive ssl.server.cert.dn from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('ssl_server_cert_dn')
+
+        # Check for direct ssl.server.cert.dn config
+        if 'ssl.server.cert.dn' in user_configs:
+            return user_configs['ssl.server.cert.dn']
+
+        # Default fallback
+        return None
+
     def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive database.server.name from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
