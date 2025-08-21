@@ -7,6 +7,12 @@ from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
 import json
 
+from create_connector import ConnectorCreator
+
+FM_CONFIGS_DIR = "fm_configs"
+SM_CONFIGS_DIR = "sm_configs_compiled"
+
+
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_file = output_dir / 'migration.log'
@@ -59,7 +65,7 @@ def main():
     # Create output directory if it doesn't exist
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / 'fm_configs').mkdir(exist_ok=True)
+    (output_dir / FM_CONFIGS_DIR).mkdir(exist_ok=True)
 
     # Setup logging
     setup_logging(output_dir)

@@ -54,6 +54,12 @@ connect-migration-utility/
 python src/main.py --config-file connectors.json --output-dir output/
 ```
 
+### Basic Usage - From Directory of config files
+
+```bash
+python src/main.py --config-dir configDir --output-dir output/
+```
+
 ### Basic Usage - From Worker Discovery
 
 ```bash
@@ -87,6 +93,7 @@ python src/main.py \
 | Option | Description | Required |
 |--------|-------------|----------|
 | `--config-file` | Path to JSON file containing connector configurations | No* |
+| `--config-dir` | Path of directory with multiple json connector configuration files | No* |
 | `--worker-urls` | Comma-separated list of worker URLs | No* |
 | `--worker-urls-file` | Path to file containing worker URLs | No* |
 | `--output-dir` | Output directory for all files (default: output) | No |
@@ -99,7 +106,7 @@ python src/main.py \
 | `--worker-config-file` | Path to file containing additional worker configs | No |
 | `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
 
-*Either `--config-file` or `--worker-urls`/`--worker-urls-file` is required
+*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required
 
 ## 🔒 SSL Certificate Verification
 
