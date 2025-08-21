@@ -1776,10 +1776,6 @@ class ConnectorComparator:
             except Exception as e:
                 self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
                 self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
-            if user_config_key in fm_configs:
-                if user_config_key in semantic_match_list:
-                    semantic_match_list.remove(user_config_key)
-                continue
 
         # Step 5: do semantic matching for the configs that are not present in the template
         self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
@@ -1949,7 +1945,7 @@ class ConnectorComparator:
             return
 
         # Case 3: Connector config def is a dynamic mapper
-        if connector_config_def.get('dynamic_mapper') is not None:
+        if connector_config_def.get('dynamic.mapper') is not None:
             self._process_dynamic_mapper_case(connector_config_def, user_config_value, user_configs, template_config_defs, fm_configs, warnings, semantic_match_list)
             return
 
@@ -2106,6 +2102,22 @@ class ConnectorComparator:
                 else:
                     warnings.append(f"User value '{user_value}' for '{connector_config_def.get('name')}' does not match any value in templateswitch case.")
 
+    def infer_dynamic_mappings(self, dynamic_mapper_fun_name: str, user_config_value: str) -> Optional[str]:
+        """
+        Infer dynamic mappings for a given FM property name.
+        This is a placeholder method that should be implemented based on specific requirements.
+        """
+        if dynamic_mapper_fun_name and dynamic_mapper_fun_name== 'value.converter.reference.subject.name.strategy.mapper':
+            sm_to_fm_mapping = {
+                "io.confluent.kafka.serializers.subject.TopicNameStrategy": "TopicNameStrategy",
+                "io.confluent.kafka.serializers.subject.RecordNameStrategy": "RecordNameStrategy",
+                "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy": "TopicRecordNameStrategy"
+            }
+            return sm_to_fm_mapping.get(user_config_value, None)
+
+        # Placeholder implementation - in real code, this would infer the mapping based on some logic
+        self.logger.warning(f"Dynamic mapping inference not implemented for {dynamic_mapper_fun_name}. Returning None.")
+        return None
 
     def _process_dynamic_mapper_case(
         self,
@@ -2126,10 +2138,27 @@ class ConnectorComparator:
         if template_config_def is not None:
             # If it exists in template config defs, add to fm_configs
             fm_configs[connector_config_name] = user_config_value
-        else:
-            # If not found in template config defs, add to semantic matching list
-            semantic_match_list.add(connector_config_name)
-            self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
+            return
+        elif connector_config_def.get('dynamic.mapper') is not None and connector_config_def.get('dynamic.mapper').get('name') is not None :
+            # Check if it has a dynamic mapper defined name is present in fm_template
+            fm_template_def = self._find_template_config_def_by_name(connector_config_name, template_config_defs)
+
+            if fm_template_def is not None:
+                # If it has a fm template dynamic mapper defined and not present in fm_configs, try to infer the mapping
+                dynamic_mapping_value = self.infer_dynamic_mappings(connector_config_def.get('dynamic.mapper').get('name'), user_config_value)
+                if dynamic_mapping_value is not None:
+                    # If dynamic mapping is found, add it to fm_configs
+                    fm_configs[fm_template_def.get('name')] = dynamic_mapping_value
+                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' inferred as '{dynamic_mapping_value}'")
+                    return
+                elif fm_configs.get(fm_template_def.get('name')) is not None:
+                    # If dynamic mapping is not found but fm_configs already has this config, skip
+                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' already exists in fm_configs, skipping inference.")
+                    return
+
+        # If not found in template config defs, add to semantic matching list
+        semantic_match_list.add(connector_config_name)
+        self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
 
     def _process_null_value_case(
         self,
