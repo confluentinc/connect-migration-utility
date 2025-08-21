@@ -790,8 +790,8 @@ class ConnectorComparator:
         db_match = re.search(r'://[^/]+/([^/?]+)', url)
         if db_match:
             db_name = db_match.group(1)
-            connection_info['db_name'] = db_name
-            self.logger.debug(f"Extracted db_name: {connection_info['db_name']}")
+            connection_info['db.name'] = db_name
+            self.logger.debug(f"Extracted db_name: {connection_info['db.name']}")
 
         # Extract user from query parameters
         user_match = re.search(r'[?&]user=([^&]+)', url)
@@ -2252,8 +2252,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db_name', not 'database'
-                return parsed.get('db_name')
+                # The _parse_jdbc_url method returns 'db.name', not 'database'
+                return parsed.get('db.name')
         return None
 
     def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
@@ -2264,8 +2264,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db_name', not 'database'
-                return parsed.get('db_name')
+                # The _parse_jdbc_url method returns 'db.name', not 'database'
+                return parsed.get('db.name')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
@@ -2297,7 +2297,7 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                return parsed.get('db_type')
+                return parsed.get('db.connection.type')
 
         # Check for direct db.connection.type config
         if 'db.connection.type' in user_configs:
@@ -2313,7 +2313,7 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                return parsed.get('ssl_server_cert_dn')
+                return parsed.get('ssl.server.cert.dn')
 
         # Check for direct ssl.server.cert.dn config
         if 'ssl.server.cert.dn' in user_configs:
