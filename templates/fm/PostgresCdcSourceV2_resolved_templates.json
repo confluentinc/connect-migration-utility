@@ -100,24 +100,65 @@
           ]
         },
         {
+          "name": "publish.via.partition.root",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Database config",
+          "order_in_group": 4,
+          "display_name": "Publish via partition root",
+          "documentation": "This configuration is applicable only when the connector is responsible for creating the publication in the source database. It determines how change events from partitioned tables are captured and emitted.\n`true` : the connector includes the publish_via_partition_root = true parameter in the publication creation statement, instructing the source database to publish change events using the root table name. As a result, changes from all partitions are emitted under the root table in the change stream.\n`false` (the default) : the publish_via_partition_root parameter is omitted, and change events are published using the individual partition names, reflecting the exact partition where each change occurred. \nNote:\n\tThe connector applies this configuration only during the initial creation of the publication. The connector ignores the changes made to this setting after the publication has been created.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
           "name": "signal.data.collection",
           "type": "STRING",
           "required": false,
           "importance": "MEDIUM",
           "group": "Database config",
-          "order_in_group": 4,
+          "order_in_group": 5,
           "display_name": "Signal data collection",
           "documentation": "Fully-qualified name of the data collection that needs to be used to send signals to the connector. Use ``schemaName.tableName`` format to specify the fully-qualified collection name. Note that the connector automatically adds the signal table to the publication only if the ``publication.autocreate.mode`` is set to ``filtered`` or ``all_tables``. You will need to add it manually if the mode is set to ``disabled``."
         },
         {
+          "name": "slot.failover",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Database config",
+          "order_in_group": 6,
+          "display_name": "Create failover slot",
+          "documentation": "Specifies whether the connector creates a failover slot. If set to false (the default), or if the primary server runs PostgreSQL 16 or earlier, the connector does not create a failover slot.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
           "name": "snapshot.mode",
-          "documentation": "Specifies the criteria for running a snapshot upon startup of the connector. Possible settings are: `initial`, `never`(deprecated), `no_data`, and `initial_only`. \n`initial` - The connector performs a snapshot only when no offsets have been recorded for the logical server name. \n`never` - Deprecated, use no_data instead. \n`no_data` - The connector never performs snapshots. When a connector is configured this way, its behavior when it starts is as follows. If there is a previously stored LSN in the Kafka offsets topic, the connector continues streaming changes from that position. If no LSN has been stored, the connector starts streaming changes from the starting position available in the replication slot. The no_data snapshot mode is useful only when you know all data of interest is still reflected in the WAL. \n`initial_only` - The connector performs an initial snapshot and then stops, without processing any subsequent changes.",
+          "documentation": "Specifies the criteria for running a snapshot upon startup of the connector. Possible settings are: `initial`, `never`(deprecated), `no_data`, `initial_only`, and `when_needed`. \n`initial` - The connector performs a snapshot only when no offsets have been recorded for the logical server name. \n`never` - Deprecated, use no_data instead. \n`no_data` - The connector never performs snapshots. When a connector is configured this way, its behavior when it starts is as follows. If there is a previously stored LSN in the Kafka offsets topic, the connector continues streaming changes from that position. If no LSN has been stored, the connector starts streaming changes from the starting position available in the replication slot. The no_data snapshot mode is useful only when you know all data of interest is still reflected in the WAL. \n`initial_only` - The connector performs an initial snapshot and then stops, without processing any subsequent changes. \n`when_needed` - The connector runs a snapshot upon startup whenever it deems it necessary. That is, when no offsets are available, or when a previously recorded offset specifies an LSN that is not available with the replication slot.",
           "recommended_values": [
             "initial",
             "never",
             "no_data",
-            "initial_only"
+            "initial_only",
+            "when_needed"
           ]
+        },
+        {
+          "name": "heartbeat.action.query",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Connector config",
+          "order_in_group": 10,
+          "display_name": "Heartbeat action query",
+          "documentation": "If specified, the connector executes this query on every heartbeat against the source database. The query must be a valid SQL DML statement, typically an ``INSERT`` or ``UPDATE``, that targets a dedicated heartbeat table. \nThis configuration helps address situations where capturing changes from a low-traffic database on the same host as a high-traffic one prevents Debezium from processing WAL records and acknowledging WAL positions with the database. To address this, create a heartbeat table in the low-traffic database, and set this property to a DML statement that periodically updates the table by either inserting a new row or repeatedly updating the same row. This allows the connector to receive changes from the low-traffic database and acknowledge their LSNs, preventing unbounded WAL growth on the database host. The heartbeat query executes at regular intervals, as specified by the ``heartbeat.interval.ms`` configuration property. \nNote: To enable the connector to detect and process events from the heartbeat table, ensure the table is part of the PostgreSQL publication specified by the ``publication.name`` configuration property. In addition, if you are using a filtered publication, include the table in the connector's capture set using the schema or table include configuration properties. \nNote: To uphold the principle of least privilege, grant the connector user write permissions exclusively to essential tables, such as those used for heartbeats. In line with data minimization, ensure the connector configuration is free of PII or sensitive data, as this information is not needed for system-level functions like heartbeat queries."
         }
       ],
       "connector_configs": [
@@ -138,6 +179,9 @@
           "name": "publication.name"
         },
         {
+          "name": "publish.via.partition.root"
+        },
+        {
           "name": "signal.data.collection"
         },
         {
@@ -146,6 +190,9 @@
         },
         {
           "name": "slot.name"
+        },
+        {
+          "name": "slot.failover"
         },
         {
           "name": "slot.retry.delay.ms",
@@ -158,6 +205,9 @@
         {
           "name": "slot.seek.to.known.offset.on.start",
           "value": "true"
+        },
+        {
+          "name": "heartbeat.action.query"
         }
       ]
     },
@@ -485,12 +535,20 @@
           "name": "field.name.adjustment.mode"
         },
         {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -550,12 +608,24 @@
           "value": "209716100"
         },
         {
+          "name": "custom.metric.tags",
+          "value": "connector={{.logicalClusterId}},version=v2"
+        },
+        {
+          "name": "topic.heartbeat.prefix",
+          "value": "__debezium-heartbeat-{{.logicalClusterId}}"
+        },
+        {
           "name": "errors.max.retries",
           "value": "3"
         },
         {
           "name": "connector.endpoint",
           "value": "${database.hostname}"
+        },
+        {
+          "name": "connector.thread.name.pattern",
+          "value": "${connector.name}-${task.id}-${debezium}-${connector.class.simple}-${topic.prefix}-${functionality}"
         }
       ]
     },
@@ -626,6 +696,115 @@
           "order_in_group": 2,
           "display_name": "Kafka API Key",
           "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        },
+        {
+          "name": "kafka.service.account.api.key",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.api.secret",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.region",
+          "type": "STRING",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.endpoint",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "kafka.user.id",
+          "type": "INT",
+          "required": false,
+          "internal": true,
+          "importance": "MEDIUM"
+        },
+        {
+          "name": "cloud.environment",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.dedicated",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "valid.kafka.api.key",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.service.account.oauth.token",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "kafka.logical.cluster.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connect.connector_cross_region.enable",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "sr.internal.sa.validity.check",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.cloud",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "connector.regional.connectivity.enabled",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
         }
       ],
       "connector_configs": [
@@ -661,8 +840,318 @@
     {
       "template_id": "common-kafka-connectivity",
       "abstract": true,
-      "config_defs": [],
-      "connector_configs": []
+      "config_defs": [
+        {
+          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
+          "type": "STRING",
+          "required": false,
+          "default_value": "SKIP",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "importance": "HIGH",
+          "internal": true
+        },
+        {
+          "name": "connect.fips.provider",
+          "type": "STRING",
+          "required": false,
+          "default_value": "UNSET",
+          "default_value_provider": {
+            "name": "defaultvalue.fips.provider"
+          },
+          "importance": "HIGH",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
     },
     {
       "template_id": "common-source",
@@ -736,7 +1225,8 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance"
+          "name": "errors.tolerance",
+          "value": "none"
         },
         {
           "name": "producer.override.max.request.size",
@@ -760,12 +1250,23 @@
           "name": "datapreview.schemas.enable"
         },
         {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -777,6 +1278,18 @@
         },
         {
           "name": "producer.override.linger.ms"
+        },
+        {
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
         }
       ]
     },
@@ -784,6 +1297,25 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
+        {
+          "name": "schema.registry.url",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -804,6 +1336,26 @@
       "template_id": "source-connector-output-data-format",
       "abstract": true,
       "config_defs": [
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
         {
           "name": "output.data.format",
           "type": "STRING",
@@ -866,6 +1418,27 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.scrub.invalid.names"
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
         }
       ],
       "connector_configs": [
@@ -881,10 +1454,12 @@
           }
         },
         {
-          "name": "value.converter.schemas.enable"
-        },
-        {
-          "name": "value.converter.replace.null.with.default"
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "output.data.format": {
+              "JSON": false
+            }
+          }
         },
         {
           "name": "value.converter.schema.registry.url",
@@ -905,6 +1480,31 @@
               "PROTOBUF": "USER_INFO"
             }
           }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "true",
+              "PROTOBUF": "false"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -984,6 +1584,102 @@
               "PROTOBUF": "USER_INFO"
             }
           }
+        },
+        {
+          "name": "key.converter.basic.auth.user.info",
+          "switch": {
+            "output.key.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "eos-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "exactly.once.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "HIGH",
+          "default_value": "false",
+          "group": "Exactly Once Semantics",
+          "order_in_group": 1,
+          "docs_hidden": true,
+          "display_name": "Exactly Once Enabled",
+          "documentation": "If true, exactly once support is enabled for this connector.",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "eos.configs.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ]
+        },
+        {
+          "name": "offsets.storage.topic",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Exactly Once Semantics",
+          "order_in_group": 2,
+          "display_name": "Offset Storage Topic",
+          "documentation": "The name of the topic to be used as the offset storage topic for storing connector offsets. Defaults to 'offset-${connector}' if not set. The provided topic should not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        },
+        {
+          "name": "eos.configs.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
+        },
+        {
+          "name": "transactional.id.prefix",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "transaction",
+          "internal": true
+        },
+        {
+          "name": "offsets.storage.partitions",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "exactly.once.enabled"
+        },
+        {
+          "name": "offsets.storage.topic",
+          "dynamic.mapper": {
+            "name": "offset.replace.mapper"
+          }
+        },
+        {
+          "name": "transactional.id.prefix",
+          "dynamic.mapper": {
+            "name": "transactionalIdPrefix.replace.mapper"
+          }
+        },
+        {
+          "name": "offsets.storage.partitions"
+        },
+        {
+          "name": "transaction.boundary"
         }
       ]
     },
@@ -1007,6 +1703,9 @@
               "arguments": {
                 "config": "csfle.configs.visible",
                 "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
               }
             }
           ]
@@ -1020,6 +1719,14 @@
           "docs_hidden": true,
           "display_name": "Schema Registry Service Account",
           "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
+        },
+        {
+          "name": "csfle.configs.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
         }
       ],
       "connector_configs": [
@@ -1089,6 +1796,22 @@
           "switch": {
             "csfle.enabled": {
               "true": "300"
+            }
+          }
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
             }
           }
         }
@@ -1441,6 +2164,33 @@
         },
         {
           "name": "header.converter"
+        }
+      ]
+    },
+    {
+      "template_id": "super-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "producer.override.compression.type",
+          "type": "STRING",
+          "recommended_values": [
+            "none",
+            "gzip",
+            "snappy",
+            "lz4",
+            "zstd"
+          ],
+          "documentation": "The compression type for all data generated by the producer. Valid values are none, gzip, snappy, lz4, and zstd.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "producer.override.compression.type"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "producer.override.compression.type"
         }
       ]
     }

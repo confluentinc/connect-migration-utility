@@ -1,290 +1,331 @@
 {
   "templates": [
     {
-      "template_id": "SnowflakeSource",
-      "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector",
+      "template_id": "CouchbaseSink",
+      "connector_type": "SINK",
+      "connector.class": "com.couchbase.connect.kafka.CouchbaseSinkConnector",
       "config_defs": [
         {
-          "name": "connection.url",
+          "name": "couchbase.default.collection",
           "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "_default._default",
+          "group": "Sink Behavior",
           "order_in_group": 1,
-          "display_name": "Snowflake Connection URL",
-          "documentation": "Snowflake connection URL. Supported formats are `<org_name>_<account_name>.snowflakecomputing.com` or If the account is located in the AWS US West (Oregon) region, then `<locator>.snowflakecomputing.com`."
+          "display_name": "Default Collection",
+          "documentation": "Qualified name (scope.collection or bucket.scope.collection) of the destination collection for messages from topics that don't have an entry in the couchbase.topic.to.collection map. If the bucket component contains a dot, escape it by enclosing it in backticks. If the bucket component is omitted, it defaults to the value of the couchbase.bucket property."
         },
         {
-          "name": "connection.user",
+          "name": "couchbase.topic.to.collection",
           "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "",
+          "group": "Sink Behavior",
           "order_in_group": 2,
-          "display_name": "Snowflake User",
-          "documentation": "User to be used for authenticating to snowflake."
+          "display_name": "Topic to Collection Map",
+          "documentation": "A map from Kafka topic to Couchbase collection. Topic and collection are joined by an equals sign. Map entries are delimited by commas. A collection name is of the form bucket.scope.collection or scope.collection. If the bucket component is omitted, it defaults to the value of the couchbase.bucket property. If the bucket component contains a dot, escape it by enclosing it in backticks. For example, if you want to write messages from topic \"topic1\" to collection \"scope-a.invoices\" in the default bucket, and messages from topic \"topic2\" to collection \"scope-a.widgets\" in bucket \"other-bucket\" you would write: \"topic1=scope-a.invoices,topic2=other-bucket.scope-a.widgets\". Defaults to an empty map, with all documents going to the collection specified by couchbase.default.collection."
         },
         {
-          "name": "connection.credentials.source",
+          "name": "couchbase.topic.to.document.id",
           "type": "STRING",
+          "importance": "MEDIUM",
           "required": false,
-          "default_value": "PRIVATE_KEY",
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "default_value": "",
+          "group": "Sink Behavior",
           "order_in_group": 3,
-          "display_name": "Credentials Source",
-          "documentation": "The source of the credentials to use for authentication. Supported values are: `PRIVATE_KEY`: Use the private key to authenticate. `PRIVATE_KEY_PASSPHRASE`: Use the private key and passphrase to authenticate.",
-          "recommended_values": [
-            "PRIVATE_KEY",
-            "PRIVATE_KEY_PASSPHRASE"
-          ]
+          "display_name": "Topic to Document ID Map",
+          "documentation": "A map of per-topic overrides for the couchbase.document.id configuration property. Topic and document ID format are joined by an equals sign. Map entries are delimited by commas. For example, if documents from topic \"topic1\" should be assigned document IDs that match their \"id\" field, and documents from topic \"topic2\" should be assigned documents IDs that match their \"identifier\" field, you would write: \"topic1=${/id},topic2=${/identifier}\". Defaults to an empty map, which means the value of the couchbase.document.id configuration property is applied to documents from all topics."
         },
         {
-          "name": "connection.private.key",
-          "type": "PASSWORD",
+          "name": "couchbase.sink.handler",
+          "type": "STRING",
+          "importance": "MEDIUM",
           "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "default_value": "com.couchbase.connect.kafka.handler.sink.UpsertSinkHandler",
+          "group": "Sink Behavior",
           "order_in_group": 4,
-          "display_name": "Snowflake Private Key",
-          "documentation": "Private key for Snowflake user."
-        },
-        {
-          "name": "connection.private.key.passphrase",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 5,
-          "display_name": "Private Key Passphrase",
-          "documentation": "Passphrase of the encrypted private key."
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "AVRO",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "display_name": "Sink Handler Class",
+          "documentation": "The fully-qualified class name of the sink handler to use. The sink handler determines how the Kafka record is translated into actions on Couchbase documents. The built-in handlers are: com.couchbase.connect.kafka.handler.sink.UpsertSinkHandler, com.couchbase.connect.kafka.handler.sink.N1qlSinkHandler, and com.couchbase.connect.kafka.handler.sink.SubDocumentSinkHandler. You can customize the sink connector's behavior by implementing your own SinkHandler.",
           "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
+            "com.couchbase.connect.kafka.handler.sink.UpsertSinkHandler",
+            "com.couchbase.connect.kafka.handler.sink.N1qlSinkHandler",
+            "com.couchbase.connect.kafka.handler.sink.SubDocumentSinkHandler",
+            "com.couchbase.connect.kafka.handler.sink.AnalyticsSinkHandler"
           ]
         },
         {
-          "name": "topic.prefix",
+          "name": "couchbase.document.id",
           "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic Prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Kafka topic to publish data to."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
-          "required": true,
-          "group": "Connector Details",
           "importance": "MEDIUM",
-          "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "Mode represents the criteria on which table is polled each time. Options include -- `BULK`: perform a bulk load of all the eligible tables each time it is polled. `TIMESTAMP`: use timestamp column(s) to detect new and modified rows. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. This assumes that the effective timestamp is updated with each write, it's values are monotonically incrementing, but not necessarily unique. Only rows with non null value of effective timestamp would be captured. `INCREMENTING`: use a strictly incrementing column on each table to detect only new rows. Only rows with non null value of incrementing column would be captured. `TIMESTAMP AND INCREMENTING`: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset. Only rows with non null effective timestamp value and non null incrementing column value would be captured",
-          "recommended_values": [
-            "timestamp",
-            "incrementing",
-            "timestamp+incrementing",
-            "bulk"
-          ]
-        },
-        {
-          "name": "table.include.list",
-          "type": "LIST",
           "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 2,
-          "display_name": "Tables Included",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Identifier names are case sensitive. For example, ``table.include.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 3,
-          "display_name": "Tables Excluded",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables not to be copied. This only applies on the tables filtered using include list. Identifier names are case sensitive. For example, ``table.exclude.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "timestamp.columns.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 4,
-          "display_name": "Table to timestamp columns mappings",
-          "documentation": "A comma-separated list of table regex to timestamp columns mappings. Timestamp columns supplied should strictly be of type ``TIMESTAMP_NTZ``. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY.*:[UPDATED_AT|MODIFIED_AT], COMPANY.FINANCE.ACCOUNTS.*:[CHANGED_AT]``."
-        },
-        {
-          "name": "incrementing.column.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
+          "default_value": "",
+          "group": "Sink Behavior",
           "order_in_group": 5,
-          "display_name": "Table to incrementing column mappings",
-          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col2,regex2:col1``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY*:EMP_ID,COMPANY.FINANCE.ACCOUNTS.*:ID``."
+          "display_name": "Document ID",
+          "documentation": "Format string to use for the Couchbase document ID (overriding the message key). May refer to document fields via placeholders like ${/path/to/field}"
         },
         {
-          "name": "db.timezone",
-          "type": "STRING",
-          "required": true,
+          "name": "couchbase.remove.document.id",
+          "type": "BOOLEAN",
           "importance": "MEDIUM",
-          "group": "Connector Details",
+          "required": false,
+          "default_value": false,
+          "group": "Sink Behavior",
           "order_in_group": 6,
-          "display_name": "Database Timezone",
-          "documentation": "Timezone to be used when interpreting values for timestamp types which don't have a timezone information in them. This should be set to the timezone of the snowflake account.",
-          "recommender": {
-            "name": "timezone"
-          }
+          "display_name": "Remove Document ID",
+          "documentation": "Whether to remove the ID identified by 'couchbase.documentId' from the document before storing in Couchbase."
         },
         {
-          "name": "timestamp.initial",
-          "type": "LONG",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 7,
-          "display_name": "Initial Timestamp",
-          "documentation": "Epoch timestamp in milliseconds which provides the start timestamp from where to capture rows. The value -1 sets the start timestamp to the current time, in this case older data would not be fetched. If not specified, start timestamp is treated as epoch start time, hence all data is fetched. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 8,
-          "display_name": "Table Types",
-          "documentation": "By default, the connector will only detect tables with type TABLE. This config allows a command separated list of table types to extract.",
-          "recommended_values": [
-            "TABLE",
-            "VIEW"
-          ]
-        },
-        {
-          "name": "timestamp.granularity",
+          "name": "couchbase.document.expiration",
           "type": "STRING",
-          "default_value": "NANOS_LONG",
+          "importance": "MEDIUM",
           "required": false,
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 9,
-          "display_name": "Timestamp granularity for timestamp columns",
-          "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL`: Represents timestamp values using Kafka Connect built-in representations. This may lead to loss of precision as this only supports milliseconds precision. `NANOS_LONG`: Represents timestamp values as nanos since epoch. Avoid this if any of the eligible timestamp columns contains timestamps greater than `2262-11-04 23:47:16.854775807 GMT`, nanos since epoch value would not fit in the range for long and hence would lead to erroneous values. Use `nanos_string` in such cases. `NANOS_STRING`: represents timestamp values as nanos since epoch in string.",
+          "default_value": "0",
+          "group": "Sink Behavior",
+          "order_in_group": 7,
+          "display_name": "Document Expiration",
+          "documentation": "Document expiration time specified as an integer followed by a time unit (s = seconds, m = minutes, h = hours, d = days). For example, to have documents expire after 30 minutes, set this value to \"30m\". A value of \"0\" (the default) means documents never expire."
+        },
+        {
+          "name": "couchbase.retry.timeout",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "0",
+          "group": "Sink Behavior",
+          "order_in_group": 8,
+          "display_name": "Retry Timeout",
+          "documentation": "Retry failed writes to Couchbase until this deadline is reached. If time runs out, the connector terminates. A value of 0 (the default) means the connector will terminate immediately when a write fails. This retry timeout is distinct from the KV timeout (which you can set via couchbase.env.*). The KV timeout affects an individual write attempt, while the retry timeout spans multiple attempts and makes the connector resilient to more kinds of transient failures. Try not to confuse this with the Kafka Connect framework's built-in errors.retry.timeout config property, which applies only to failures occurring before the framework delivers the record to the Couchbase connector."
+        },
+        {
+          "name": "couchbase.durability",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "NONE",
+          "group": "Durability",
+          "order_in_group": 1,
+          "display_name": "Durability",
+          "documentation": "The preferred way to specify an enhanced durability requirement when using Couchbase Server 6.5 or later. The default value of NONE means a write is considered successful as soon as it reaches the memory of the active node. If you set this to anything other than NONE, then you must not set couchbase.persist.to or couchbase.replicate.to.",
           "recommended_values": [
-            "CONNECT_LOGICAL",
-            "NANOS_LONG",
-            "NANOS_STRING"
+            "NONE",
+            "MAJORITY",
+            "MAJORITY_AND_PERSIST_TO_ACTIVE",
+            "PERSIST_TO_MAJORITY"
           ]
         },
         {
-          "name": "poll.interval.ms",
+          "name": "couchbase.persist.to",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "NONE",
+          "group": "Durability",
+          "order_in_group": 2,
+          "display_name": "Persist To",
+          "documentation": "For Couchbase Server versions prior to 6.5, this is how you require the connector to verify a write is persisted to disk on a certain number of replicas before considering the write successful. If you're using Couchbase Server 6.5 or later, we recommend using the couchbase.durability property instead.",
+          "recommended_values": [
+            "NONE",
+            "ACTIVE",
+            "ONE",
+            "TWO",
+            "THREE",
+            "FOUR"
+          ]
+        },
+        {
+          "name": "couchbase.replicate.to",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "NONE",
+          "group": "Durability",
+          "order_in_group": 3,
+          "display_name": "Replicate To",
+          "documentation": "For Couchbase Server versions prior to 6.5, this is how you require the connector to verify a write has reached the memory of a certain number of replicas before considering the write successful. If you're using Couchbase Server 6.5 or later, we recommend using the couchbase.durability property instead.",
+          "recommended_values": [
+            "NONE",
+            "ONE",
+            "TWO",
+            "THREE"
+          ]
+        },
+        {
+          "name": "couchbase.n1ql.operation",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "UPDATE",
+          "group": "N1ql Sink Handler",
+          "order_in_group": 1,
+          "display_name": "N1QL Operation",
+          "documentation": "The type of update to use when couchbase.sink.handler is set to com.couchbase.connect.kafka.handler.sink.N1qlSinkHandler. This property is specific to N1qlSinkHandler.",
+          "recommended_values": [
+            "UPDATE",
+            "UPDATE_WHERE"
+          ]
+        },
+        {
+          "name": "couchbase.n1ql.where.fields",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "",
+          "group": "N1ql Sink Handler",
+          "order_in_group": 2,
+          "display_name": "N1QL Where Fields",
+          "documentation": "When using the UPDATE_WHERE operation, this is the list of document fields that must match the Kafka message in order for the document to be updated with the remaining message fields. To match against a literal value instead of a message field, use a colon to delimit the document field name and the target value. For example, \"type:widget,color\" matches documents whose 'type' field is 'widget' and whose 'color' field matches the 'color' field of the Kafka message. This property is specific to N1qlSinkHandler."
+        },
+        {
+          "name": "couchbase.n1ql.create.document",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": true,
+          "group": "N1ql Sink Handler",
+          "order_in_group": 3,
+          "display_name": "N1QL Create Document",
+          "documentation": "Controls whether to create the document if it does not exist. This property is specific to N1qlSinkHandler."
+        },
+        {
+          "name": "couchbase.subdocument.path",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "",
+          "group": "Sub Document Sink Handler",
+          "order_in_group": 1,
+          "display_name": "SubDocument Path",
+          "documentation": "JSON Pointer to the property of the Kafka message whose value is the subdocument path to use when modifying the Couchbase document. This property is specific to SubDocumentSinkHandler."
+        },
+        {
+          "name": "couchbase.subdocument.operation",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "UPSERT",
+          "group": "Sub Document Sink Handler",
+          "order_in_group": 2,
+          "display_name": "SubDocument Operation",
+          "documentation": "Setting to indicate the type of update to a sub-document. This property is specific to SubDocumentSinkHandler.",
+          "recommended_values": [
+            "UPSERT",
+            "ARRAY_PREPEND",
+            "ARRAY_APPEND"
+          ]
+        },
+        {
+          "name": "couchbase.subdocument.create.path",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": true,
+          "group": "Sub Document Sink Handler",
+          "order_in_group": 3,
+          "display_name": "SubDocument Create Path",
+          "documentation": "Whether to add the parent paths if they are missing in the document. This property is specific to SubDocumentSinkHandler."
+        },
+        {
+          "name": "couchbase.subdocument.create.document",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": true,
+          "group": "Sub Document Sink Handler",
+          "order_in_group": 4,
+          "display_name": "SubDocument Create Document",
+          "documentation": "This property controls whether to create the document if it does not exist. This property is specific to SubDocumentSinkHandler."
+        },
+        {
+          "name": "couchbase.analytics.max.records.in.batch",
           "type": "INT",
-          "default_value": "5000",
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 10,
-          "display_name": "Poll Interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": 100,
+          "group": "Analytics Sink Handler",
+          "order_in_group": 1,
+          "display_name": "Max Records in Batch",
+          "documentation": "Every Batch consists of an UPSERT or a DELETE statement, based on mutations. This property determines the maximum number of records in the UPSERT or DELETE statement in the batch. Users can configure this parameter based on the capacity of their analytics cluster. This property is specific to AnalyticsSinkHandler. UNCOMMITTED; this feature may change in a patch release without notice. Since: 4.1.14"
+        },
+        {
+          "name": "couchbase.analytics.max.size.in.batch",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "5m",
+          "group": "Analytics Sink Handler",
+          "order_in_group": 2,
+          "display_name": "Max Size in Batch",
+          "documentation": "Every Batch consists of an UPSERT or a DELETE statement, based on mutations. This property defines the max size of all docs in bytes in an UPSERT statement in a batch. Users can configure this parameter based on the capacity of their analytics cluster. This property is specific to AnalyticsSinkHandler. UNCOMMITTED; this feature may change in a patch release without notice. Since: 4.2.0"
+        },
+        {
+          "name": "couchbase.analytics.query.timeout",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "5m",
+          "group": "Analytics Sink Handler",
+          "order_in_group": 3,
+          "display_name": "Query Timeout",
+          "documentation": "This property determines the time period after which client cancels the Query request for Analytics. This property is specific to AnalyticsSinkHandler. UNCOMMITTED; this feature may change in a patch release without notice. Since: 4.2.0"
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.url",
-          "value": "jdbc:snowflake://${connection.url}"
+          "name": "couchbase.default.collection"
         },
         {
-          "name": "connection.user"
+          "name": "couchbase.topic.to.collection"
         },
         {
-          "name": "connection.credentials.source"
+          "name": "couchbase.topic.to.document.id"
         },
         {
-          "name": "connection.private.key"
+          "name": "couchbase.sink.handler"
         },
         {
-          "name": "connection.private.key.passphrase"
+          "name": "couchbase.document.id"
         },
         {
-          "name": "topic.prefix"
+          "name": "couchbase.remove.document.id"
         },
         {
-          "name": "table.include.list"
+          "name": "couchbase.document.expiration"
         },
         {
-          "name": "table.exclude.list"
+          "name": "couchbase.retry.timeout"
         },
         {
-          "name": "mode"
+          "name": "couchbase.durability"
         },
         {
-          "name": "timestamp.columns.mapping"
+          "name": "couchbase.persist.to"
         },
         {
-          "name": "incrementing.column.mapping"
+          "name": "couchbase.replicate.to"
         },
         {
-          "name": "db.timezone"
+          "name": "couchbase.n1ql.operation"
         },
         {
-          "name": "timestamp.initial"
+          "name": "couchbase.n1ql.where.fields"
         },
         {
-          "name": "table.types"
+          "name": "couchbase.n1ql.create.document"
         },
         {
-          "name": "timestamp.granularity"
+          "name": "couchbase.subdocument.path"
         },
         {
-          "name": "validate.non.null",
-          "value": false
+          "name": "couchbase.subdocument.operation"
         },
         {
-          "name": "poll.interval.ms"
+          "name": "couchbase.subdocument.create.path"
         },
         {
-          "name": "value.converter",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "name": "couchbase.subdocument.create.document"
         }
       ]
     },
@@ -813,7 +854,7 @@
       ]
     },
     {
-      "template_id": "common-source",
+      "template_id": "common-sink",
       "abstract": true,
       "config_defs": [
         {
@@ -840,15 +881,44 @@
           ]
         },
         {
-          "name": "datapreview.schemas.enable",
-          "type": "STRING",
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
           "required": false,
           "importance": "LOW",
-          "default_value": "false",
-          "display_name": "Show schemas in data preview request output",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
         },
         {
           "name": "errors.tolerance",
@@ -856,7 +926,7 @@
           "required": false,
           "importance": "LOW",
           "group": "Additional Configs",
-          "default_value": "none",
+          "default_value": "all",
           "display_name": "errors.tolerance",
           "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
           "recommended_values": [
@@ -865,51 +935,55 @@
           ]
         },
         {
-          "name": "producer.override.linger.ms",
-          "type": "LONG",
-          "required": "false",
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
           "importance": "LOW",
-          "group": "Additional Configs",
-          "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
         }
       ],
       "connector_configs": [
         {
-          "name": "topic.creation.default.replication.factor",
-          "value": "3"
-        },
-        {
-          "name": "topic.creation.default.partitions",
-          "value": "1"
+          "name": "topics"
         },
         {
           "name": "errors.tolerance",
-          "value": "none"
+          "value": "all"
         },
         {
-          "name": "producer.override.max.request.size",
-          "switch": {
-            "kafka.dedicated": {
-              "true": "20971610",
-              "false": "8388698"
-            }
-          }
+          "name": "errors.deadletterqueue.topic.name",
+          "value": "dlq-{{.logicalClusterId}}"
         },
         {
-          "name": "topic.creation.default.max.message.bytes",
-          "switch": {
-            "kafka.dedicated": {
-              "true": "20971520",
-              "false": "8388608"
-            }
-          }
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
         },
         {
-          "name": "datapreview.schemas.enable"
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
         },
         {
-          "name": "errors.tolerance"
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
         },
         {
           "name": "producer.override.sasl.jaas.config",
@@ -936,63 +1010,83 @@
           "value": "PLAIN"
         },
         {
-          "name": "producer.override.linger.ms"
+          "name": "errors.tolerance"
         },
         {
-          "name": "consumer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
-          "name": "consumer.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "consumer.override.sasl.mechanism",
-          "value": "PLAIN"
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         }
       ]
     },
     {
-      "template_id": "schema-registry",
+      "template_id": "couchbase-common",
       "abstract": true,
       "config_defs": [
         {
-          "name": "schema.registry.url",
+          "name": "couchbase.seed.nodes",
           "type": "STRING",
-          "importance": "MEDIUM",
-          "internal": true
+          "importance": "HIGH",
+          "required": true,
+          "group": "Connection",
+          "order_in_group": 1,
+          "display_name": "Couchbase Seed Nodes",
+          "documentation": "Addresses of Couchbase Server nodes, delimited by commas. If a custom port is specified, it must be the KV port (which is normally 11210 for insecure connections, or 11207 for secure connections)."
         },
         {
-          "name": "schema.context.name",
+          "name": "couchbase.username",
           "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
+          "importance": "HIGH",
+          "required": true,
+          "group": "Connection",
+          "order_in_group": 2,
+          "display_name": "Couchbase Username",
+          "documentation": "Name of the Couchbase user to authenticate as."
         },
         {
-          "name": "schema.context.name",
+          "name": "couchbase.password",
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "required": true,
+          "group": "Connection",
+          "order_in_group": 3,
+          "display_name": "Couchbase Password",
+          "documentation": "Password of the Couchbase user."
+        },
+        {
+          "name": "couchbase.bucket",
           "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
+          "importance": "HIGH",
+          "required": true,
+          "default_value": "",
+          "group": "Connection",
+          "order_in_group": 4,
+          "display_name": "Couchbase Bucket",
+          "documentation": "Name of the Couchbase bucket to use. This property is required unless using the experimental AnalyticsSinkHandler."
         }
       ],
-      "connector_configs": []
+      "connector_configs": [
+        {
+          "name": "couchbase.seed.nodes"
+        },
+        {
+          "name": "couchbase.username"
+        },
+        {
+          "name": "couchbase.password"
+        },
+        {
+          "name": "couchbase.bucket"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${couchbase.seed.nodes}"
+        }
+      ]
     },
     {
-      "template_id": "csfle-source",
+      "template_id": "csfle-sink",
       "abstract": true,
       "config_defs": [
         {
@@ -1016,6 +1110,22 @@
                 "visibility": "false"
               }
             }
+          ]
+        },
+        {
+          "name": "csfle.onFailure",
+          "type": "STRING",
+          "required": false,
+          "default_value": "ERROR",
+          "importance": "MEDIUM",
+          "group": "CSFLE",
+          "order_in_group": 3,
+          "docs_hidden": true,
+          "display_name": "Connector behaviour on data decryption failure",
+          "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
+          "recommended_values": [
+            "ERROR",
+            "NONE"
           ]
         },
         {
@@ -1053,8 +1163,9 @@
         {
           "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
           "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
             }
           }
         },
@@ -1078,8 +1189,9 @@
         {
           "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
           "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
             }
           }
         },
@@ -1126,28 +1238,73 @@
       ]
     },
     {
-      "template_id": "source-connector-schema-enabled-output-data-format",
+      "template_id": "input-data-format",
       "abstract": true,
       "config_defs": [
         {
-          "name": "output.data.format",
+          "name": "input.data.format",
           "type": "STRING",
           "required": true,
-          "default_value": "AVRO",
           "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
           "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
-            "PROTOBUF"
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
           ],
           "dependents": [
             "schema.registry.url"
           ]
+        },
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1174,24 +1331,58 @@
         {
           "name": "value.converter",
           "switch": {
-            "output.data.format": {
+            "input.data.format": {
               "AVRO": "io.confluent.connect.avro.AvroConverter",
               "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "input.data.format": {
+              "JSON": false
             }
           }
         },
         {
           "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -1201,21 +1392,47 @@
           "dynamic.mapper": {
             "name": "value.converter.scrub.invalid.names.mapper"
           }
-        },
-        {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
-            }
-          }
         }
       ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.registry.url",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": []
     },
     {
       "template_id": "super",
@@ -1568,29 +1785,55 @@
       ]
     },
     {
-      "template_id": "super-source",
+      "template_id": "super-sink",
       "abstract": true,
       "config_defs": [
         {
-          "name": "producer.override.compression.type",
+          "name": "consumer.override.auto.offset.reset",
           "type": "STRING",
-          "recommended_values": [
-            "none",
-            "gzip",
-            "snappy",
-            "lz4",
-            "zstd"
-          ],
-          "documentation": "The compression type for all data generated by the producer. Valid values are none, gzip, snappy, lz4, and zstd.",
-          "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "producer.override.compression.type"
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset or the \u201clatest\u201d offset (the default). You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
         }
       ],
       "connector_configs": [
         {
-          "name": "producer.override.compression.type"
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
         }
       ]
     }

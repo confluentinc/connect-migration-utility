@@ -1,290 +1,126 @@
 {
   "templates": [
     {
-      "template_id": "SnowflakeSource",
+      "template_id": "SqsSource",
       "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector",
+      "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
       "config_defs": [
         {
-          "name": "connection.url",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 1,
-          "display_name": "Snowflake Connection URL",
-          "documentation": "Snowflake connection URL. Supported formats are `<org_name>_<account_name>.snowflakecomputing.com` or If the account is located in the AWS US West (Oregon) region, then `<locator>.snowflakecomputing.com`."
-        },
-        {
-          "name": "connection.user",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 2,
-          "display_name": "Snowflake User",
-          "documentation": "User to be used for authenticating to snowflake."
-        },
-        {
-          "name": "connection.credentials.source",
-          "type": "STRING",
-          "required": false,
-          "default_value": "PRIVATE_KEY",
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 3,
-          "display_name": "Credentials Source",
-          "documentation": "The source of the credentials to use for authentication. Supported values are: `PRIVATE_KEY`: Use the private key to authenticate. `PRIVATE_KEY_PASSPHRASE`: Use the private key and passphrase to authenticate.",
-          "recommended_values": [
-            "PRIVATE_KEY",
-            "PRIVATE_KEY_PASSPHRASE"
-          ]
-        },
-        {
-          "name": "connection.private.key",
+          "name": "aws.access.key.id",
           "type": "PASSWORD",
           "required": false,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 4,
-          "display_name": "Snowflake Private Key",
-          "documentation": "Private key for Snowflake user."
+          "group": "AWS credentials",
+          "order_in_group": 2,
+          "display_name": "AWS Access Key",
+          "documentation": "The Amazon Access Key used to connect to SQS."
         },
         {
-          "name": "connection.private.key.passphrase",
+          "name": "aws.secret.key.id",
           "type": "PASSWORD",
           "required": false,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 5,
-          "display_name": "Private Key Passphrase",
-          "documentation": "Passphrase of the encrypted private key."
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "AVRO",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "topic.prefix",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic Prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Kafka topic to publish data to."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
-          "required": true,
-          "group": "Connector Details",
-          "importance": "MEDIUM",
-          "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "Mode represents the criteria on which table is polled each time. Options include -- `BULK`: perform a bulk load of all the eligible tables each time it is polled. `TIMESTAMP`: use timestamp column(s) to detect new and modified rows. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. This assumes that the effective timestamp is updated with each write, it's values are monotonically incrementing, but not necessarily unique. Only rows with non null value of effective timestamp would be captured. `INCREMENTING`: use a strictly incrementing column on each table to detect only new rows. Only rows with non null value of incrementing column would be captured. `TIMESTAMP AND INCREMENTING`: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset. Only rows with non null effective timestamp value and non null incrementing column value would be captured",
-          "recommended_values": [
-            "timestamp",
-            "incrementing",
-            "timestamp+incrementing",
-            "bulk"
-          ]
-        },
-        {
-          "name": "table.include.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 2,
-          "display_name": "Tables Included",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Identifier names are case sensitive. For example, ``table.include.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
+          "group": "AWS credentials",
           "order_in_group": 3,
-          "display_name": "Tables Excluded",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables not to be copied. This only applies on the tables filtered using include list. Identifier names are case sensitive. For example, ``table.exclude.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
+          "display_name": "AWS Secret Key",
+          "documentation": "The Amazon Secret Key used to connect to SQS."
         },
         {
-          "name": "timestamp.columns.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 4,
-          "display_name": "Table to timestamp columns mappings",
-          "documentation": "A comma-separated list of table regex to timestamp columns mappings. Timestamp columns supplied should strictly be of type ``TIMESTAMP_NTZ``. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY.*:[UPDATED_AT|MODIFIED_AT], COMPANY.FINANCE.ACCOUNTS.*:[CHANGED_AT]``."
-        },
-        {
-          "name": "incrementing.column.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 5,
-          "display_name": "Table to incrementing column mappings",
-          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col2,regex2:col1``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY*:EMP_ID,COMPANY.FINANCE.ACCOUNTS.*:ID``."
-        },
-        {
-          "name": "db.timezone",
+          "name": "sqs.url",
           "type": "STRING",
           "required": true,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 6,
-          "display_name": "Database Timezone",
-          "documentation": "Timezone to be used when interpreting values for timestamp types which don't have a timezone information in them. This should be set to the timezone of the snowflake account.",
-          "recommender": {
-            "name": "timezone"
-          }
+          "importance": "HIGH",
+          "group": "How should we connect to Amazon SQS?",
+          "order_in_group": 1,
+          "display_name": "Fully qualified SQS URL",
+          "documentation": "Fully qualified Amazon SQS URL to read messages from"
         },
         {
-          "name": "timestamp.initial",
-          "type": "LONG",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 7,
-          "display_name": "Initial Timestamp",
-          "documentation": "Epoch timestamp in milliseconds which provides the start timestamp from where to capture rows. The value -1 sets the start timestamp to the current time, in this case older data would not be fetched. If not specified, start timestamp is treated as epoch start time, hence all data is fetched. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 8,
-          "display_name": "Table Types",
-          "documentation": "By default, the connector will only detect tables with type TABLE. This config allows a command separated list of table types to extract.",
-          "recommended_values": [
-            "TABLE",
-            "VIEW"
-          ]
-        },
-        {
-          "name": "timestamp.granularity",
+          "name": "sqs.region",
           "type": "STRING",
-          "default_value": "NANOS_LONG",
           "required": false,
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 9,
-          "display_name": "Timestamp granularity for timestamp columns",
-          "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL`: Represents timestamp values using Kafka Connect built-in representations. This may lead to loss of precision as this only supports milliseconds precision. `NANOS_LONG`: Represents timestamp values as nanos since epoch. Avoid this if any of the eligible timestamp columns contains timestamps greater than `2262-11-04 23:47:16.854775807 GMT`, nanos since epoch value would not fit in the range for long and hence would lead to erroneous values. Use `nanos_string` in such cases. `NANOS_STRING`: represents timestamp values as nanos since epoch in string.",
-          "recommended_values": [
-            "CONNECT_LOGICAL",
-            "NANOS_LONG",
-            "NANOS_STRING"
-          ]
-        },
-        {
-          "name": "poll.interval.ms",
-          "type": "INT",
-          "default_value": "5000",
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 10,
-          "display_name": "Poll Interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
+          "importance": "MEDIUM",
+          "group": "How should we connect to Amazon SQS?",
+          "order_in_group": 2,
+          "display_name": "SQS Region",
+          "documentation": "The AWS region that the SQS queue belongs to. If left empty, the connector will attempt to infer the region from the SQS URL."
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.url",
-          "value": "jdbc:snowflake://${connection.url}"
+          "name": "kafka.topic"
         },
         {
-          "name": "connection.user"
+          "name": "aws.access.key.id"
         },
         {
-          "name": "connection.credentials.source"
+          "name": "aws.secret.key.id"
         },
         {
-          "name": "connection.private.key"
+          "name": "sqs.url"
         },
         {
-          "name": "connection.private.key.passphrase"
+          "name": "sqs.region"
         },
         {
-          "name": "topic.prefix"
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "table.include.list"
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "table.exclude.list"
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "mode"
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "timestamp.columns.mapping"
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "incrementing.column.mapping"
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "db.timezone"
+          "name": "connector.endpoint",
+          "value": "${sqs.url}"
         },
         {
-          "name": "timestamp.initial"
-        },
-        {
-          "name": "table.types"
-        },
-        {
-          "name": "timestamp.granularity"
-        },
-        {
-          "name": "validate.non.null",
-          "value": false
-        },
-        {
-          "name": "poll.interval.ms"
-        },
-        {
-          "name": "value.converter",
+          "name": "sqs.credentials.provider.class",
           "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+            "authentication.method": {
+              "IAM Roles": "io.confluent.provider.integration.aws.v2.ChainedAssumeRoleCredentialsProvider"
             }
           }
         },
         {
-          "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
+          "name": "sqs.credentials.provider.customer.aws.iam.role.arn",
+          "value": "${customer.aws.iam.role.arn}"
         },
         {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
+          "name": "sqs.credentials.provider.external.id",
+          "value": "${external.id}"
         },
         {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "name": "sqs.credentials.provider.confluent.aws.iam.role.arn",
+          "value": "${confluent.aws.iam.role.arn}"
+        },
+        {
+          "name": "sqs.credentials.provider.middleware.external.id",
+          "value": "${middleware.external.id}"
+        },
+        {
+          "name": "sqs.credentials.provider.aws.iam.assume.role.session.name",
+          "value": "${aws.iam.assume.role.session.name}"
+        },
+        {
+          "name": "sqs.credentials.provider.provider.integration.max.retries",
+          "value": "${provider.integration.max.retries}"
         }
       ]
     },
@@ -813,6 +649,23 @@
       ]
     },
     {
+      "template_id": "kafka-topic-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.topic",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topic do you want to send data to?",
+          "order_in_group": 1,
+          "display_name": "Topic name",
+          "documentation": "Identifies the topic name to write the data to."
+        }
+      ],
+      "connector_configs": []
+    },
+    {
       "template_id": "common-source",
       "abstract": true,
       "config_defs": [
@@ -992,162 +845,71 @@
       "connector_configs": []
     },
     {
-      "template_id": "csfle-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "csfle.enabled",
-          "type": "BOOLEAN",
-          "default_value": "false",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 1,
-          "docs_hidden": true,
-          "display_name": "Enable Client-Side Field Level Encryption",
-          "documentation": "Determines whether the connector honours CSFLE rules or not",
-          "conditional_metadata_provider": [
-            {
-              "name": "metadata.conditional.visible",
-              "arguments": {
-                "config": "csfle.configs.visible",
-                "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
-              }
-            }
-          ]
-        },
-        {
-          "name": "sr.service.account.id",
-          "type": "STRING",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 2,
-          "docs_hidden": true,
-          "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
-        },
-        {
-          "name": "csfle.configs.visible",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "false",
-          "internal": true
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "csfle.enabled"
-        },
-        {
-          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
-            }
-          }
-        },
-        {
-          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
-          "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
-            }
-          }
-        },
-        {
-          "name": "value.converter.latest.cache.ttl.sec",
-          "switch": {
-            "csfle.enabled": {
-              "true": "300"
-            }
-          }
-        },
-        {
-          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
-            }
-          }
-        },
-        {
-          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
-          "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
-            }
-          }
-        },
-        {
-          "name": "key.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "key.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
-        },
-        {
-          "name": "key.converter.latest.cache.ttl.sec",
-          "switch": {
-            "csfle.enabled": {
-              "true": "300"
-            }
-          }
-        },
-        {
-          "name": "value.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "template_id": "source-connector-schema-enabled-output-data-format",
+      "template_id": "source-connector-output-data-format",
       "abstract": true,
       "config_defs": [
         {
           "name": "output.data.format",
           "type": "STRING",
           "required": true,
-          "default_value": "AVRO",
           "importance": "HIGH",
           "group": "Output messages",
           "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
-            "PROTOBUF"
+            "PROTOBUF",
+            "JSON"
           ],
           "dependents": [
             "schema.registry.url"
           ]
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1168,6 +930,27 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.scrub.invalid.names"
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
         }
       ],
       "connector_configs": [
@@ -1177,34 +960,48 @@
             "output.data.format": {
               "AVRO": "io.confluent.connect.avro.AvroConverter",
               "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "output.data.format": {
+              "JSON": false
             }
           }
         },
         {
           "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        },
-        {
-          "name": "value.converter.ignore.default.for.nullables"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "dynamic.mapper": {
-            "name": "value.converter.scrub.invalid.names.mapper"
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
           }
         },
         {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1214,6 +1011,168 @@
               "PROTOBUF": "false"
             }
           }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "aws-authentication",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "authentication.method",
+          "type": "STRING",
+          "required": false,
+          "default_value": "Access Keys",
+          "importance": "HIGH",
+          "group": "AWS credentials",
+          "order_in_group": 1,
+          "display_name": "Authentication method",
+          "documentation": "Select how you want to authenticate with AWS.",
+          "recommended_values": [
+            "IAM Roles",
+            "Access Keys"
+          ],
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "provider.integration.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ]
+        },
+        {
+          "name": "provider.integration.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "AWS credentials",
+          "order_in_group": 2,
+          "display_name": "Provider Integration",
+          "documentation": "Select an existing integration that has access to your resource. In case you need to integrate a new IAM role, use provider integration"
+        },
+        {
+          "name": "customer.aws.iam.role.arn",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "IAM Role ARN",
+          "documentation": "The Amazon Resource Name (ARN) that identifies the AWS IAM role that Confluent Cloud assumes to access resources in customer's AWS account.",
+          "internal": true
+        },
+        {
+          "name": "external.id",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "External ID",
+          "documentation": "The external ID that Confluent Cloud uses when it assumes the IAM role in customer's Amazon Web Services (AWS) account.",
+          "internal": true
+        },
+        {
+          "name": "confluent.aws.iam.role.arn",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "Confluent AWS IAM Role ARN",
+          "documentation": "The Amazon Resource Name (ARN) that specifies the AWS IAM role that Confluent Cloud uses to assume the IAM role within the customer's AWS account.",
+          "internal": true
+        },
+        {
+          "name": "middleware.external.id",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "Confluent Middleware External ID",
+          "documentation": "The external ID that Confluent Cloud uses when it assumes the IAM role in confluent middleware account.",
+          "internal": true
+        },
+        {
+          "name": "aws.iam.assume.role.session.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "display_name": "AWS IAM Assume Role Session Name",
+          "documentation": "Specify the name for the assumed role session",
+          "internal": true
+        },
+        {
+          "name": "provider.integration.max.retries",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "default_value": 10,
+          "internal": true
+        },
+        {
+          "name": "connect.aws.iam.role.validation.disable",
+          "type": "STRING",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "internal": true
+        },
+        {
+          "name": "provider.integration.visible",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "authentication.method",
+          "switch": {
+            "authentication.method": {
+              "IAM Roles": "IAM Roles",
+              "Access Keys": "Access Keys"
+            }
+          }
+        },
+        {
+          "name": "provider.integration.id"
+        },
+        {
+          "name": "customer.aws.iam.role.arn"
+        },
+        {
+          "name": "external.id"
+        },
+        {
+          "name": "middleware.external.id"
+        },
+        {
+          "name": "confluent.aws.iam.role.arn"
+        },
+        {
+          "name": "aws.iam.assume.role.session.name"
+        },
+        {
+          "name": "provider.integration.max.retries"
+        },
+        {
+          "name": "connect.aws.iam.role.validation.disable"
         }
       ]
     },

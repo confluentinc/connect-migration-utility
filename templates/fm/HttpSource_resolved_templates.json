@@ -1,290 +1,555 @@
 {
   "templates": [
     {
-      "template_id": "SnowflakeSource",
+      "template_id": "HttpSource",
       "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector",
+      "connector.class": "io.confluent.connect.http.HttpSourceConnector",
       "config_defs": [
         {
-          "name": "connection.url",
+          "name": "topic.name.pattern",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "group": "Which topic(s) do you want to send data to?",
           "order_in_group": 1,
-          "display_name": "Snowflake Connection URL",
-          "documentation": "Snowflake connection URL. Supported formats are `<org_name>_<account_name>.snowflakecomputing.com` or If the account is located in the AWS US West (Oregon) region, then `<locator>.snowflakecomputing.com`."
+          "display_name": "Topic Name Pattern",
+          "documentation": "The name of the Kafka topic to publish data to. The value can contain a template variable ${entityName} in case a separate Kafka topic should be used for each entity; the variable ${entityName} will be replaced with values from the config 'entity.names'."
+        },
+        {
+          "name": "http.request.method",
+          "type": "STRING",
+          "required": false,
+          "default_value": "GET",
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "HTTP Request Method",
+          "documentation": "HTTP Request Method. Valid options are `GET` and `POST`.",
+          "recommended_values": [
+            "GET",
+            "POST"
+          ]
+        },
+        {
+          "name": "http.request.headers",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 3,
+          "display_name": "HTTP Request Headers",
+          "documentation": "HTTP headers to be included in each request. Header names and values should be separated by `:`. Distinct headers should be separated by the config value for 'http.request.headers.separator' (defaults to `|'). For example: `From:abcxyz@confluent.io|Content-Length:348`."
+        },
+        {
+          "name": "http.request.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 4,
+          "display_name": "HTTP Request Parameters",
+          "documentation": "HTTP parameters to be added to each request. Parameter names and values should be separated by `=`. Distinct parameters should be separated by the config value for 'http.request.parameters.separator' ((defaults to `&`). Parameter values can be templated with offset and entity information (for example: `entity=${entityName}&search_after=${offset}`) where `${offset}` will be substituted with the offset generated from the previous request's response (or if it's the first request, from 'http.initial.offset'), and `${entityName}` will be substituted with values from the config 'entity.names'. The parameters are only set if 'http.request.method' = `GET`."
+        },
+        {
+          "name": "http.request.body",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 5,
+          "display_name": "HTTP Request Body",
+          "documentation": "The payload to be sent along with each HTTP request. The value can be templated with offset and entity information (for example: `{'entity': '${entityName}', 'search_after': '${offset}'`) where `${offset}` will be substituted with the offset generated from the previous request's response (or if it's the first request, from 'http.initial.offset'), and `${entityName}` will be substituted with values from the config 'entity.names'. The body is only set if 'http.request.method' = `POST`."
+        },
+        {
+          "name": "http.initial.offset",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 6,
+          "display_name": "HTTP Initial Offset",
+          "documentation": "The initial offset to be used to generate the first request. This needs to be set if either one or more of the configs - 'url', 'http.request.parameters', or 'http.request.body' contain the template variable ${offset}."
+        },
+        {
+          "name": "http.offset.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "SIMPLE_INCREMENTING",
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 7,
+          "display_name": "HTTP Offset Mode",
+          "documentation": "This config indicates how offsets are computed and how requests are generated. If set to `SIMPLE_INCREMENTING`, the ${offset} used to generate requests is simply the previous offset (or `http.initial.offset`) incremented by 1 per sourced record. In this mode, `http.initial.offset` needs to be set to an integer value. If set to `CHAINING`, the config 'http.offset.json.pointer' needs to be set, and the offset for a record is set to the value for the configured key in the response data. If the value is `CURSOR_PAGINATION`, then the config 'http.next.page.json.pointer' needs to be set and the offset for the last record in each page will be set to the next page value.",
+          "recommended_values": [
+            "SIMPLE_INCREMENTING",
+            "CHAINING",
+            "CURSOR_PAGINATION"
+          ]
+        },
+        {
+          "name": "http.response.data.json.pointer",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 8,
+          "display_name": "HTTP Response Data JSON Pointer",
+          "documentation": "The JSON Pointer to the entity in the JSON response containing the actual data that should be written to Kafka as records. The entity can be an array (multiple records in a single response) or an object / scalar value (single record)."
+        },
+        {
+          "name": "http.offset.json.pointer",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 9,
+          "display_name": "HTTP Offset JSON Pointer",
+          "documentation": "The JSON Pointer to the value in each record that corresponds to the offset for that record (it is relative to 'http.response.data.json.pointer'). The offset will be available to the subsequent request as ${offset} and it will also be used for checkpointing and recovery in case of connector failures or restarts. This config should only be set if 'http.offset.mode' is set to `CHAINING`."
+        },
+        {
+          "name": "use.http.offset.json.pointer.as.string",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 10,
+          "display_name": "Use value of HTTP Offset JSON Pointer as string",
+          "documentation": "By default the value of 'http.response.data.json.pointer' will be converted to string before using it as offset. Set this to false if this conversion is not needed."
+        },
+        {
+          "name": "http.next.page.json.pointer",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 11,
+          "display_name": "HTTP Next Page JSON Pointer",
+          "documentation": "The JSON pointer to the value in the response which corresponds to the next page reference (either a page token, a full URL or a URL fragment). This will be stored as the offset and will be available to the subsequent request via the template variable ${offset}. This config should only be set if 'http.offset.mode' is set to `CURSOR_PAGINATION`."
+        },
+        {
+          "name": "request.interval.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "15000",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 12,
+          "display_name": "Request Interval (ms)",
+          "documentation": "The time in milliseconds to wait between consecutive requests."
+        },
+        {
+          "name": "entity.names",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 13,
+          "display_name": "Entity Names",
+          "documentation": "A list of entities that should be polled. Values from this list will replace the template variable ${entityName} in the configs 'topic.name.pattern', 'url', 'http.request.parameters', 'http.request.body'. This config doesn't need to be set if none of the mentioned configs contain the template variable ${entityName}."
+        },
+        {
+          "name": "max.retries",
+          "type": "INT",
+          "required": false,
+          "default_value": "10",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 14,
+          "display_name": "Maximum Retries",
+          "documentation": "The maximum number of times to retry on errors before failing the task."
+        },
+        {
+          "name": "retry.backoff.ms",
+          "type": "INT",
+          "required": false,
+          "default_value": "3000",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 15,
+          "display_name": "Retry Backoff (ms)",
+          "documentation": "The time in milliseconds to wait following an error before a retry attempt is made."
+        },
+        {
+          "name": "retry.on.status.codes",
+          "type": "STRING",
+          "required": false,
+          "default_value": "400-",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 16,
+          "display_name": "Retry HTTP Status Codes",
+          "documentation": "Comma-separated list of HTTP status codes or range of codes to retry on. Ranges are specified with start and optional end code. Range boundaries are inclusive. For instance, 400- includes all codes greater than or equal to 400. 400-500 includes codes from 400 to 500, including 500. Multiple ranges and single codes can be specified together to achieve fine-grained control over retry behavior. For example, 404,408,500- will retry on 404 NOT FOUND, 408 REQUEST TIMEOUT, and all 5xx error codes. Note that some status codes will always be retried, such as unauthorized, timeouts and too many requests."
+        },
+        {
+          "name": "http.request.headers.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 17,
+          "display_name": "HTTP Request Headers Separator",
+          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'."
+        },
+        {
+          "name": "http.request.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "&",
+          "importance": "MEDIUM",
+          "group": "Connection details",
+          "order_in_group": 18,
+          "display_name": "HTTP Request Parameters Separator",
+          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'."
+        },
+        {
+          "name": "url",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 1,
+          "display_name": "HTTP(S) URL",
+          "documentation": "The HTTP API URL which can be templated with offset and entity information. For example: `http://example.com/api/v1/${entityName}/${offset}` where `${offset}` will be substituted with the offset generated from the previous request's response (or if it's the first request, from 'http.initial.offset'), and `${entityName}` will be substituted with values from the config `entity.names`."
+        },
+        {
+          "name": "auth.type",
+          "type": "STRING",
+          "required": false,
+          "default_value": "none",
+          "importance": "HIGH",
+          "group": "Authentication and SSL",
+          "order_in_group": 2,
+          "display_name": "Endpoint Authentication Type",
+          "documentation": "Authentication type of the endpoint. Valid values are ``none``, ``basic``, ``oauth2``, ``bearer`` (Client Credentials grant type only).",
+          "recommended_values": [
+            "none",
+            "basic",
+            "oauth2",
+            "bearer"
+          ]
         },
         {
           "name": "connection.user",
           "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 2,
-          "display_name": "Snowflake User",
-          "documentation": "User to be used for authenticating to snowflake."
-        },
-        {
-          "name": "connection.credentials.source",
-          "type": "STRING",
           "required": false,
-          "default_value": "PRIVATE_KEY",
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
           "order_in_group": 3,
-          "display_name": "Credentials Source",
-          "documentation": "The source of the credentials to use for authentication. Supported values are: `PRIVATE_KEY`: Use the private key to authenticate. `PRIVATE_KEY_PASSPHRASE`: Use the private key and passphrase to authenticate.",
-          "recommended_values": [
-            "PRIVATE_KEY",
-            "PRIVATE_KEY_PASSPHRASE"
-          ]
+          "display_name": "Auth Username",
+          "documentation": "The username to be used with an endpoint requiring basic authentication."
         },
         {
-          "name": "connection.private.key",
+          "name": "connection.password",
           "type": "PASSWORD",
           "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
           "order_in_group": 4,
-          "display_name": "Snowflake Private Key",
-          "documentation": "Private key for Snowflake user."
+          "display_name": "Auth Password",
+          "documentation": "The password to be used with an endpoint requiring basic authentication."
         },
         {
-          "name": "connection.private.key.passphrase",
+          "name": "bearer.token",
           "type": "PASSWORD",
           "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
           "order_in_group": 5,
-          "display_name": "Private Key Passphrase",
-          "documentation": "Passphrase of the encrypted private key."
+          "display_name": "Bearer Token",
+          "documentation": "The bearer authentication token to be used with an endpoint requiring bearer token based authentication."
         },
         {
-          "name": "output.data.format",
+          "name": "oauth2.token.url",
           "type": "STRING",
-          "required": true,
-          "default_value": "AVRO",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "topic.prefix",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic Prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Kafka topic to publish data to."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
-          "required": true,
-          "group": "Connector Details",
-          "importance": "MEDIUM",
-          "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "Mode represents the criteria on which table is polled each time. Options include -- `BULK`: perform a bulk load of all the eligible tables each time it is polled. `TIMESTAMP`: use timestamp column(s) to detect new and modified rows. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. This assumes that the effective timestamp is updated with each write, it's values are monotonically incrementing, but not necessarily unique. Only rows with non null value of effective timestamp would be captured. `INCREMENTING`: use a strictly incrementing column on each table to detect only new rows. Only rows with non null value of incrementing column would be captured. `TIMESTAMP AND INCREMENTING`: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset. Only rows with non null effective timestamp value and non null incrementing column value would be captured",
-          "recommended_values": [
-            "timestamp",
-            "incrementing",
-            "timestamp+incrementing",
-            "bulk"
-          ]
-        },
-        {
-          "name": "table.include.list",
-          "type": "LIST",
           "required": false,
           "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 2,
-          "display_name": "Tables Included",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Identifier names are case sensitive. For example, ``table.include.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 3,
-          "display_name": "Tables Excluded",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables not to be copied. This only applies on the tables filtered using include list. Identifier names are case sensitive. For example, ``table.exclude.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "timestamp.columns.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 4,
-          "display_name": "Table to timestamp columns mappings",
-          "documentation": "A comma-separated list of table regex to timestamp columns mappings. Timestamp columns supplied should strictly be of type ``TIMESTAMP_NTZ``. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY.*:[UPDATED_AT|MODIFIED_AT], COMPANY.FINANCE.ACCOUNTS.*:[CHANGED_AT]``."
-        },
-        {
-          "name": "incrementing.column.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 5,
-          "display_name": "Table to incrementing column mappings",
-          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col2,regex2:col1``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY*:EMP_ID,COMPANY.FINANCE.ACCOUNTS.*:ID``."
-        },
-        {
-          "name": "db.timezone",
-          "type": "STRING",
-          "required": true,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
+          "group": "Authentication and SSL",
           "order_in_group": 6,
-          "display_name": "Database Timezone",
-          "documentation": "Timezone to be used when interpreting values for timestamp types which don't have a timezone information in them. This should be set to the timezone of the snowflake account.",
-          "recommender": {
-            "name": "timezone"
-          }
+          "display_name": "OAuth2 Token URL",
+          "documentation": "The URL to be used for fetching the OAuth2 token. Client Credentials is the only supported grant type."
         },
         {
-          "name": "timestamp.initial",
-          "type": "LONG",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 7,
-          "display_name": "Initial Timestamp",
-          "documentation": "Epoch timestamp in milliseconds which provides the start timestamp from where to capture rows. The value -1 sets the start timestamp to the current time, in this case older data would not be fetched. If not specified, start timestamp is treated as epoch start time, hence all data is fetched. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 8,
-          "display_name": "Table Types",
-          "documentation": "By default, the connector will only detect tables with type TABLE. This config allows a command separated list of table types to extract.",
-          "recommended_values": [
-            "TABLE",
-            "VIEW"
-          ]
-        },
-        {
-          "name": "timestamp.granularity",
+          "name": "oauth2.client.id",
           "type": "STRING",
-          "default_value": "NANOS_LONG",
           "required": false,
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 9,
-          "display_name": "Timestamp granularity for timestamp columns",
-          "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL`: Represents timestamp values using Kafka Connect built-in representations. This may lead to loss of precision as this only supports milliseconds precision. `NANOS_LONG`: Represents timestamp values as nanos since epoch. Avoid this if any of the eligible timestamp columns contains timestamps greater than `2262-11-04 23:47:16.854775807 GMT`, nanos since epoch value would not fit in the range for long and hence would lead to erroneous values. Use `nanos_string` in such cases. `NANOS_STRING`: represents timestamp values as nanos since epoch in string.",
-          "recommended_values": [
-            "CONNECT_LOGICAL",
-            "NANOS_LONG",
-            "NANOS_STRING"
-          ]
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 7,
+          "display_name": "OAuth2 Client ID",
+          "documentation": "The client id used when fetching the OAuth2 token."
         },
         {
-          "name": "poll.interval.ms",
-          "type": "INT",
-          "default_value": "5000",
-          "importance": "LOW",
-          "group": "Connector Details",
+          "name": "oauth2.client.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 8,
+          "display_name": "OAuth2 Client Secret",
+          "documentation": "The client secret used when fetching the OAuth2 token."
+        },
+        {
+          "name": "oauth2.token.property",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 9,
+          "display_name": "OAuth2 Token Property Name",
+          "documentation": "The name of the property containing the OAuth2 token returned by the OAuth2 token URL (defaults to `access_token`)."
+        },
+        {
+          "name": "oauth2.client.scope",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
           "order_in_group": 10,
-          "display_name": "Poll Interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
+          "display_name": "OAuth2 Client Scope",
+          "documentation": "The scope parameter sent to the service when fetching the OAuth2 token."
+        },
+        {
+          "name": "oauth2.client.mode",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 11,
+          "display_name": "OAuth2 Client Mode",
+          "documentation": "Specifies how to encode ``client_id`` and ``client_secret`` in the OAuth2 authorization request. If set to ``header``, the credentials are encoded as an `'Authorization: Basic <base-64 encoded client_id:client_secret>'` HTTP header. If set to 'url', then ``client_id`` and ``client_secret`` are sent as URL encoded parameters."
+        },
+        {
+          "name": "https.ssl.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 12,
+          "display_name": "SSL Enabled",
+          "documentation": "Whether or not to connect to the endpoint via SSL."
+        },
+        {
+          "name": "https.ssl.keystorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "group": "Authentication and SSL",
+          "order_in_group": 13,
+          "display_name": "Key Store",
+          "documentation": "The key store containing the server certificate."
+        },
+        {
+          "name": "https.ssl.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication and SSL",
+          "order_in_group": 14,
+          "display_name": "Keystore Password",
+          "documentation": "The store password for the key store file."
+        },
+        {
+          "name": "https.ssl.key.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication and SSL",
+          "order_in_group": 15,
+          "display_name": "Key Password",
+          "documentation": "The password for the private key in the key store file."
+        },
+        {
+          "name": "https.ssl.truststorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication and SSL",
+          "order_in_group": 16,
+          "display_name": "Trust Store",
+          "documentation": "The trust store containing a server CA certificate."
+        },
+        {
+          "name": "https.ssl.truststore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Authentication and SSL",
+          "order_in_group": 17,
+          "display_name": "Trust Store Password",
+          "documentation": "The trust store password containing a server CA certificate."
+        },
+        {
+          "name": "https.ssl.protocol",
+          "type": "STRING",
+          "required": false,
+          "default_value": "TLSv1.3",
+          "importance": "MEDIUM",
+          "group": "Authentication and SSL",
+          "order_in_group": 18,
+          "display_name": "SSL Protocol",
+          "documentation": "The protocol to use for SSL connections"
+        },
+        {
+          "name": "http.request.sensitive.headers",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Connection details",
+          "order_in_group": 18,
+          "display_name": "Sensitive HTTP Headers",
+          "documentation": "Sensitive HTTP headers (eg: credentials) to be included in all requests. Individual headers should be separated by the Header Separator"
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.url",
-          "value": "jdbc:snowflake://${connection.url}"
+          "name": "topic.name.pattern"
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "http.request.method"
+        },
+        {
+          "name": "http.request.headers"
+        },
+        {
+          "name": "http.request.sensitive.headers"
+        },
+        {
+          "name": "http.request.parameters"
+        },
+        {
+          "name": "http.request.body"
+        },
+        {
+          "name": "http.initial.offset"
+        },
+        {
+          "name": "http.offset.mode"
+        },
+        {
+          "name": "http.response.data.json.pointer"
+        },
+        {
+          "name": "http.offset.json.pointer"
+        },
+        {
+          "name": "use.http.offset.json.pointer.as.string"
+        },
+        {
+          "name": "http.next.page.json.pointer"
+        },
+        {
+          "name": "request.interval.ms"
+        },
+        {
+          "name": "entity.names"
+        },
+        {
+          "name": "max.retries"
+        },
+        {
+          "name": "retry.backoff.ms"
+        },
+        {
+          "name": "retry.on.status.codes"
+        },
+        {
+          "name": "http.request.headers.separator"
+        },
+        {
+          "name": "http.request.parameters.separator"
+        },
+        {
+          "name": "auth.type"
         },
         {
           "name": "connection.user"
         },
         {
-          "name": "connection.credentials.source"
+          "name": "connection.password"
         },
         {
-          "name": "connection.private.key"
+          "name": "bearer.token"
         },
         {
-          "name": "connection.private.key.passphrase"
+          "name": "oauth2.token.url"
         },
         {
-          "name": "topic.prefix"
+          "name": "oauth2.client.id"
         },
         {
-          "name": "table.include.list"
+          "name": "oauth2.client.secret"
         },
         {
-          "name": "table.exclude.list"
+          "name": "oauth2.token.property"
         },
         {
-          "name": "mode"
+          "name": "oauth2.client.scope"
         },
         {
-          "name": "timestamp.columns.mapping"
+          "name": "oauth2.client.mode"
         },
         {
-          "name": "incrementing.column.mapping"
+          "name": "https.ssl.enabled"
         },
         {
-          "name": "db.timezone"
+          "name": "https.ssl.keystore.location",
+          "value": "${https.ssl.keystorefile}"
         },
         {
-          "name": "timestamp.initial"
+          "name": "https.ssl.keystore.password"
         },
         {
-          "name": "table.types"
+          "name": "https.ssl.key.password"
         },
         {
-          "name": "timestamp.granularity"
+          "name": "https.ssl.truststore.location",
+          "value": "${https.ssl.truststorefile}"
         },
         {
-          "name": "validate.non.null",
-          "value": false
+          "name": "https.ssl.truststore.password"
         },
         {
-          "name": "poll.interval.ms"
+          "name": "https.ssl.protocol"
         },
         {
-          "name": "value.converter",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
-            }
-          }
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${url}"
+        },
+        {
+          "name": "sensitive.headers.list"
+        },
+        {
+          "name": "sensitive.headers.validation.enabled"
         }
       ]
     },
@@ -953,6 +1218,53 @@
       ]
     },
     {
+      "template_id": "http-network-restrictions-common",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connection.disallow.private.ips",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "connection.disallow.cidr.ranges",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "internal": true
+        },
+        {
+          "name": "connection.allow.cidr.ranges",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "internal": true
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "connection.disallow.class.e.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.local.ips",
+          "value": "true"
+        },
+        {
+          "name": "connection.disallow.private.ips"
+        },
+        {
+          "name": "connection.disallow.cidr.ranges"
+        },
+        {
+          "name": "connection.allow.cidr.ranges"
+        }
+      ]
+    },
+    {
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
@@ -992,162 +1304,71 @@
       "connector_configs": []
     },
     {
-      "template_id": "csfle-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "csfle.enabled",
-          "type": "BOOLEAN",
-          "default_value": "false",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 1,
-          "docs_hidden": true,
-          "display_name": "Enable Client-Side Field Level Encryption",
-          "documentation": "Determines whether the connector honours CSFLE rules or not",
-          "conditional_metadata_provider": [
-            {
-              "name": "metadata.conditional.visible",
-              "arguments": {
-                "config": "csfle.configs.visible",
-                "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
-              }
-            }
-          ]
-        },
-        {
-          "name": "sr.service.account.id",
-          "type": "STRING",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 2,
-          "docs_hidden": true,
-          "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
-        },
-        {
-          "name": "csfle.configs.visible",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "false",
-          "internal": true
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "csfle.enabled"
-        },
-        {
-          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
-            }
-          }
-        },
-        {
-          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
-          "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
-            }
-          }
-        },
-        {
-          "name": "value.converter.latest.cache.ttl.sec",
-          "switch": {
-            "csfle.enabled": {
-              "true": "300"
-            }
-          }
-        },
-        {
-          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
-            }
-          }
-        },
-        {
-          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
-          "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
-            }
-          }
-        },
-        {
-          "name": "key.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "key.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
-        },
-        {
-          "name": "key.converter.latest.cache.ttl.sec",
-          "switch": {
-            "csfle.enabled": {
-              "true": "300"
-            }
-          }
-        },
-        {
-          "name": "value.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "template_id": "source-connector-schema-enabled-output-data-format",
+      "template_id": "source-connector-output-data-format",
       "abstract": true,
       "config_defs": [
         {
           "name": "output.data.format",
           "type": "STRING",
           "required": true,
-          "default_value": "AVRO",
           "importance": "HIGH",
           "group": "Output messages",
           "order_in_group": 1,
           "display_name": "Select output record value format",
           "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
-            "PROTOBUF"
+            "PROTOBUF",
+            "JSON"
           ],
           "dependents": [
             "schema.registry.url"
           ]
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1168,6 +1389,27 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.scrub.invalid.names"
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
         }
       ],
       "connector_configs": [
@@ -1177,34 +1419,48 @@
             "output.data.format": {
               "AVRO": "io.confluent.connect.avro.AvroConverter",
               "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "output.data.format": {
+              "JSON": false
             }
           }
         },
         {
           "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        },
-        {
-          "name": "value.converter.ignore.default.for.nullables"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "dynamic.mapper": {
-            "name": "value.converter.scrub.invalid.names.mapper"
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
           }
         },
         {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
         },
         {
           "name": "value.converter.scrub.invalid.names",
@@ -1213,6 +1469,21 @@
               "AVRO": "true",
               "PROTOBUF": "false"
             }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
           }
         }
       ]

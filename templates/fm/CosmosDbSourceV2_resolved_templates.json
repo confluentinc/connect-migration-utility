@@ -1,76 +1,73 @@
 {
   "templates": [
     {
-      "template_id": "SnowflakeSource",
+      "template_id": "CosmosDbSourceV2",
       "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector",
+      "connector.class": "com.azure.cosmos.kafka.connect.CosmosSourceConnector",
       "config_defs": [
         {
-          "name": "connection.url",
+          "name": "azure.cosmos.account.endpoint",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "group": "Connect to your Cosmos DB database",
           "order_in_group": 1,
-          "display_name": "Snowflake Connection URL",
-          "documentation": "Snowflake connection URL. Supported formats are `<org_name>_<account_name>.snowflakecomputing.com` or If the account is located in the AWS US West (Oregon) region, then `<locator>.snowflakecomputing.com`."
-        },
-        {
-          "name": "connection.user",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 2,
-          "display_name": "Snowflake User",
-          "documentation": "User to be used for authenticating to snowflake."
-        },
-        {
-          "name": "connection.credentials.source",
-          "type": "STRING",
-          "required": false,
-          "default_value": "PRIVATE_KEY",
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 3,
-          "display_name": "Credentials Source",
-          "documentation": "The source of the credentials to use for authentication. Supported values are: `PRIVATE_KEY`: Use the private key to authenticate. `PRIVATE_KEY_PASSPHRASE`: Use the private key and passphrase to authenticate.",
-          "recommended_values": [
-            "PRIVATE_KEY",
-            "PRIVATE_KEY_PASSPHRASE"
+          "display_name": "Cosmos endpoint",
+          "documentation": "Cosmos endpoint URL. For example: https://connect-cosmosdb.documents.azure.com:443/.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
           ]
         },
         {
-          "name": "connection.private.key",
-          "type": "PASSWORD",
+          "name": "region.ignore",
+          "type": "STRING",
+          "internal": true,
           "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 4,
-          "display_name": "Snowflake Private Key",
-          "documentation": "Private key for Snowflake user."
+          "default_value": "true",
+          "importance": "LOW",
+          "documentation": "turn on to suppress 'azure.region' validator."
         },
         {
-          "name": "connection.private.key.passphrase",
-          "type": "PASSWORD",
-          "required": false,
+          "name": "azure.cosmos.source.database.name",
+          "type": "STRING",
+          "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 5,
-          "display_name": "Private Key Passphrase",
-          "documentation": "Passphrase of the encrypted private key."
+          "group": "Connect to your Cosmos DB database",
+          "order_in_group": 2,
+          "display_name": "Cosmos DB database name",
+          "documentation": "Name of the database to read from.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.source.containers.topicMap",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "group": "Container details",
+          "order_in_group": 2,
+          "display_name": "Cosmos container topic map",
+          "documentation": "A comma delimited list of Kafka topics mapped to Cosmos containers. For example: topic1#con1,topic2#con2. By default, the container name is used as the name of the Kafka topic to publish data to, but you can use this property to override the default configuration.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
         },
         {
           "name": "output.data.format",
           "type": "STRING",
           "required": true,
-          "default_value": "AVRO",
+          "default_value": "JSON_SR",
           "importance": "HIGH",
           "group": "Output messages",
           "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "display_name": "Output Kafka record value format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured when using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
@@ -81,188 +78,252 @@
           ]
         },
         {
-          "name": "topic.prefix",
+          "name": "azure.cosmos.source.changeFeed.startFrom",
           "type": "STRING",
-          "required": true,
           "importance": "HIGH",
-          "group": "How should we name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic Prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Kafka topic to publish data to."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
+          "default_value": "Beginning",
           "required": true,
-          "group": "Connector Details",
-          "importance": "MEDIUM",
+          "group": "ChangeFeed details",
           "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "Mode represents the criteria on which table is polled each time. Options include -- `BULK`: perform a bulk load of all the eligible tables each time it is polled. `TIMESTAMP`: use timestamp column(s) to detect new and modified rows. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. This assumes that the effective timestamp is updated with each write, it's values are monotonically incrementing, but not necessarily unique. Only rows with non null value of effective timestamp would be captured. `INCREMENTING`: use a strictly incrementing column on each table to detect only new rows. Only rows with non null value of incrementing column would be captured. `TIMESTAMP AND INCREMENTING`: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset. Only rows with non null effective timestamp value and non null incrementing column value would be captured",
-          "recommended_values": [
-            "timestamp",
-            "incrementing",
-            "timestamp+incrementing",
-            "bulk"
+          "display_name": "Change feed start from",
+          "documentation": "ChangeFeed Start from settings (Now, Beginning or a certain point in time (UTC) for example 2020-02-10T14:15:03) - the default value is ``Beginning``.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
           ]
         },
         {
-          "name": "table.include.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 2,
-          "display_name": "Tables Included",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Identifier names are case sensitive. For example, ``table.include.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 3,
-          "display_name": "Tables Excluded",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables not to be copied. This only applies on the tables filtered using include list. Identifier names are case sensitive. For example, ``table.exclude.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "timestamp.columns.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 4,
-          "display_name": "Table to timestamp columns mappings",
-          "documentation": "A comma-separated list of table regex to timestamp columns mappings. Timestamp columns supplied should strictly be of type ``TIMESTAMP_NTZ``. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY.*:[UPDATED_AT|MODIFIED_AT], COMPANY.FINANCE.ACCOUNTS.*:[CHANGED_AT]``."
-        },
-        {
-          "name": "incrementing.column.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 5,
-          "display_name": "Table to incrementing column mappings",
-          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col2,regex2:col1``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY*:EMP_ID,COMPANY.FINANCE.ACCOUNTS.*:ID``."
-        },
-        {
-          "name": "db.timezone",
+          "name": "azure.cosmos.source.changeFeed.mode",
           "type": "STRING",
+          "importance": "HIGH",
           "required": true,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 6,
-          "display_name": "Database Timezone",
-          "documentation": "Timezone to be used when interpreting values for timestamp types which don't have a timezone information in them. This should be set to the timezone of the snowflake account.",
-          "recommender": {
-            "name": "timezone"
-          }
-        },
-        {
-          "name": "timestamp.initial",
-          "type": "LONG",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 7,
-          "display_name": "Initial Timestamp",
-          "documentation": "Epoch timestamp in milliseconds which provides the start timestamp from where to capture rows. The value -1 sets the start timestamp to the current time, in this case older data would not be fetched. If not specified, start timestamp is treated as epoch start time, hence all data is fetched. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 8,
-          "display_name": "Table Types",
-          "documentation": "By default, the connector will only detect tables with type TABLE. This config allows a command separated list of table types to extract.",
+          "group": "ChangeFeed details",
+          "default_value": "LatestVersion",
+          "order_in_group": 1,
+          "display_name": "ChangeFeed mode",
+          "documentation": "ChangeFeed mode (LatestVersion or AllVersionsAndDeletes)",
           "recommended_values": [
-            "TABLE",
-            "VIEW"
+            "LatestVersion",
+            "AllVersionsAndDeletes"
           ]
         },
         {
-          "name": "timestamp.granularity",
-          "type": "STRING",
-          "default_value": "NANOS_LONG",
-          "required": false,
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 9,
-          "display_name": "Timestamp granularity for timestamp columns",
-          "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL`: Represents timestamp values using Kafka Connect built-in representations. This may lead to loss of precision as this only supports milliseconds precision. `NANOS_LONG`: Represents timestamp values as nanos since epoch. Avoid this if any of the eligible timestamp columns contains timestamps greater than `2262-11-04 23:47:16.854775807 GMT`, nanos since epoch value would not fit in the range for long and hence would lead to erroneous values. Use `nanos_string` in such cases. `NANOS_STRING`: represents timestamp values as nanos since epoch in string.",
-          "recommended_values": [
-            "CONNECT_LOGICAL",
-            "NANOS_LONG",
-            "NANOS_STRING"
-          ]
-        },
-        {
-          "name": "poll.interval.ms",
+          "name": "azure.cosmos.source.changeFeed.maxItemCountHint",
           "type": "INT",
-          "default_value": "5000",
-          "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 10,
-          "display_name": "Poll Interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
+          "importance": "MEDIUM",
+          "default_value": 1000,
+          "group": "ChangeFeed details",
+          "order_in_group": 1,
+          "display_name": "Maximum number hint of documents returned in single request",
+          "documentation": "The maximum number of documents returned in a single change feed request. But the number of items received might be higher than the specified value if multiple items are changed by the same transaction. The default is 1000."
+        },
+        {
+          "name": "azure.cosmos.source.metadata.poll.delay.ms",
+          "type": "INT",
+          "default_value": 300000,
+          "importance": "MEDIUM",
+          "group": "Metadata details",
+          "order_in_group": 1,
+          "display_name": "Metadata polling delay in ms",
+          "documentation": "Indicates how often to check the metadata changes (including container split/merge, adding/removing/recreated containers). When changes are detected, it will reconfigure the tasks. Default is 5 minutes"
+        },
+        {
+          "name": "azure.cosmos.source.metadata.storage.type",
+          "type": "STRING",
+          "default_value": "Kafka",
+          "importance": "MEDIUM",
+          "required": true,
+          "group": "Metadata details",
+          "order_in_group": 1,
+          "display_name": "Storage source of metadata",
+          "documentation": "The storage type of the metadata. Two types are supported: Cosmos, Kafka.",
+          "recommended_values": [
+            "Cosmos",
+            "Kafka"
+          ]
+        },
+        {
+          "name": "azure.cosmos.source.metadata.storage.name.prefix",
+          "type": "STRING",
+          "default_value": "cosmos.metadata.topic",
+          "importance": "MEDIUM",
+          "group": "Metadata details",
+          "required": true,
+          "order_in_group": 1,
+          "display_name": "Metadata storage name Prefix",
+          "documentation": "The resource name of the metadata storage prefix. If metadata storage type is Kafka topic, then this config refers to kafka topic name, the metadata topic will be created if it does not already exist, else it will use the pre-created topic. If metadata storage type is ``Cosmos``, then this config refers to container name, for ``MasterKey`` auth, this container will be created with ``AutoScale`` with 4000 RU if not already exists, for ``ServicePrincipal`` auth, it requires the container to be created ahead of time .",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.source.messageKey.enabled",
+          "type": "BOOLEAN",
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Message key details",
+          "order_in_group": 1,
+          "display_name": "Kafka record message key enabled",
+          "documentation": "Whether to set the kafka record message key."
+        },
+        {
+          "name": "azure.cosmos.source.containers.includeAll",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "Container details",
+          "order_in_group": 3,
+          "display_name": "Include all containers",
+          "documentation": "Flag to indicate whether reading from all containers."
+        },
+        {
+          "name": "azure.cosmos.source.containers.includedList",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Container details",
+          "order_in_group": 4,
+          "display_name": "Containers included",
+          "documentation": "Containers included. This config will be ignored if kafka.connect.cosmos.source.containers.includeAll is true.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.source.messageKey.field",
+          "type": "STRING",
+          "required": false,
+          "default_value": "id",
+          "importance": "HIGH",
+          "group": "Message key details",
+          "order_in_group": 3,
+          "display_name": "Kafka message key field",
+          "documentation": "The document field to use as the message key.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.url",
-          "value": "jdbc:snowflake://${connection.url}"
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "connection.user"
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "connection.credentials.source"
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "connection.private.key"
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "connection.private.key.passphrase"
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "topic.prefix"
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "table.include.list"
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
-          "name": "table.exclude.list"
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
         },
         {
-          "name": "mode"
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
         },
         {
-          "name": "timestamp.columns.mapping"
+          "name": "tasks.max"
         },
         {
-          "name": "incrementing.column.mapping"
+          "name": "azure.cosmos.account.endpoint"
         },
         {
-          "name": "db.timezone"
+          "name": "connect.cosmos.master.key"
         },
         {
-          "name": "timestamp.initial"
+          "name": "azure.cosmos.source.database.name"
         },
         {
-          "name": "table.types"
+          "name": "azure.cosmos.source.changeFeed.mode"
         },
         {
-          "name": "timestamp.granularity"
+          "name": "azure.cosmos.source.containers.topicMap"
         },
         {
-          "name": "validate.non.null",
-          "value": false
+          "name": "connect.cosmos.offset.useLatest",
+          "value": "true"
         },
         {
-          "name": "poll.interval.ms"
+          "name": "azure.cosmos.source.messageKey.enabled"
+        },
+        {
+          "name": "azure.cosmos.source.changeFeed.startFrom"
+        },
+        {
+          "name": "azure.cosmos.source.messageKey.field"
+        },
+        {
+          "name": "connect.cosmos.task.timeout"
+        },
+        {
+          "name": "connect.cosmos.task.buffer.size"
+        },
+        {
+          "name": "azure.cosmos.source.changeFeed.maxItemCountHint"
+        },
+        {
+          "name": "azure.cosmos.source.metadata.poll.delay.ms"
+        },
+        {
+          "name": "azure.cosmos.source.metadata.storage.type"
+        },
+        {
+          "name": "connect.cosmos.task.poll.interval"
+        },
+        {
+          "name": "azure.cosmos.source.containers.includeAll"
+        },
+        {
+          "name": "azure.cosmos.source.containers.includedList"
+        },
+        {
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.storage.StringConverter"
+        },
+        {
+          "name": "region.ignore",
+          "switch": {
+            "cloud.environment": {
+              "private": "true",
+              "DEFAULT": "${region.ignore}"
+            }
+          }
+        },
+        {
+          "name": "connect.cosmos.provider.name",
+          "value": "CONFLUENT_CLOUD"
+        },
+        {
+          "name": "azure.cosmos.application.name",
+          "value": "APN/2.0 Microsoft/2.0 ConfluentCloudKafkaConnectSource/"
         },
         {
           "name": "value.converter",
@@ -276,15 +337,50 @@
         },
         {
           "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
+          "switch": {
+            "output.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "true",
+              "PROTOBUF": "false"
+            }
+          }
+        },
+        {
+          "name": "azure.cosmos.source.metadata.storage.name",
+          "value": "${azure.cosmos.source.metadata.storage.name.prefix}.{{.logicalClusterId}}"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${azure.cosmos.account.endpoint}"
         }
       ]
     },
@@ -992,6 +1088,626 @@
       "connector_configs": []
     },
     {
+      "template_id": "CosmosDbCommonV2",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "azure.cosmos.account.environment",
+          "type": "STRING",
+          "default_value": "AZURE",
+          "importance": "MEDIUM",
+          "required": true,
+          "group": "Account details",
+          "order_in_group": 1,
+          "display_name": "Azure environment of Cosmos DB account",
+          "alias": "data.format",
+          "documentation": "The azure environment of the Cosmos DB account: `Azure`, `AzureChina`, `AzureUsGovernment`, `AzureGermany`.",
+          "recommended_values": [
+            "AZURE",
+            "AZURE_CHINA",
+            "AZURE_CHINA",
+            "AZURE_US_GOVERNMENT",
+            "AZURE_GERMANY"
+          ]
+        },
+        {
+          "name": "azure.cosmos.account.tenantId",
+          "type": "STRING",
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Account details",
+          "order_in_group": 7,
+          "display_name": "TenantId of Cosmos DB account",
+          "alias": "data.format",
+          "documentation": "The tenantId of the Cosmos DB account. Required for `ServicePrincipal` authentication."
+        },
+        {
+          "name": "azure.cosmos.auth.type",
+          "type": "STRING",
+          "importance": "HIGH",
+          "required": true,
+          "group": "Account details",
+          "order_in_group": 3,
+          "display_name": "Cosmos connection auth type",
+          "documentation": "Cosmos connection auth type",
+          "recommended_values": [
+            "MasterKey",
+            "ServicePrincipal"
+          ],
+          "default_value": "MasterKey"
+        },
+        {
+          "name": "azure.cosmos.account.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Account details",
+          "order_in_group": 4,
+          "display_name": "Cosmos DB account key",
+          "documentation": "Cosmos DB account key (only required in case of `auth.type` as `MasterKey`)."
+        },
+        {
+          "name": "azure.cosmos.auth.aad.clientId",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Account details",
+          "order_in_group": 5,
+          "display_name": "ClientId/applicationId of service principal",
+          "documentation": "The clientId/ApplicationId of the service principal. Required for `ServicePrincipal` authentication.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.auth.aad.clientSecret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Account details",
+          "order_in_group": 6,
+          "display_name": "Client secret/password of service principal",
+          "documentation": "The client secret/password of the service principal. Required for `ServicePrincipal` authentication."
+        },
+        {
+          "name": "azure.cosmos.mode.gateway",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Account details",
+          "order_in_group": 2,
+          "display_name": "Gateway mode",
+          "documentation": "Flag to indicate whether to use gateway mode. By default it is false, means SDK uses direct mode. https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-connection-modes"
+        },
+        {
+          "name": "azure.cosmos.preferredRegionList",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Account details",
+          "order_in_group": 3,
+          "display_name": "Preferred regions list",
+          "documentation": "Preferred regions list to be used for a multi region Cosmos DB account. This is a comma separated value (e.g., `[East US, West US]` or `East US, West US`) provided preferred regions will be used as hint. You should use a collocated kafka cluster with your Cosmos DB account and pass the kafka cluster region as preferred region. See list of azure regions - https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.locationnames?view=azure-dotnet&preserve-view=true.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.enabled",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 10,
+          "display_name": "Enable throughput control",
+          "documentation": "A flag to indicate whether throughput control is enabled."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.environment",
+          "type": "STRING",
+          "required": true,
+          "importance": "LOW",
+          "default_value": "AZURE",
+          "group": "Throughput control details",
+          "order_in_group": 15,
+          "display_name": "Azure environment of Cosmos DB account",
+          "documentation": "The azure environment of the Cosmos DB account: `Azure`, `AzureChina`, `AzureUsGovernment`, `AzureGermany`.",
+          "recommended_values": [
+            "AZURE",
+            "AZURE_CHINA",
+            "AZURE_US_GOVERNMENT",
+            "AZURE_GERMANY"
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.endpoint",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 16,
+          "display_name": "Cosmos DB throughput control account endpoint uri",
+          "documentation": "Cosmos DB throughput control account endpoint uri.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.type",
+          "type": "STRING",
+          "required": true,
+          "default_value": "MasterKey",
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 11,
+          "display_name": "Cosmos auth type",
+          "documentation": "There are two auth types are supported currently: `MasterKey`(PrimaryReadWriteKeys, SecondReadWriteKeys, PrimaryReadOnlyKeys, SecondReadWriteKeys), `ServicePrincipal`",
+          "recommended_values": [
+            "MasterKey",
+            "ServicePrincipal"
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 12,
+          "display_name": "Cosmos DB throughput control account key",
+          "documentation": "Cosmos DB throughput control account key (only required in case of `throughputControl.auth.type` as `MasterKey`)"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.aad.clientId",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 13,
+          "display_name": "ClientId/applicationId of service principal",
+          "documentation": "The clientId/applicationId of the service principal. Required for `ServicePrincipal` authentication.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.aad.clientSecret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 14,
+          "display_name": "Client secret/password of service principal",
+          "documentation": "The client secret/password of the service principal. Required for `ServicePrincipal` authentication."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.tenantId",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 15,
+          "display_name": "TenantId of Cosmos DB account",
+          "documentation": "The tenantId of the Cosmos DB account. Required for `ServicePrincipal` authentication.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.mode.gateway",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 17,
+          "display_name": "Gateway mode for throughput control",
+          "documentation": "Flag to indicate whether to use gateway mode. By default it is false, means SDK uses direct mode. https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-connection-modes"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.preferredRegionList",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 18,
+          "display_name": "Preferred regions list for throughput control database account",
+          "documentation": "Preferred regions list to be used for a multi region Cosmos DB account. This is a comma separated value (e.g., `[East US, West US]` or `East US, West US`) provided preferred regions will be used as hint. You should use a collocated kafka cluster with your Cosmos DB account and pass the kafka cluster region as preferred region. See list of azure regions - https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.locationnames?view=azure-dotnet&preserve-view=true",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.group.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 19,
+          "display_name": "Throughput control group name",
+          "documentation": "Throughput control group name. Since customer is allowed to create many groups for a container, the name should be unique.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.targetThroughput",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 20,
+          "display_name": "Throughput control group target throughput",
+          "documentation": "Throughput control group target throughput. The value should be larger than 0."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.targetThroughputThreshold",
+          "type": "DOUBLE",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 21,
+          "display_name": "Throughput control group target throughput threshold",
+          "documentation": "Throughput control group target throughput threshold. The value should be between (0,1]."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.priorityLevel",
+          "type": "STRING",
+          "required": false,
+          "default_value": "None",
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 22,
+          "display_name": "Throughput control group priority level",
+          "documentation": "Throughput control group priority level. The value can be None, High or Low.",
+          "recommended_values": [
+            "None",
+            "High",
+            "Low"
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.database.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 23,
+          "display_name": "Database for throughput global control",
+          "documentation": "Database which will be used for throughput global control.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.container.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Throughput control details",
+          "order_in_group": 24,
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ],
+          "display_name": "Container for throughput global control",
+          "documentation": "Container which will be used for throughput global control."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.renewIntervalInMS",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "default_value": 5000,
+          "group": "Throughput control details",
+          "order_in_group": 25,
+          "display_name": "Throughput control client RU usage update interval",
+          "documentation": "This controls how often the client is going to update the throughput usage of itself and adjust its own throughput share based on the throughput usage of other clients. Default is 5s, the allowed min value is 5s."
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.expireIntervalInMS",
+          "type": "INT",
+          "required": false,
+          "importance": "LOW",
+          "group": "Throughput control details",
+          "order_in_group": 26,
+          "display_name": "Throughput control client expire interval",
+          "documentation": "This controls how quickly we will detect the client has been offline and hence allow its throughput share to be taken by other clients. Default is 11s, the allowed min value is 2 * renewIntervalInMS + 1"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "connector.endpoint",
+          "value": "${azure.cosmos.account.endpoint}"
+        },
+        {
+          "name": "azure.cosmos.account.endpoint"
+        },
+        {
+          "name": "azure.cosmos.account.environment"
+        },
+        {
+          "name": "azure.cosmos.account.tenantId"
+        },
+        {
+          "name": "azure.cosmos.auth.type"
+        },
+        {
+          "name": "azure.cosmos.account.key"
+        },
+        {
+          "name": "azure.cosmos.auth.aad.clientId"
+        },
+        {
+          "name": "azure.cosmos.auth.aad.clientSecret"
+        },
+        {
+          "name": "azure.cosmos.mode.gateway"
+        },
+        {
+          "name": "azure.cosmos.preferredRegionList"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.enabled"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.endpoint"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.environment"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.tenantId"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.type"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.account.key"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.aad.clientId"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.auth.aad.clientSecret"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.preferredRegionList"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.mode.gateway"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.group.name"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.targetThroughput"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.targetThroughputThreshold"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.priorityLevel"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.database.name"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.container.name"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.renewIntervalInMS"
+        },
+        {
+          "name": "azure.cosmos.throughputControl.globalControl.expireIntervalInMS"
+        }
+      ]
+    },
+    {
+      "template_id": "source-connector-output-data-format",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names"
+        },
+        {
+          "name": "output.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "group": "Output messages",
+          "order_in_group": 1,
+          "display_name": "Select output record value format",
+          "alias": "data.format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "value.converter",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "output.data.format": {
+              "JSON": false
+            }
+          }
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "true",
+              "PROTOBUF": "false"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
       "template_id": "csfle-source",
       "abstract": true,
       "config_defs": [
@@ -1120,98 +1836,6 @@
           "switch": {
             "csfle.enabled": {
               "true": "true"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "template_id": "source-connector-schema-enabled-output-data-format",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "AVRO",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "value.converter.ignore.default.for.nullables",
-          "alias": "ignore.default.for.nullables",
-          "type": "BOOLEAN",
-          "required": false,
-          "default_value": "false",
-          "importance": "LOW",
-          "group": "Additional Configs",
-          "display_name": "value.converter.ignore.default.for.nullables",
-          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "type": "BOOLEAN",
-          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
-          "group": "Additional Configs",
-          "required": false,
-          "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names"
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "value.converter",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-        },
-        {
-          "name": "value.converter.ignore.default.for.nullables"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "dynamic.mapper": {
-            "name": "value.converter.scrub.invalid.names.mapper"
-          }
-        },
-        {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
             }
           }
         }

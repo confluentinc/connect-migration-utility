@@ -1,290 +1,201 @@
 {
   "templates": [
     {
-      "template_id": "SnowflakeSource",
-      "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector",
+      "template_id": "PineconeSink",
+      "connector_type": "SINK",
+      "connector.class": "io.confluent.connect.pinecone.PineconeSinkConnector",
       "config_defs": [
         {
-          "name": "connection.url",
+          "name": "pinecone.project",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
+          "group": "How should we connect to Pinecone?",
           "order_in_group": 1,
-          "display_name": "Snowflake Connection URL",
-          "documentation": "Snowflake connection URL. Supported formats are `<org_name>_<account_name>.snowflakecomputing.com` or If the account is located in the AWS US West (Oregon) region, then `<locator>.snowflakecomputing.com`."
+          "display_name": "Pinecone Project",
+          "documentation": "Pinecone project ID"
         },
         {
-          "name": "connection.user",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 2,
-          "display_name": "Snowflake User",
-          "documentation": "User to be used for authenticating to snowflake."
-        },
-        {
-          "name": "connection.credentials.source",
-          "type": "STRING",
-          "required": false,
-          "default_value": "PRIVATE_KEY",
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 3,
-          "display_name": "Credentials Source",
-          "documentation": "The source of the credentials to use for authentication. Supported values are: `PRIVATE_KEY`: Use the private key to authenticate. `PRIVATE_KEY_PASSPHRASE`: Use the private key and passphrase to authenticate.",
-          "recommended_values": [
-            "PRIVATE_KEY",
-            "PRIVATE_KEY_PASSPHRASE"
-          ]
-        },
-        {
-          "name": "connection.private.key",
+          "name": "pinecone.api.key",
           "type": "PASSWORD",
-          "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 4,
-          "display_name": "Snowflake Private Key",
-          "documentation": "Private key for Snowflake user."
-        },
-        {
-          "name": "connection.private.key.passphrase",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "HIGH",
-          "group": "How should we connect to your Snowflake Instance?",
-          "order_in_group": 5,
-          "display_name": "Private Key Passphrase",
-          "documentation": "Passphrase of the encrypted private key."
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "AVRO",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "topic.prefix",
-          "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we name your topic(s)?",
-          "order_in_group": 1,
-          "display_name": "Topic Prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Kafka topic to publish data to."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
-          "required": true,
-          "group": "Connector Details",
-          "importance": "MEDIUM",
-          "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "Mode represents the criteria on which table is polled each time. Options include -- `BULK`: perform a bulk load of all the eligible tables each time it is polled. `TIMESTAMP`: use timestamp column(s) to detect new and modified rows. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. This assumes that the effective timestamp is updated with each write, it's values are monotonically incrementing, but not necessarily unique. Only rows with non null value of effective timestamp would be captured. `INCREMENTING`: use a strictly incrementing column on each table to detect only new rows. Only rows with non null value of incrementing column would be captured. `TIMESTAMP AND INCREMENTING`: use two columns, a timestamp column that detects new and modified rows and a strictly incrementing column which provides a globally unique ID for updates so each row can be assigned a unique stream offset. Only rows with non null effective timestamp value and non null incrementing column value would be captured",
-          "recommended_values": [
-            "timestamp",
-            "incrementing",
-            "timestamp+incrementing",
-            "bulk"
-          ]
-        },
-        {
-          "name": "table.include.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
+          "group": "How should we connect to Pinecone?",
           "order_in_group": 2,
-          "display_name": "Tables Included",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Identifier names are case sensitive. For example, ``table.include.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
+          "display_name": "Pinecone API key",
+          "documentation": "Pinecone API key is required by client to upsert data to pinecone index"
         },
         {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 3,
-          "display_name": "Tables Excluded",
-          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables not to be copied. This only applies on the tables filtered using include list. Identifier names are case sensitive. For example, ``table.exclude.list: \"DB_A.PUBLIC.CUSTOMER.*,DB_B.PUBLIC.CUSTOMER.*,\"``."
-        },
-        {
-          "name": "timestamp.columns.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 4,
-          "display_name": "Table to timestamp columns mappings",
-          "documentation": "A comma-separated list of table regex to timestamp columns mappings. Timestamp columns supplied should strictly be of type ``TIMESTAMP_NTZ``. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY.*:[UPDATED_AT|MODIFIED_AT], COMPANY.FINANCE.ACCOUNTS.*:[CHANGED_AT]``."
-        },
-        {
-          "name": "incrementing.column.mapping",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 5,
-          "display_name": "Table to incrementing column mappings",
-          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col2,regex2:col1``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``COMPANY.EMPLOYEES.SALARY*:EMP_ID,COMPANY.FINANCE.ACCOUNTS.*:ID``."
-        },
-        {
-          "name": "db.timezone",
+          "name": "pinecone.environment",
           "type": "STRING",
           "required": true,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 6,
-          "display_name": "Database Timezone",
-          "documentation": "Timezone to be used when interpreting values for timestamp types which don't have a timezone information in them. This should be set to the timezone of the snowflake account.",
-          "recommender": {
-            "name": "timezone"
-          }
+          "importance": "HIGH",
+          "default_value": "",
+          "group": "How should we connect to Pinecone?",
+          "order_in_group": 3,
+          "display_name": "Pinecone Environment",
+          "documentation": "Environment of your Pinecone instance"
         },
         {
-          "name": "timestamp.initial",
-          "type": "LONG",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 7,
-          "display_name": "Initial Timestamp",
-          "documentation": "Epoch timestamp in milliseconds which provides the start timestamp from where to capture rows. The value -1 sets the start timestamp to the current time, in this case older data would not be fetched. If not specified, start timestamp is treated as epoch start time, hence all data is fetched. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Connector Details",
-          "order_in_group": 8,
-          "display_name": "Table Types",
-          "documentation": "By default, the connector will only detect tables with type TABLE. This config allows a command separated list of table types to extract.",
-          "recommended_values": [
-            "TABLE",
-            "VIEW"
-          ]
-        },
-        {
-          "name": "timestamp.granularity",
+          "name": "pinecone.index",
           "type": "STRING",
-          "default_value": "NANOS_LONG",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to Pinecone?",
+          "order_in_group": 4,
+          "display_name": "Pinecone Index",
+          "documentation": "Pinecone index to which data will be upserted. Please note that index configured must exist in your Pinecone project.  ."
+        },
+        {
+          "name": "pinecone.namespace",
+          "type": "STRING",
           "required": false,
           "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 9,
-          "display_name": "Timestamp granularity for timestamp columns",
-          "documentation": "Define the granularity of the Timestamp column. `CONNECT_LOGICAL`: Represents timestamp values using Kafka Connect built-in representations. This may lead to loss of precision as this only supports milliseconds precision. `NANOS_LONG`: Represents timestamp values as nanos since epoch. Avoid this if any of the eligible timestamp columns contains timestamps greater than `2262-11-04 23:47:16.854775807 GMT`, nanos since epoch value would not fit in the range for long and hence would lead to erroneous values. Use `nanos_string` in such cases. `NANOS_STRING`: represents timestamp values as nanos since epoch in string.",
-          "recommended_values": [
-            "CONNECT_LOGICAL",
-            "NANOS_LONG",
-            "NANOS_STRING"
-          ]
+          "default_value": "",
+          "group": "Pinecone Details",
+          "order_in_group": "1",
+          "display_name": "Pinecone Namespace",
+          "documentation": "Namespace which will be used while upserting the data to pinecone"
         },
         {
-          "name": "poll.interval.ms",
+          "name": "pinecone.server.timeout",
           "type": "INT",
-          "default_value": "5000",
+          "required": false,
           "importance": "LOW",
-          "group": "Connector Details",
-          "order_in_group": 10,
-          "display_name": "Poll Interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
+          "default_value": 20,
+          "group": "Pinecone Details",
+          "order_in_group": 2,
+          "display_name": "Pinecone Server Side Timeout",
+          "documentation": "Pinecone Server Side Timeout(sec)"
+        },
+        {
+          "name": "behavior.on.error",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "log",
+          "group": "How should we handle errors?",
+          "order_in_group": 1,
+          "display_name": "Behavior on Error",
+          "documentation": "Error handling behavior setting when an error occurs while extracting metric from Kafka record value. Valid options are 'LOG' and 'FAIL'. 'LOG' logs the error message in error-<connector-id> topic and continues processing, 'FAIL' stops the connector in case of an error.",
+          "recommended_values": [
+            "FAIL",
+            "LOG"
+          ]
+        },
+        {
+          "name": "pinecone.use.openai",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "OpenAI Details",
+          "order_in_group": 1,
+          "display_name": "Use OpenAI Mode",
+          "documentation": "Whether to use OpenAI to generate vector embeddings or not",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "pinecone.azure.openai",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "true",
+          "group": "OpenAI Details",
+          "order_in_group": 2,
+          "display_name": "Use Azure OpenAI",
+          "documentation": "Whether to use Azure OpenAI or non-azure OpenAI",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "pinecone.openai.endpoint",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "",
+          "group": "OpenAI Details",
+          "order_in_group": 3,
+          "display_name": "OpenAI Endpoint",
+          "documentation": "OpenAI Endpoint URL"
+        },
+        {
+          "name": "pinecone.openai.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "OpenAI Details",
+          "order_in_group": 4,
+          "display_name": "OpenAI API key",
+          "documentation": "OpenAI API key required to generate vector embedding data"
+        },
+        {
+          "name": "pinecone.openai.deployment",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "OpenAI Details",
+          "order_in_group": 5,
+          "display_name": "OpenAI Deployment Id",
+          "documentation": "OpenAI Deployment ID or Model ID"
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.url",
-          "value": "jdbc:snowflake://${connection.url}"
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.storage.StringConverter"
         },
         {
-          "name": "connection.user"
+          "name": "key.converter.schemas.enable",
+          "value": "false"
         },
         {
-          "name": "connection.credentials.source"
+          "name": "enhanced.avro.schema.support",
+          "value": "true"
         },
         {
-          "name": "connection.private.key"
+          "name": "behavior.on.error"
         },
         {
-          "name": "connection.private.key.passphrase"
+          "name": "topics"
         },
         {
-          "name": "topic.prefix"
+          "name": "pinecone.api.key"
         },
         {
-          "name": "table.include.list"
+          "name": "pinecone.environment"
         },
         {
-          "name": "table.exclude.list"
+          "name": "pinecone.project"
         },
         {
-          "name": "mode"
+          "name": "pinecone.server.timeout"
         },
         {
-          "name": "timestamp.columns.mapping"
+          "name": "pinecone.index"
         },
         {
-          "name": "incrementing.column.mapping"
+          "name": "pinecone.namespace"
         },
         {
-          "name": "db.timezone"
+          "name": "pinecone.use.openai"
         },
         {
-          "name": "timestamp.initial"
+          "name": "pinecone.azure.openai"
         },
         {
-          "name": "table.types"
+          "name": "pinecone.openai.endpoint"
         },
         {
-          "name": "timestamp.granularity"
+          "name": "pinecone.openai.api.key"
         },
         {
-          "name": "validate.non.null",
-          "value": false
-        },
-        {
-          "name": "poll.interval.ms"
-        },
-        {
-          "name": "value.converter",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "name": "pinecone.openai.deployment"
         }
       ]
     },
@@ -493,6 +404,173 @@
         {
           "name": "value.converter.ignore.modern.dialects",
           "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "all",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "errors.tolerance",
+          "value": "all"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "value": "dlq-{{.logicalClusterId}}"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
+        },
+        {
+          "name": "consumer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "producer.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         }
       ]
     },
@@ -813,146 +891,6 @@
       ]
     },
     {
-      "template_id": "common-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "kafka.service.account.id",
-          "type": "STRING",
-          "required": false,
-          "importance": "HIGH",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
-          "display_name": "Kafka Service Account",
-          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
-        },
-        {
-          "name": "kafka.api.secret",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "HIGH",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 3,
-          "display_name": "Kafka API Secret",
-          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
-          "dependents": [
-            "kafka.api.key"
-          ]
-        },
-        {
-          "name": "datapreview.schemas.enable",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "false",
-          "display_name": "Show schemas in data preview request output",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 4,
-          "documentation": "This config key only applies to data preview requests and governs whether the data preview output has record schema with it.\nThe visibility condition is set such that it can never be true.\nSo this key does not show in create connector UI."
-        },
-        {
-          "name": "errors.tolerance",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "group": "Additional Configs",
-          "default_value": "none",
-          "display_name": "errors.tolerance",
-          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
-          "recommended_values": [
-            "none",
-            "all"
-          ]
-        },
-        {
-          "name": "producer.override.linger.ms",
-          "type": "LONG",
-          "required": "false",
-          "importance": "LOW",
-          "group": "Additional Configs",
-          "display_name": "producer.override.linger.ms",
-          "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "topic.creation.default.replication.factor",
-          "value": "3"
-        },
-        {
-          "name": "topic.creation.default.partitions",
-          "value": "1"
-        },
-        {
-          "name": "errors.tolerance",
-          "value": "none"
-        },
-        {
-          "name": "producer.override.max.request.size",
-          "switch": {
-            "kafka.dedicated": {
-              "true": "20971610",
-              "false": "8388698"
-            }
-          }
-        },
-        {
-          "name": "topic.creation.default.max.message.bytes",
-          "switch": {
-            "kafka.dedicated": {
-              "true": "20971520",
-              "false": "8388608"
-            }
-          }
-        },
-        {
-          "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
-        },
-        {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
-          "name": "producer.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "producer.override.sasl.mechanism",
-          "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
-          "name": "admin.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "admin.override.sasl.mechanism",
-          "value": "PLAIN"
-        },
-        {
-          "name": "producer.override.linger.ms"
-        },
-        {
-          "name": "consumer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
-          "name": "consumer.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "consumer.override.sasl.mechanism",
-          "value": "PLAIN"
-        }
-      ]
-    },
-    {
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
@@ -992,162 +930,240 @@
       "connector_configs": []
     },
     {
-      "template_id": "csfle-source",
+      "template_id": "reporter",
       "abstract": true,
       "config_defs": [
         {
-          "name": "csfle.enabled",
-          "type": "BOOLEAN",
-          "default_value": "false",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 1,
-          "docs_hidden": true,
-          "display_name": "Enable Client-Side Field Level Encryption",
-          "documentation": "Determines whether the connector honours CSFLE rules or not",
-          "conditional_metadata_provider": [
-            {
-              "name": "metadata.conditional.visible",
-              "arguments": {
-                "config": "csfle.configs.visible",
-                "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
-              }
-            }
-          ]
-        },
-        {
-          "name": "sr.service.account.id",
+          "name": "reporter.result.topic.name",
           "type": "STRING",
-          "importance": "HIGH",
-          "group": "CSFLE",
-          "order_in_group": 2,
-          "docs_hidden": true,
-          "display_name": "Schema Registry Service Account",
-          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
-        },
-        {
-          "name": "csfle.configs.visible",
-          "type": "STRING",
-          "required": false,
           "importance": "LOW",
-          "default_value": "false",
-          "internal": true
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 3,
+          "display_name": "Reporter Result Topic Name",
+          "default_value": "success-${connector}",
+          "documentation": "The name of the topic to produce records to after successfully processing a sink record. Defaults to 'success-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 4,
+          "display_name": "Reporter Error Topic Name",
+          "default_value": "error-${connector}",
+          "documentation": "The name of the topic to produce records to after each unsuccessful record sink attempt. Defaults to 'error-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
         }
       ],
       "connector_configs": [
         {
-          "name": "csfle.enabled"
-        },
-        {
-          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "name": "reporter.bootstrap.servers",
           "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
             }
           }
         },
         {
-          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "name": "reporter.producer.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.producer.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.producer.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "reporter.admin.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.admin.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.admin.sasl.jaas.config",
+          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
+        },
+        {
+          "name": "reporter.result.topic.name",
+          "value": "success-${connector}"
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "value": "error-${connector}"
+        },
+        {
+          "name": "reporter.admin.confluent.lkc.id",
           "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
             }
           }
         },
         {
-          "name": "value.converter.latest.cache.ttl.sec",
+          "name": "reporter.producer.confluent.lkc.id",
           "switch": {
-            "csfle.enabled": {
-              "true": "300"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
             }
           }
         },
         {
-          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "name": "reporter.admin.ssl.trustmanager.algorithm",
           "switch": {
-            "csfle.enabled": {
-              "true": "false",
-              "false": "true"
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
             }
           }
         },
         {
-          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "name": "reporter.producer.ssl.trustmanager.algorithm",
           "switch": {
-            "csfle.enabled": {
-              "true": "ERROR"
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
             }
           }
         },
         {
-          "name": "key.converter.auto.register.schemas",
+          "name": "reporter.admin.confluent.proxy.protocol.client.mode",
           "switch": {
-            "csfle.enabled": {
-              "true": "false"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
             }
           }
         },
         {
-          "name": "key.converter.use.latest.version",
+          "name": "reporter.producer.confluent.proxy.protocol.client.mode",
           "switch": {
-            "csfle.enabled": {
-              "true": "true"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
             }
           }
         },
         {
-          "name": "key.converter.latest.cache.ttl.sec",
+          "name": "reporter.producer.confluent.proxy.protocol.client.version",
           "switch": {
-            "csfle.enabled": {
-              "true": "300"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
             }
           }
         },
         {
-          "name": "value.converter.auto.register.schemas",
+          "name": "reporter.admin.confluent.proxy.protocol.client.version",
           "switch": {
-            "csfle.enabled": {
-              "true": "false"
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
             }
           }
         },
         {
-          "name": "value.converter.use.latest.version",
+          "name": "reporter.producer.ssl.endpoint.identification.algorithm",
           "switch": {
-            "csfle.enabled": {
-              "true": "true"
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
             }
           }
+        },
+        {
+          "name": "reporter.admin.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "reporter.result.topic.name"
+        },
+        {
+          "name": "reporter.error.topic.name"
         }
       ]
     },
     {
-      "template_id": "source-connector-schema-enabled-output-data-format",
+      "template_id": "input-data-format",
       "abstract": true,
       "config_defs": [
         {
-          "name": "output.data.format",
+          "name": "input.data.format",
           "type": "STRING",
           "required": true,
-          "default_value": "AVRO",
           "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
           "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, or PROTOBUF. Please configure Confluent Cloud Schema Registry.",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
-            "PROTOBUF"
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
           ],
           "dependents": [
             "schema.registry.url"
           ]
+        },
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "default_value": "JSON",
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF",
+            "JSON",
+            "BYTES"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "alias": "schemas.enable",
+          "display_name": "value.converter.schemas.enable",
+          "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
+        },
+        {
+          "name": "value.converter.replace.null.with.default",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "alias": "replace.null.with.default",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.replace.null.with.default",
+          "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
           "name": "value.converter.ignore.default.for.nullables",
@@ -1174,24 +1190,58 @@
         {
           "name": "value.converter",
           "switch": {
-            "output.data.format": {
+            "input.data.format": {
               "AVRO": "io.confluent.connect.avro.AvroConverter",
               "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
+              "BYTES": "org.apache.kafka.connect.converters.ByteArrayConverter",
+              "JSON": "org.apache.kafka.connect.json.JsonConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable",
+          "switch": {
+            "input.data.format": {
+              "JSON": false
             }
           }
         },
         {
           "name": "value.converter.schema.registry.url",
-          "value": "${schema.registry.url}"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.credentials.source",
-          "value": "USER_INFO"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
         },
         {
           "name": "value.converter.basic.auth.user.info",
-          "value": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -1200,19 +1250,6 @@
           "name": "value.converter.scrub.invalid.names",
           "dynamic.mapper": {
             "name": "value.converter.scrub.invalid.names.mapper"
-          }
-        },
-        {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
-            }
           }
         }
       ]
@@ -1568,29 +1605,55 @@
       ]
     },
     {
-      "template_id": "super-source",
+      "template_id": "super-sink",
       "abstract": true,
       "config_defs": [
         {
-          "name": "producer.override.compression.type",
+          "name": "consumer.override.auto.offset.reset",
           "type": "STRING",
-          "recommended_values": [
-            "none",
-            "gzip",
-            "snappy",
-            "lz4",
-            "zstd"
-          ],
-          "documentation": "The compression type for all data generated by the producer. Valid values are none, gzip, snappy, lz4, and zstd.",
-          "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "producer.override.compression.type"
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset or the \u201clatest\u201d offset (the default). You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
         }
       ],
       "connector_configs": [
         {
-          "name": "producer.override.compression.type"
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
         }
       ]
     }
