@@ -275,6 +275,7 @@ class ConfigDiscovery:
         try:
             response = requests.get(url, timeout=5, verify=not self.disable_ssl_verify)
             response.raise_for_status()
+            self.logger.info(f"Response from {url}: {response.json()}")
             return response.json()
         except requests.exceptions.RequestException as e:
             self.logger.error(f"HTTP error for {url}: {e}")

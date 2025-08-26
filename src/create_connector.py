@@ -3,7 +3,7 @@ import base64
 from typing import Dict, Any, List, Optional, Tuple
 import json
 import os
-
+import logging
 
 def extract_connectors_configs_from_json(json_file_path: str) -> List[Dict[str, Any]]:
     """
@@ -73,6 +73,7 @@ def extract_connectors_configs_from_json(json_file_path: str) -> List[Dict[str, 
 
 class ConnectorCreator:
     def __init__(self, environment: str):
+        self.logger = logging.getLogger(__name__)
         if environment == "prod":
             self.url_template = "https://api.confluent.cloud/connect/v1/environments/{environment_id}/clusters/{kafka_cluster_id}/connectors"
         elif environment == "stag":
@@ -103,21 +104,22 @@ class ConnectorCreator:
         Create new connector(s) in Confluent Cloud from a JSON file.
         Returns a list of new connector information dicts (one per connector in the file).
         """
+        self.logger.info(f"[INFO] Creating connector(s) from {json_file_path}")
         connector_entries = extract_connectors_configs_from_json(json_file_path)
         results = []
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
         headers = {
             "Content-Type": "application/json",
         }
-        print(bearer_token)
+        self.logger.info(f"[INFO] Bearer token: {bearer_token}")
         if bearer_token:
             headers["Authorization"] = f"Basic {self.encode_to_base64(bearer_token)}"
             # headers["Authorization"] = f"Basic {bearer_token}"
 
-        print(headers["Authorization"])
+        self.logger.info(f"[INFO] Headers: {headers}")
 
-        print(f"[INFO] API URL: {url}")
-        print(f"[INFO] Headers: {{'Content-Type': 'application/json', 'Authorization': '***' if bearer_token else None}}")
+        self.logger.info(f"[INFO] API URL: {url}")
+        self.logger.info(f"[INFO] Headers: {{'Content-Type': 'application/json', 'Authorization': '***' if bearer_token else None}}")
 
         for name, config, offsets in connector_entries:
             # Ensure config is a dict
@@ -137,7 +139,7 @@ class ConnectorCreator:
             redacted_body = body.copy()
             if 'config' in redacted_body:
                 redacted_body['config'] = {k: ('***' if 'password' in k.lower() or 'secret' in k.lower() else v) for k, v in redacted_body['config'].items()}
-            print(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
+            self.logger.info(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
             # try:
             #     response = requests.post(url, json=body, headers=headers, verify=not disable_ssl_verify)
             #     print(f"[INFO] Response status code for '{name}': {response.status_code}")
