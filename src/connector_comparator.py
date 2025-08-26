@@ -7,6 +7,9 @@ from semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
 
+from offset_manager import OffsetManager
+
+
 class ConnectorComparator:
     SUCCESSFUL_CONFIGS_DIR = "successful_configs"
     UNSUCCESSFUL_CONFIGS_DIR = "unsuccessful_configs_with_errors"
@@ -100,6 +103,10 @@ class ConnectorComparator:
             'io.confluent.connect.protobuf.ProtobufConverter': 'PROTOBUF',
             'org.apache.kafka.connect.json.JsonConverter': 'JSON'
         }
+
+        self.offset_supported_source_connector_types = [
+            'io.confluent.connect.jdbc.JdbcSourceConnector',
+        ]
 
     def encode_to_base64(self, input_string):
         # Convert the input string to bytes
@@ -1457,7 +1464,7 @@ class ConnectorComparator:
         except Exception as e:
             logger.error(f"Failed to parse {file}: {e}")
 
-    def process_connectors(self):
+    def process_connectors(self) -> Dict[str, Any]:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
@@ -1468,7 +1475,7 @@ class ConnectorComparator:
         connectors = list(connectors_dict.values())
 
         # Process each connector
-        fm_configs = []
+        fm_configs = {}
         for i, connector in enumerate(connectors):
             try:
                 # Handle case where connector might be a string or other type
@@ -1493,37 +1500,17 @@ class ConnectorComparator:
                     'mapping_warnings': result['warnings'],
                 }
 
-                fm_configs.append(fm_config)
+                # Add offsets to FM config if they are supported
+                if 'offsets' in connector and OffsetManager.get_instance(self.logger).is_offset_supported_connector(connector.get('type', ''), fm_config['config']['connector.class']):
+                    fm_config['offsets'] = connector['offsets']
 
-                # Categorize configs based on mapping_errors
-                if result['errors'] and len(result['errors']) > 0:
-                    # There are mapping errors, save to unsuccessful_configs_with_errors
-                    complete_dir = self.fm_configs_dir / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
-                    complete_dir.mkdir(exist_ok=True)
-                    config_file = complete_dir / f"{connector['name']}.json"
-                    category = "unsuccessful_configs_with_errors"
-                else:
-                    # There are no mapping errors, save to successful_configs
-                    error_dir = self.fm_configs_dir / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
-                    error_dir.mkdir(exist_ok=True)
-                    config_file = error_dir / f"{connector['name']}.json"
-                    category = "successful_configs"
-
-                with open(config_file, 'w') as f:
-                    json.dump(fm_config, f, indent=2)
-
-                self.logger.info(f"Saved FM config for {connector['name']} to {config_file} (category: {category})")
+                fm_configs[connector['name']] = fm_config
 
             except Exception as e:
                 connector_name = connector.get('name', f'connector_{i}') if isinstance(connector, dict) else f'connector_{i}'
                 self.logger.error(f"Error processing connector {connector_name}: {str(e)}")
 
-        # Save all FM configs
-        all_configs_file = self.output_dir / 'all_fm_configs.json'
-        with open(all_configs_file, 'w') as f:
-            json.dump(fm_configs, f, indent=2)
-
-        self.logger.info(f"Saved {len(fm_configs)} FM configurations to {all_configs_file}") 
+        return fm_configs
 
     def transformSMToFm(self, connector_name:str, user_configs: Dict[str, Any]) -> Dict[str, Any]:
         """
