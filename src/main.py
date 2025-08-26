@@ -7,8 +7,6 @@ from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
 import json
 
-from create_connector import ConnectorCreator
-
 FM_CONFIGS_DIR = "fm_configs"
 SM_CONFIGS_DIR = "sm_configs_compiled"
 
