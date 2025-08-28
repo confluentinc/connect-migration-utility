@@ -18,25 +18,25 @@ SM_CONFIGS_DIR = "sm_configs_compiled"
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_file = output_dir / 'migration.log'
-    
+
     # Clear any existing handlers to avoid conflicts
     root_logger = logging.getLogger()
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     # Create file handler
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
-    
+
     # Create console handler (explicitly for stdout)
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)
-    
+
     # Configure root logger
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(file_handler)
@@ -49,12 +49,12 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
         errors = fm_config.get('errors', [])
         if errors:
             # There are mapping errors, save to unsuccessful_configs_with_errors
-            complete_dir = output_dir / FM_CONFIGS_DIR/ ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
+            complete_dir = output_dir / FM_CONFIGS_DIR / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
             complete_dir.mkdir(exist_ok=True)
             config_file = complete_dir / f"{connector_name}.json"
         else:
             # There are no mapping errors, save to successful_configs
-            complete_dir = output_dir / FM_CONFIGS_DIR/ ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
+            complete_dir = output_dir / FM_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
             complete_dir.mkdir(exist_ok=True)
             config_file = complete_dir / f"{connector_name}.json"
         with open(config_file, 'w') as f:
@@ -196,7 +196,7 @@ def main():
         # If offsets are required, fetch them from the workers and add them to the FM configs
         if getattr(args, 'offsets_required', None) and discovery:
             logger.info("Fetching offsets for connectors")
-            configs_with_offsets = offset_manager.get_connector_configs_offsets(discovery, worker_urls_list)
+            configs_with_offsets = offset_manager.get_connector_configs_offsets(worker_urls_list)
             for config in configs_with_offsets:
                 if config.get('offsets') and config.get('name') in fm_configs:
                     fm_configs[config['name']]['offsets'] = config['offsets']
@@ -227,7 +227,7 @@ def main():
                 try:
                     # Only call create_connector if env_id, lkc_id, and bearer_token are provided
                     if getattr(args, 'env_id', None) and getattr(args, 'lkc_id', None) and bearer_token:
-                        results = connector_creator.create_connector(
+                        results = connector_creator.create_connector_from_json_file(
                             environment_id=getattr(args, 'env_id', None),
                             kafka_cluster_id=getattr(args, 'lkc_id', None),
                             kafka_api_key=getattr(args, 'kafka_api_key', None),
