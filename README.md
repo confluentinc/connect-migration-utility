@@ -1,132 +1,76 @@
 # Kafka Connector Migration Utility
 
-A powerful tool to migrate Self-Managed (SM) Kafka Connect configurations to Fully Managed (FM) configurations on Confluent Cloud. This utility intelligently maps SM connector configs to FM configs using semantic matching, template-based mappings, and comprehensive error reporting.
+A powerful tool to migrate Self-Managed connectors to Fully Managed connectors on Confluent Cloud. This utility maps self-managed connector configurations to fuly-managed connector configurations and gives comprehensive errors and warnings during the migration. 
 
-## 🚀 Features
+Follow the steps below to migrate your connectors to Conlfuent Cloud.
 
-- **Intelligent Mapping**: Uses semantic matching with configurable thresholds to map SM properties to FM properties
-- **Template-Based Processing**: Leverages FM templates to understand supported configurations and mappings
-- **Transform & Predicate Filtering**: Automatically filters out unsupported transforms and their associated predicates
-- **JDBC URL Parsing**: Automatically extracts database connection details from JDBC URLs
-- **Comprehensive Error Reporting**: Detailed mapping errors with actionable guidance
-- **HTTP Integration**: Fetches SM templates from worker URLs and FM transforms from Confluent Cloud API
-- **Fallback Support**: Uses local fallback files when HTTP calls fail
-
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.8+
 - Self-Managed Kafka Connect worker URLs
-- Confluent Cloud environment with API access(optional)
+- Confluent Cloud environment with API access. (optional)
 
-## 🛠️ Installation
+## Installation
+
+Follow the steps below to install the migration tool:
+
+1. Clone the Migration utility repository.
 
 ```bash
 # Clone the repository
 git clone <repository-url>
+```
+
+2. Go to the clone repository and install the dependencies:
+
+```bash
 cd connect-migration-utility
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-## 📁 Project Structure
 
-```
-connect-migration-utility/
-├── src/
-│   ├── connector_comparator.py    # Main migration logic
-│   ├── config_discovery.py        # HTTP client for fetching templates
-│   ├── semantic_matcher.py        # Semantic matching engine
-│   └── main.py                    # CLI entry point
-├── templates/
-│   ├── fm/                        # FM template files
-│   └── sm/                        # SM template files (optional)
-├── output/                        # Generated FM configs
-├── fm_transforms_list.json        # Fallback FM transforms
-└── README.md
-```
+## Migrate 
 
-## 🎯 Usage
+This section covers the steps about using the migration utility tool to migrate your connector(s).
 
-### Basic Usage - From Config File
+### Step 1: Translate the connector configuration
 
-```bash
-python src/main.py --config-file connectors.json --output-dir output/
-```
+To get started with migration, you first need to translate the configuration of the self-managed connector you want to migrate. 
+You can provide the connector configurations in the following ways:
 
-### Basic Usage - From Directory of config files
+1. Worker URL (Configurations are fetched directly from the workers)
+2. Configuration directory or configuration file 
 
-```bash
-python src/main.py --config-dir configDir --output-dir output/
-```
+#### Using the worker URL
 
-### Basic Usage - From Worker Discovery
+Run the following command to check the the migration feasibilty using the worker URL:
 
 ```bash
 python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
 ```
 
-### Advanced Usage with Confluent Cloud Integration
+##### SSL Certificate Verification
+
+While using the worker URL, the utility makes HTTP(s) requests to fetch templates and configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services. Refer to the command below:
 
 ```bash
-python src/main.py \
-  --config-file connectors.json \
-  --output-dir output/ \
-  --env-id <environment-id> \
-  --lkc-id <lkc-id> \
-  --bearer-token <api-token>
+python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/ --disable-ssl-verify
 ```
 
-### Secure Bearer Token Input
+#### Using configuration file or directory
 
-```bash
-python src/main.py \
-  --config-file connectors.json \
-  --output-dir output/ \
-  --env-id <environment-id> \
-  --lkc-id <lkc-id> \
-  --prompt-bearer-token
-```
+If you are providing the configuration directory or a file, you must provide it in the input format shown below:
 
-### Command Line Options
+##### Input format
 
-| Option | Description | Required |
-|--------|-------------|----------|
-| `--config-file` | Path to JSON file containing connector configurations | No* |
-| `--config-dir` | Path of directory with multiple json connector configuration files | No* |
-| `--worker-urls` | Comma-separated list of worker URLs | No* |
-| `--worker-urls-file` | Path to file containing worker URLs | No* |
-| `--output-dir` | Output directory for all files (default: output) | No |
-| `--env-id` | Confluent Cloud environment ID | No |
-| `--lkc-id` | Confluent Cloud LKC cluster ID | No |
-| `--bearer-token` | Confluent Cloud bearer token (api_key:api_secret) | No |
-| `--prompt-bearer-token` | Prompt for bearer token securely | No |
-| `--redact` | Redact sensitive configurations | No |
-| `--sensitive-file` | Path to file containing sensitive config keys | No |
-| `--worker-config-file` | Path to file containing additional worker configs | No |
-| `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
+The examples below show the sample input format of the connector configuration for the migration process.
 
-*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required
+> Only valid if you are using the configuration file or the configuration directory.
 
-## 🔒 SSL Certificate Verification
+1. **Single Connector**:
 
-The utility makes HTTPS requests to fetch templates and configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services.
-
-### Enable SSL Verification (Default - Recommended)
-```bash
-python src/main.py --config-file connectors.json --output-dir output/
-```
-
-### Disable SSL Verification
-```bash
-python src/main.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
-```
-
-
-
-## 📊 Input Format
-
-### Single Connector
 ```json
 {
   "name": "my-connector",
@@ -144,7 +88,9 @@ python src/main.py --config-file connectors.json --output-dir output/ --disable-
 }
 ```
 
-### Multiple Connectors
+2. **Multplie connectors**:
+
+
 ```json
 {
   "connectors": {
@@ -223,66 +169,201 @@ python src/main.py --config-file connectors.json --output-dir output/ --disable-
 }
 ```
 
-## 🔄 Mapping Process
 
-The migration utility follows a sophisticated multi-step mapping process:
 
-### 1. Direct Matching
-- Exact property name matches between SM and FM configs
-- Validates values against recommended values from FM templates
+##### Using directory of configuration files
 
-### 2. Template-Based Mappings
-- **Switch Mappings**: Maps SM values to FM values based on conditions
-- **Value Mappings**: Direct value assignments from SM to FM
-- **Template Variables**: Handles `${variable}` references in mappings
+Run the following command to check the the migration feasibilty using the directory of configuration file:
 
-### 3. Static Mappings
-- Predefined mappings for common properties (converters, etc.)
-- Connector-type specific mappings (source vs sink)
+```bash
+python src/main.py --config-dir configDir --output-dir output/
+```
 
-### 4. Semantic Matching
-- Uses NLP-based similarity scoring (threshold: 0.7)
-- Matches properties based on name and description similarity
-- Prevents false positives with additional validation
+##### Using a configuration file
 
-### 5. Transform & Predicate Processing
-- Filters transforms based on FM support
-- Automatically filters predicates associated with unsupported transforms
-- Provides detailed error messages for filtered items
+Run the following command to check the the migration feasibilty using the configuration file:
 
-## ⚠️ Mapping Errors
+```bash
+python src/main.py --config-file connectors.json --output-dir output/
+```
+
+
+> [!NOTE]
+> If you want to include the latest transforms available on Confluent Cloud, you can provide additional information as shown in the command below:
+> 
+> ```bash
+> python src/main.py \
+>   --config-file connectors.json \
+>   --output-dir output/ \
+>   --env-id <environment-id> \
+>   --lkc-id <lkc-id> \
+>   --bearer-token <api-token>
+> ```
+> 
+> If you want to use a secure bearer token:
+> 
+> ```bash
+> python src/main.py \
+>   --config-file connectors.json \
+>   --output-dir output/ \
+>   --env-id <environment-id> \
+>   --lkc-id <lkc-id> \
+>   --prompt-bearer-token
+> ```
+
+
+#### Output format
+
+When you run the commands to check the feasibilty, it gives an output in the output directory, that will have the connector configuration, mentioning the 
+mapping errors and the warnings. The directory structure looks like this:
+
+```
+output/
+├── summary.txt                                    # A file that has a summary generated. 
+├── discovered_configs
+│   ├── successful_configs                      
+│       ├── fm_configs                             # fully managed connector configuration JSON file
+|       ├── all files                              #  JSON files that have the self-managed and fully-managed configurations, mapping errors and mapping warnings
+|   ├── unsuccessful_configs
+|       ├── all files
+|       ├── fm_configs
+```
+
+The examples below show the sample output format of the connector configuration.
+
+##### Successful Migration (successful_configs)
+
+The example below show the output that has no errors and warnings. 
+If the output has no mapping errors, you can move to Step 2.
+
+```json
+{
+  "name": "my-connector",
+  "sm_config": { /* original SM config */ },
+  "config": {
+    "connector.class": "JdbcSource",
+    "input.key.format": "AVRO",
+    "input.value.format": "AVRO",
+    "connection.url": "jdbc:mysql://localhost:3306/mydb",
+    "table.whitelist": "users"
+  },
+  "mapping_errors": [],
+}
+```
+
+##### Migration with Errors (unsuccessful_configs)
+
+The example below show the output that has mapping errors and warnings.
+You must fix the mapping errors before moving further. If you migrate the connector with mapping errors in the configurations, it will lead to errors.
+
+
+```json
+{
+  "name": "my-connector",
+  "sm_config": { /* original SM config */ },
+  "config": { /* successfully mapped config */ },
+  "mapping_errors": [
+    "Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used.",
+    "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
+  ],
+}
+```
+### Command line options
+
+The table below shows the command line options valid for the python translation script:
+
+| Option | Description | Required |
+|--------|-------------|----------|
+| `--config-file` | Path to JSON file containing connector configurations | No* |
+| `--config-dir` | Path of directory with multiple json connector configuration files | No* |
+| `--worker-urls` | Comma-separated list of worker URLs | No* |
+| `--worker-urls-file` | Path to file containing worker URLs | No* |
+| `--output-dir` | Output directory for all files (default: output) | No |
+| `--env-id` | Confluent Cloud environment ID | No |
+| `--lkc-id` | Confluent Cloud LKC cluster ID | No |
+| `--bearer-token` | Confluent Cloud bearer token (api_key:api_secret) | No |
+| `--prompt-bearer-token` | Prompt for bearer token securely | No |
+| `--redact` | Redact sensitive configurations | No |
+| `--sensitive-file` | Path to file containing sensitive config keys | No |
+| `--worker-config-file` | Path to file containing additional worker configs | No |
+| `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
+
+*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required
+
+
+
+### Step 2: Migrate the connector
+
+Once you have fixed the mapping errors (if any), you can follow the steps below to complete the migration:
+
+
+#### Prerequisites
+
+- A Kafka cluster on Confluent Cloud (Cluster ID, Environment ID).
+
+
+#### Create a connector with No Data loss/duplication
+
+To create a connector with no data loss and data duplication, run the command below to create a fully-managed connector:
+
+```bash
+command
+```
+> The python script stops the self-managed connector and fetches the latest offset and creates a fully-managed connector on Confluent Cloud using the fetched offset.
+
+#### Create a connector with no downtime 
+
+To create a connector with no downtime, run the command below to create a fully-managed connector:
+
+```bash
+command
+```
+> The python script fetched the latest offset without stopping the connector and creates a fully-managed connector on Confluent Cloud using the fetched offset. This option may cause data duplication as the self-managed connector is still running.
+
+
+#### Create connector without any offset consideration
+
+If you want to create a fully-managed connector without stopping the self-managed connector and without any offset consideration, run the following command:
+
+```bash
+command
+```
+> The python script creates the fully-managed connector on Confluent Cloud using the translated configurations.
+
+#### Command Line Options
+
+Table with command line options
+
+
+## Errors
+
+### Mapping Errors
 
 The utility provides comprehensive error reporting to help you understand and resolve mapping issues:
 
-### Transform Errors
+#### Transform Errors
 
 **Unsupported Transform Type**
 ```
-"Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used."
+"Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in fully-managed connectors. Potentially Custom SMT can be used."
 ```
 *Solution: Consider implementing the transform as a Custom SMT in Confluent Cloud*
 
-**Missing Transform Type**
-```
-"Transform 'transform_1' has no type specified"
-```
-*Solution: Add the missing `transforms.transform_1.type` property*
-
-### Predicate Errors
+#### Predicate Errors
 
 **Associated with Unsupported Transform**
 ```
 "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
 ```
-*Solution: The predicate is automatically filtered when its associated transform is not supported*
+*Solution: The predicate is automatically filtered when its associated transform is not supported. To include the prodicate along the transform, create a Custom SMT.*
 
-### Property Mapping Errors
+#### Property Mapping Errors
 
 **Unmapped Properties**
 ```
 "Config 'custom.property' not exposed for fully managed connector"
 ```
-*Solution: The property is not available in FM - check if it's needed or can be replaced*
+*Solution: The property is not available in FM - check if it's needed or can be replaced or reach out Confluent support*
 
 **Invalid Values**
 ```
@@ -302,7 +383,7 @@ The utility provides comprehensive error reporting to help you understand and re
 ```
 *Solution: The property couldn't be automatically mapped - may need manual configuration*
 
-### Validation Errors
+#### Validation Errors
 
 **Config Defs Filtering**
 ```
@@ -310,81 +391,28 @@ The utility provides comprehensive error reporting to help you understand and re
 ```
 *Solution: Property filtered out as it's not in FM template config_defs*
 
-## 🔧 Configuration
 
-### Semantic Matching Threshold
-Adjust the similarity threshold in `connector_comparator.py`:
-```python
-semantic_threshold=0.7  # Default: 0.7 (70% similarity)
-```
-
-
-## 📈 Output Format
-
-### Successful Migration
-```json
-{
-  "name": "my-connector",
-  "sm_config": { /* original SM config */ },
-  "config": {
-    "connector.class": "JdbcSource",
-    "input.key.format": "AVRO",
-    "input.value.format": "AVRO",
-    "connection.url": "jdbc:mysql://localhost:3306/mydb",
-    "table.whitelist": "users"
-  },
-  "mapping_errors": [],
-  "unmapped_configs": []
-}
-```
-
-### Migration with Errors
-```json
-{
-  "name": "my-connector",
-  "sm_config": { /* original SM config */ },
-  "config": { /* successfully mapped config */ },
-  "mapping_errors": [
-    "Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used.",
-    "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
-  ],
-  "unmapped_configs": ["custom.property"]
-}
-```
-
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 **HTTP Connection Errors**
-- Verify worker URLs are accessible
-- Check network connectivity
-- Ensure proper authentication for Confluent Cloud API
+- Verify worker URLs are accessible.
+- Check network connectivity.
+- Ensure proper authentication for Confluent Cloud API.
 
 **Template Not Found**
-- Verify FM template files exist in `templates/fm/`
-- Check template naming convention
-- Ensure connector.class matches template
-
-**Semantic Matching Issues**
-- Adjust similarity threshold if needed
-- Review property descriptions in templates
-- Consider adding static mappings for common cases
+- Verify FM template files exist in `templates/fm/`.
+- Check template naming convention.
+- Ensure connector.class matches template.
 
 **Transform Filtering**
-- Review FM transform support documentation
-- Consider Custom SMT alternatives
-- Check if transforms are essential for your use case
+- Review FM transform support documentation.
+- Consider Custom SMT alternatives.
+- Check if transforms are essential for your use case.
 
-### Debug Mode
 
-Enable debug logging for detailed processing information:
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -392,16 +420,16 @@ logging.basicConfig(level=logging.DEBUG)
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## License
 
-[Add your license information here]
+Apache 2.0 License
 
-## 🆘 Support
+## Support
 
 For issues and questions:
-- Create an issue in the repository
-- Check the troubleshooting section
-- Review the mapping errors documentation above
+- Create an issue in the repository.
+- Check the troubleshooting section.
+- Review the mapping errors documentation above.
 
 ---
 
