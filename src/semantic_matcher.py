@@ -1,3 +1,10 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
 from typing import Dict, Any, List, Optional, NamedTuple
 import numpy as np
 from dataclasses import dataclass
