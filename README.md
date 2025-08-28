@@ -1,13 +1,13 @@
 # Kafka Connector Migration Utility
 
-A powerful tool to migrate Self-Managed connectors to Fully Managed connectors on Confluent Cloud. This utility maps self-managed connector configurations to fuly-managed connector configurations and gives comprehensive errors and warnings during the migration. 
+A powerful tool to migrate self-managed connectors to fully-managed connectors on Confluent Cloud. This utility maps self-managed connector configurations to fully-managed connector configurations and gives comprehensive errors and warnings during the migration. 
 
-Follow the steps below to migrate your connectors to Conlfuent Cloud.
+Follow the steps below to migrate your connectors to Confluent Cloud.
 
 ## Prerequisites
 
 - Python 3.8+
-- Self-Managed Kafka Connect worker URLs
+- self-managed Kafka Connect worker URLs
 - Confluent Cloud environment with API access. (optional)
 
 ## Installation
@@ -88,7 +88,7 @@ The examples below show the sample input format of the connector configuration f
 }
 ```
 
-2. **Multplie connectors**:
+2. **Multiple connectors**:
 
 
 ```json
@@ -263,7 +263,7 @@ You must fix the mapping errors before moving further. If you migrate the connec
   "sm_config": { /* original SM config */ },
   "config": { /* successfully mapped config */ },
   "mapping_errors": [
-    "Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in Fully Managed Connector. Potentially Custom SMT can be used.",
+    "Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in fully-managed Connector. Potentially Custom SMT can be used.",
     "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
   ],
 }
@@ -355,7 +355,7 @@ The utility provides comprehensive error reporting to help you understand and re
 ```
 "Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
 ```
-*Solution: The predicate is automatically filtered when its associated transform is not supported. To include the prodicate along the transform, create a Custom SMT.*
+*Solution: The predicate is automatically filtered when its associated transform is not supported. To include the predicate along the transform, create a Custom SMT.*
 
 #### Property Mapping Errors
 
