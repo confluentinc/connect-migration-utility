@@ -121,9 +121,17 @@ class ConnectorCreator:
         self.logger.info(f"[INFO] API URL: {url}")
         self.logger.info(f"[INFO] Headers: {{'Content-Type': 'application/json', 'Authorization': '***' if bearer_token else None}}")
 
-        for name, config, offsets in connector_entries:
+        for entry in connector_entries:
+            name = entry['name']
+            config = entry['config']
+            offsets = entry.get('offsets', None)
+            self.logger.info(f"[INFO] Creating connector '{name}' with config keys: {list(config.keys())} and offsets: {'present' if offsets else 'not present'}")
+
             # Ensure config is a dict
-            config = dict(config) if config is not None else {}
+            if config is None or not isinstance(config, dict):
+                self.logger.error(f"[ERROR] Config for connector '{name}' is not a valid dictionary")
+                continue
+            config = dict(config)
             # Add required kafka fields
             config["kafka.api.key"] = kafka_api_key
             config["kafka.api.secret"] = kafka_api_secret

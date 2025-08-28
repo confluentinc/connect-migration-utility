@@ -207,7 +207,7 @@ def main():
 
         # stop connector working in SM based on user input
 
-        if not getattr(args, 'create_connector', None) or getattr(args, 'create_connector', None)!=True:
+        if not getattr(args, 'create_connector', False):
             logger.info("Skipping connector creation")
             sys.exit(0)
 
