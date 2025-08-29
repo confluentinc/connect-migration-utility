@@ -16,11 +16,6 @@ from connector_comparator import ConnectorComparator
 from summary import generate_migration_summary
 import json
 
-from create_connector import ConnectorCreator
-from offset_manager import OffsetManager
-
-FM_CONFIGS_DIR = "fm_configs"
-SM_CONFIGS_DIR = "sm_configs_compiled"
 
 
 def setup_logging(output_dir: Path):
@@ -51,27 +46,49 @@ def setup_logging(output_dir: Path):
     root_logger.addHandler(console_handler)
 
 def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
-    """Write FM configs to file"""
-    # This function writes FM configs to the specified output directory as JSON files.
+    """Write FM configs to file in the discovered_configs structure"""
+    # Directory structure
+    discovered_dir = output_dir / "discovered_configs"
+    successful_dir = discovered_dir / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
+    unsuccessful_dir = discovered_dir / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
+    successful_fm_dir = successful_dir / ConfigDiscovery.FM_CONFIGS_DIR
+    unsuccessful_fm_dir = unsuccessful_dir / ConfigDiscovery.FM_CONFIGS_DIR
+
+    # Create directories if they don't exist
+    successful_fm_dir.mkdir(parents=True, exist_ok=True)
+    unsuccessful_fm_dir.mkdir(parents=True, exist_ok=True)
+    successful_dir.mkdir(parents=True, exist_ok=True)
+    unsuccessful_dir.mkdir(parents=True, exist_ok=True)
+
     for connector_name, fm_config in fm_configs.items():
         errors = fm_config.get('errors', [])
+        minimal_fm = {
+            "name": connector_name,
+            "config": fm_config.get("config", {})
+        }
         if errors:
-            # There are mapping errors, save to unsuccessful_configs_with_errors
-            complete_dir = output_dir / FM_CONFIGS_DIR / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
-            complete_dir.mkdir(exist_ok=True)
-            config_file = complete_dir / f"{connector_name}.json"
+            # Save full config in unsuccessful_configs
+            full_config_file = unsuccessful_dir / f"{connector_name}.json"
+            with open(full_config_file, 'w') as f:
+                json.dump(fm_config, f, indent=2)
+            # Save minimal fm_config in fm_configs
+            fm_file = unsuccessful_fm_dir / f"fm_config_{connector_name}.json"
+            with open(fm_file, 'w') as f:
+                json.dump(minimal_fm, f, indent=2)
         else:
-            # There are no mapping errors, save to successful_configs
-            complete_dir = output_dir / FM_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
-            complete_dir.mkdir(exist_ok=True)
-            config_file = complete_dir / f"{connector_name}.json"
-        with open(config_file, 'w') as f:
-            json.dump(fm_config, f, indent=2)
+            # Save full config in successful_configs
+            full_config_file = successful_dir / f"{connector_name}.json"
+            with open(full_config_file, 'w') as f:
+                json.dump(fm_config, f, indent=2)
+            # Save minimal fm_config in fm_configs
+            fm_file = successful_fm_dir / f"fm_config_{connector_name}.json"
+            with open(fm_file, 'w') as f:
+                json.dump(minimal_fm, f, indent=2)
 
-    logger.info(f"Saved {len(fm_configs)} FM configurations to {output_dir}")
+    logger.info(f"Saved {len(fm_configs)} FM configurations to {discovered_dir}")
 
-    # Save all FM configs
-    all_configs_file = output_dir / 'all_fm_configs.json'
+    # Save all FM configs (full) in discovered_configs
+    all_configs_file = discovered_dir / 'compiled_configs.json'
     with open(all_configs_file, 'w') as f:
         json.dump(fm_configs, f, indent=2)
 
@@ -90,14 +107,6 @@ def main():
     parser.add_argument('--output-dir', type=str, default='output', help='Output directory for all files')
 
     # Confluent Cloud credentials for FM transforms (optional)
-    parser.add_argument('--create-connector', type=bool, default=False, help='Whether to create connectors or not')
-    parser.add_argument('--environment', type=str, choices=['prod', 'stag', 'devel'], help='Environment to create connectors in (choose from prod, stag, devel)')
-    parser.add_argument('--offsets-required', type=bool, default=False, help='Whether to create connectors with offsets')
-    parser.add_argument('--env-id', type=str, help='Confluent Cloud environment ID')
-    parser.add_argument('--lkc-id', type=str, help='Confluent Cloud LKC cluster ID')
-    parser.add_argument('--stop-connector', type=bool, default=False, help='Whether to stop connectors or not')
-    parser.add_argument('--kafka-api-key', type=str, help='Kafka API key for LKC cluster')
-    parser.add_argument('--kafka-api-secret', type=str, help='Kafka API secret for LKC cluster')
     parser.add_argument('--bearer-token', type=str, help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
@@ -109,14 +118,10 @@ def main():
     # Create output directory if it doesn't exist
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / FM_CONFIGS_DIR).mkdir(exist_ok=True)
 
     # Setup logging
     setup_logging(output_dir)
     logger = logging.getLogger(__name__)
-
-    # Initialize offset manager
-    offset_manager = OffsetManager.get_instance(logger)
 
     # Handle bearer token input
     bearer_token = args.bearer_token
@@ -155,8 +160,6 @@ def main():
             config_dir = Path(args.config_dir)
             if not config_dir.exists() or not config_dir.is_dir():
                 raise FileNotFoundError(f"Config directory not found or is not a directory: {args.config_dir}")
-            merged_dir = output_dir / 'sm_configs_compiled'
-            merged_dir.mkdir(exist_ok=True)
             all_connectors_dict = {}  # Accumulate all connectors here
             for file in sorted(config_dir.iterdir()):
                 ConnectorComparator.parse_connector_file(file, all_connectors_dict, logger)
@@ -165,7 +168,7 @@ def main():
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
                 sys.exit(1)
             # Write all connectors to a single file
-            all_connectors_path = merged_dir / 'combined_connectors_sm_configs.json'
+            all_connectors_path = output_dir / 'compiled_input_sm_configs.json'
             with open(all_connectors_path, 'w') as all_f:
                 json.dump({"connectors": all_connectors_dict}, all_f, indent=2)
             logger.info(f"Wrote all connectors to {all_connectors_path}")
@@ -201,65 +204,9 @@ def main():
         fm_configs = comparator.process_connectors()
         logger.info("Connector processing completed successfully")
 
-        # If offsets are required, fetch them from the workers and add them to the FM configs
-        if getattr(args, 'offsets_required', None) and discovery:
-            logger.info("Fetching offsets for connectors")
-            configs_with_offsets = offset_manager.get_connector_configs_offsets(worker_urls_list)
-            for config in configs_with_offsets:
-                if config.get('offsets') and config.get('name') in fm_configs:
-                    fm_configs[config['name']]['offsets'] = config['offsets']
-            logger.info(f"FM configs with offsets: {fm_configs}")
-
         # Write FM configs to file
         write_fm_configs_to_file(fm_configs, output_dir, logger)
 
-        # stop connector working in SM based on user input
-
-        if not getattr(args, 'create_connector', False):
-            logger.info("Skipping connector creation")
-            sys.exit(0)
-
-        # Parse JSON files in output_dir/SUCCESSFUL_CONFIGS_DIR and call create_connector for each
-        successful_configs_dir = output_dir / FM_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
-        if not successful_configs_dir.exists() or not successful_configs_dir.is_dir():
-            logger.warning(f"SUCCESSFUL_CONFIGS_DIR '{successful_configs_dir}' does not exist or is not a directory. Skipping connector creation.")
-        else:
-            # For each JSON file in the directory, call create_connector
-            create_results_dir = output_dir / "create_connector_results"
-            create_results_dir.mkdir(exist_ok=True)
-            connector_creator = ConnectorCreator(
-                environment=getattr(args, 'environment', None), # Use 'stag' for staging environment
-            )
-            for json_file in sorted(successful_configs_dir.glob("*.json")):
-                logger.info(f"Creating connector(s) from {json_file}")
-                try:
-                    # Only call create_connector if env_id, lkc_id, and bearer_token are provided
-                    if getattr(args, 'env_id', None) and getattr(args, 'lkc_id', None) and bearer_token:
-                        results = connector_creator.create_connector_from_json_file(
-                            environment_id=getattr(args, 'env_id', None),
-                            kafka_cluster_id=getattr(args, 'lkc_id', None),
-                            kafka_api_key=getattr(args, 'kafka_api_key', None),
-                            kafka_api_secret=getattr(args, 'kafka_api_secret', None),
-                            json_file_path=str(json_file),
-                            bearer_token=bearer_token,
-                            disable_ssl_verify=getattr(args, 'disable_ssl_verify', None)
-                        )
-                        logger.info(f"Successfully created connector(s) from {json_file}: {results}")
-                        # Store each result as a separate JSON file
-                        for idx, result in enumerate(results):
-                            connector_name = result.get("name") or f"connector_{idx}"
-                            out_path = create_results_dir / f"{connector_name}.json"
-                            # Ensure unique file name if duplicate names
-                            if out_path.exists():
-                                out_path = create_results_dir / f"{connector_name}_{idx}.json"
-                            with open(out_path, "w") as f:
-                                json.dump(result, f, indent=2)
-                            logger.info(f"Stored create_connector result to {out_path}")
-                    else:
-                        logger.warning("Skipping connector creation: env_id, lkc_id, or bearer_token not provided.")
-                        break
-                except Exception as e:
-                    logger.error(f"Failed to create connector(s) from {json_file}: {e}")
         # Generate migration summary automatically
         logger.info("Generating migration summary...")
         try:

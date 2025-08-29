@@ -10,9 +10,11 @@ import logging
 import requests
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Set
-from urllib.parse import urljoin
 
 class ConfigDiscovery:
+    FM_CONFIGS_DIR = "fm_configs"
+
+
     def __init__(
         self,
         worker_urls: Optional[str] = None,
@@ -372,9 +374,7 @@ class ConfigDiscovery:
         }
 
         # Save to JSON file
-        output_file = self.output_dir / 'connectors.json'
-        self.output_dir.mkdir(exist_ok=True)
-        
+        output_file = self.output_dir / 'compiled_input_sm_configs.json'
         with open(output_file, 'w') as f:
             json.dump(output_data, f, indent=2)
 

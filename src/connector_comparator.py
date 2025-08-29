@@ -26,7 +26,6 @@ class ConnectorComparator:
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
-        self.fm_configs_dir = output_dir / 'fm_configs'
         # Use local model
         self.semantic_matcher = SemanticMatcher()
 
