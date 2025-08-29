@@ -1,3 +1,10 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
 import json
 import logging
 from pathlib import Path

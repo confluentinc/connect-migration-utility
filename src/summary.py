@@ -1,0 +1,221 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
+import os
+import json
+import re
+import logging
+from collections import defaultdict
+
+def count_files(path):
+    return len(os.listdir(path)) if os.path.exists(path) else 0
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
+def get_connector_type_counts(config_path):
+    counts = defaultdict(int)
+    if not os.path.exists(config_path):
+        return counts
+    for fname in os.listdir(config_path):
+        fpath = os.path.join(config_path, fname)
+        if not fname.endswith(".json"):
+            continue
+        try:
+            with open(fpath, 'r') as f:
+                data = json.load(f)
+                if "config" in data:
+                    connector_class = data["config"].get("connector.class")
+                elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
+                    connector_class = data["sm_config"][0].get("connector.class")
+                else:
+                    connector_class = None
+                if connector_class:
+                    counts[connector_class] += 1
+        except Exception as e:
+            logger.info(f"Failed to read {fpath}: {e}")
+    return counts
+
+def extract_config_name(data):
+    if "config" in data and "name" in data["config"]:
+        return data["config"]["name"]
+    elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
+        return data["sm_config"][0].get("name", "UNKNOWN_CONFIG")
+    else:
+        return "UNKNOWN_CONFIG"
+
+def extract_transform_name(error_str):
+    match = re.search(r"Transform\s+'([^']+)'", error_str)
+    if match:
+        return match.group(1)
+    return "UNKNOWN_TRANSFORM"
+
+def collect_mapping_errors_with_details(config_path):
+    error_summary = defaultdict(lambda: {
+        "count": 0,
+        "occurrences": []  # list of (config_name, transform_name)
+    })
+    if not os.path.exists(config_path):
+        return error_summary
+
+    for fname in os.listdir(config_path):
+        fpath = os.path.join(config_path, fname)
+        if not fname.endswith(".json"):
+            continue
+        try:
+            with open(fpath, 'r') as f:
+                data = json.load(f)
+                config_name = extract_config_name(data)
+                errors = []
+                if "mapping_errors" in data:
+                    errors = data["mapping_errors"]
+                elif "config" in data and "mapping_errors" in data["config"]:
+                    errors = data["config"]["mapping_errors"]
+                if isinstance(errors, list):
+                    for error in errors:
+                        error = error.strip()
+                        transform = extract_transform_name(error)
+                        error_summary[error]["count"] += 1
+                        error_summary[error]["occurrences"].append((config_name, transform))
+        except Exception as e:
+            logger.info(f"Failed to parse mapping_errors in {fpath}: {e}")
+    return error_summary
+
+def summarize_output(base_dir):
+    summary = {
+        "fm_configs_found": 0,
+        "total_successful_files": 0,
+        "total_unsuccessful_files": 0,
+        "details": {},
+        "global_successful_types": defaultdict(int),
+        "global_unsuccessful_types": defaultdict(int),
+        "global_mapping_errors": {},  # now with details
+    }
+
+    for root, dirs, files in os.walk(base_dir):
+        if os.path.basename(root) == "fm_configs":
+            summary["fm_configs_found"] += 1
+            parent_folder = os.path.relpath(os.path.dirname(root), base_dir)
+
+            success_path = os.path.join(root, "successful_configs")
+            fail_path = os.path.join(root, "unsuccessful_configs_with_errors")
+
+            successful_files = count_files(success_path)
+            unsuccessful_files = count_files(fail_path)
+            total_files = successful_files + unsuccessful_files
+
+            success_types = get_connector_type_counts(success_path)
+            fail_types = get_connector_type_counts(fail_path)
+            mapping_errors = collect_mapping_errors_with_details(fail_path)
+
+            for k, v in success_types.items():
+                summary["global_successful_types"][k] += v
+            for k, v in fail_types.items():
+                summary["global_unsuccessful_types"][k] += v
+            for err, details in mapping_errors.items():
+                if err not in summary["global_mapping_errors"]:
+                    summary["global_mapping_errors"][err] = {
+                        "count": 0,
+                        "occurrences": []
+                    }
+                summary["global_mapping_errors"][err]["count"] += details["count"]
+                summary["global_mapping_errors"][err]["occurrences"].extend(details["occurrences"])
+
+            summary["total_successful_files"] += successful_files
+            summary["total_unsuccessful_files"] += unsuccessful_files
+
+            summary["details"][parent_folder] = {
+                "total_files_in_fm_configs": total_files,
+                "successful_files": successful_files,
+                "unsuccessful_files": unsuccessful_files,
+                "successful_connector_types": dict(success_types),
+                "unsuccessful_connector_types": dict(fail_types),
+                "mapping_errors": mapping_errors
+            }
+
+    return summary
+
+
+def generate_migration_summary(output_dir):
+    """Generate migration summary for the given output directory."""
+    report = summarize_output(output_dir)
+    total_files_overall = report['total_successful_files'] + report['total_unsuccessful_files']
+
+    # Generate summary text
+    summary_lines = []
+    summary_lines.append("================================================================================")
+    summary_lines.append(" Overall Summary")
+    summary_lines.append("================================================================================")
+    summary_lines.append(f"Number of Connector clusters scanned: {report['fm_configs_found']}")
+    summary_lines.append(f"Total Connector configurations scanned: {total_files_overall}")
+    summary_lines.append(f"Total Connectors that can be successfully migrated: {report['total_successful_files']}")
+    summary_lines.append(f"Total Connectors that have errors in migration: {report['total_unsuccessful_files']}")
+
+    summary_lines.append("")
+    summary_lines.append("================================================================================")
+    summary_lines.append("Summary By Connector Type")
+    summary_lines.append("================================================================================")
+    summary_lines.append("✅ Connector types (successful across all clusters):")
+    for k, v in sorted(report["global_successful_types"].items(), key=lambda item: item[1], reverse=True):
+        summary_lines.append(f"  - {k}: {v}")
+
+    summary_lines.append("")
+    summary_lines.append("❌ Connector types (with errors across all clusters):")
+    for k, v in sorted(report["global_unsuccessful_types"].items(), key=lambda item: item[1], reverse=True):
+        summary_lines.append(f"  - {k}: {v}")
+
+    summary_lines.append("")
+    summary_lines.append("================================================================================")
+    summary_lines.append(" Per-Cluster Summary (sorted by successful configurations for migration)")
+    summary_lines.append("================================================================================")
+    sorted_folders = sorted(
+        report["details"].items(),
+        key=lambda item: item[1]["successful_files"],
+        reverse=True
+    )
+    for folder, stats in sorted_folders:
+        summary_lines.append("")
+        summary_lines.append(f"Cluster Details: {folder}")
+        summary_lines.append(f"  Total Connector configurations scanned: {stats['total_files_in_fm_configs']}")
+        summary_lines.append(f"  Total Connectors that can be successfully migrated: {stats['successful_files']}")
+        if stats['successful_connector_types']:
+            summary_lines.append(f"    ✅ Connector types (successful):")
+            for conn_type, count in stats['successful_connector_types'].items():
+                summary_lines.append(f"      - {conn_type}: {count}")
+        summary_lines.append(f"  Total Connectors that have errors in migration: {stats['unsuccessful_files']}")
+        if stats['unsuccessful_connector_types']:
+            summary_lines.append(f"    ❌ Connector types (with errors):")
+            for conn_type, count in stats['unsuccessful_connector_types'].items():
+                summary_lines.append(f"      - {conn_type}: {count}")
+        if stats['mapping_errors']:
+            summary_lines.append(f"    ⚠️ Mapping errors:")
+            for err_msg, detail in sorted(stats['mapping_errors'].items(), key=lambda x: x[1]["count"], reverse=True):
+                summary_lines.append(f"      - '{err_msg}': found in {detail['count']} file(s)")
+
+    summary_lines.append("")
+    summary_lines.append("================================================================================")
+    summary_lines.append(" Connector Mapping Errors (all unsuccessful configs)")
+    summary_lines.append("================================================================================")
+    for error, details in sorted(report["global_mapping_errors"].items(), key=lambda x: x[1]["count"], reverse=True):
+        summary_lines.append("")
+        summary_lines.append(f"❌ '{error}'")
+        summary_lines.append(f"   ↳ Found in {details['count']} occurrences")
+
+    # Save summary to text file
+    summary_file_path = os.path.join(output_dir, "summary.txt")
+    try:
+        with open(summary_file_path, 'w') as f:
+            f.write('\n'.join(summary_lines))
+        logger.info(f"Migration summary saved to: {summary_file_path}")
+    except Exception as e:
+        logger.warning(f"Failed to save summary to file: {e}")
+
+    # Also print to console/logs
+    for line in summary_lines:
+        logger.info(line)
+
+    return report

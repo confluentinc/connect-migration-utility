@@ -1,3 +1,10 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
 #!/usr/bin/env python3
 """
 Script to download and set up the all-MiniLM-L6-v2 sentence transformer model.
