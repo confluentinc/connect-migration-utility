@@ -1212,8 +1212,7 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance",
-          "value": "none"
+          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.max.request.size",
@@ -1235,9 +1234,6 @@
         },
         {
           "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.security.protocol",
@@ -1272,19 +1268,6 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "schema.context.name",
-          "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -1648,6 +1631,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },

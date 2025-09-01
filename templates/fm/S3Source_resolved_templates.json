@@ -753,6 +753,10 @@
         },
         {
           "name": "aws.secret.access.key"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "s3.${s3.region}.amazonaws.com"
         }
       ]
     },
@@ -1207,8 +1211,7 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance",
-          "value": "none"
+          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.max.request.size",
@@ -1230,9 +1233,6 @@
         },
         {
           "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.security.protocol",
@@ -1267,19 +1267,6 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "schema.context.name",
-          "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -1403,22 +1390,6 @@
               "true": "300"
             }
           }
-        },
-        {
-          "name": "value.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
         }
       ]
     },
@@ -1508,26 +1479,6 @@
           "name": "output.data.format",
           "type": "STRING",
           "required": true,
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
           "default_value": "JSON",
           "importance": "HIGH",
           "group": "Output messages",
@@ -1586,27 +1537,6 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.scrub.invalid.names"
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "JSON",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
         }
       ],
       "connector_configs": [
@@ -1622,12 +1552,10 @@
           }
         },
         {
-          "name": "value.converter.schemas.enable",
-          "switch": {
-            "output.data.format": {
-              "JSON": false
-            }
-          }
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.schema.registry.url",
@@ -1658,21 +1586,6 @@
               "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schemas.enable"
-        },
-        {
-          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -2032,6 +1945,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },

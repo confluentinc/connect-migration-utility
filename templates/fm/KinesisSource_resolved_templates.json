@@ -703,8 +703,7 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance",
-          "value": "none"
+          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.max.request.size",
@@ -726,9 +725,6 @@
         },
         {
           "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.security.protocol",
@@ -1184,6 +1180,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },

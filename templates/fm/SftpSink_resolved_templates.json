@@ -590,12 +590,13 @@
           "name": "topics"
         },
         {
-          "name": "errors.tolerance",
-          "value": "all"
+          "name": "errors.tolerance"
         },
         {
           "name": "errors.deadletterqueue.topic.name",
-          "value": "dlq-{{.logicalClusterId}}"
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         },
         {
           "name": "errors.deadletterqueue.topic.replication.factor",
@@ -636,15 +637,6 @@
         {
           "name": "admin.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "errors.tolerance"
-        },
-        {
-          "name": "errors.deadletterqueue.topic.name",
-          "dynamic.mapper": {
-            "name": "errors.deadletterqueue.topic.mapper"
-          }
         }
       ]
     },
@@ -652,19 +644,6 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "schema.context.name",
-          "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -736,7 +715,7 @@
           "importance": "MEDIUM",
           "group": "Organize my data by...",
           "order_in_group": 4,
-          "documentation": "Scheduled rotation uses rotate.schedule.interval.ms to close the file and upload to storage on a regular basis using the current time, rather than the record time. Setting rotate.schedule.interval.ms is nondeterministic and will invalidate exactly-once guarantees. Minimum value is 600000ms (10 minutes).",
+          "documentation": "Scheduled rotation uses rotate.schedule.interval.ms to close the file and upload to storage on a regular basis using the current time, rather than the record time. Setting rotate.schedule.interval.ms is nondeterministic and will invalidate exactly-once guarantees.",
           "display_name": "Maximum span of record time (in ms) before scheduled rotation"
         },
         {
@@ -749,7 +728,7 @@
           "importance": "HIGH",
           "group": "Organize my data by...",
           "order_in_group": 5,
-          "documentation": "The connector\u2019s rotation interval specifies the maximum timespan (in milliseconds) a file can remain open and ready for additional records. In other words, when using rotate.interval.ms, the timestamp for each file starts with the timestamp of the first record inserted in the file. The connector closes and uploads a file to the blob store when the next record's timestamp does not fit into the file's rotate.interval time span from the first record's timestamp. If the connector has no more records to process, the connector may keep the file open until the connector can process another record (which can be a long time). Minimum value is 600000ms (10 minutes).",
+          "documentation": "The connector\u2019s rotation interval specifies the maximum timespan (in milliseconds) a file can remain open and ready for additional records. In other words, when using rotate.interval.ms, the timestamp for each file starts with the timestamp of the first record inserted in the file. The connector closes and uploads a file to the blob store when the next record's timestamp does not fit into the file's rotate.interval time span from the first record's timestamp. If the connector has no more records to process, the connector may keep the file open until the connector can process another record (which can be a long time).",
           "display_name": "Maximum span of record time (in ms) before rotation"
         },
         {
@@ -772,7 +751,7 @@
           "default_value": "",
           "order_in_group": 7,
           "display_name": "Timestamp field name",
-          "documentation": "Sets the field that contains the timestamp used for the ``TimeBasedPartitioner``. If not set, it defaults to using the Kafka record timestamp. If a field name is specified, it extracts the timestamp from that field in the record value.",
+          "documentation": "Sets the field that contains the timestamp used for the TimeBasedPartitioner",
           "dependents": [
             "path.format"
           ]
@@ -790,21 +769,6 @@
           "recommender": {
             "name": "timezone"
           }
-        },
-        {
-          "name": "value.converter.connect.meta.data",
-          "type": "BOOLEAN",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Organize my data by...",
-          "order_in_group": 11,
-          "default_value": "true",
-          "display_name": "Value Converter Connect Metadata",
-          "documentation": "Toggle for enabling/disabling connect converter to add its meta data to the output schema or not.",
-          "recommended_values": [
-            "true",
-            "false"
-          ]
         },
         {
           "name": "locale",
@@ -829,43 +793,6 @@
           "order_in_group": 1,
           "display_name": "Tasks",
           "documentation": "Maximum number of tasks for the connector."
-        },
-        {
-          "name": "rotate.schedule.interval.ms",
-          "type": "INT",
-          "default_value": "-1",
-          "importance": "MEDIUM",
-          "group": "Organize my data by...",
-          "order_in_group": 4,
-          "documentation": "Scheduled rotation uses rotate.schedule.interval.ms to close the file and upload to storage on a regular basis using the current time, rather than the record time. Setting rotate.schedule.interval.ms is nondeterministic and will invalidate exactly-once guarantees.",
-          "display_name": "Maximum span of record time (in ms) before scheduled rotation"
-        },
-        {
-          "name": "rotate.interval.ms",
-          "type": "INT",
-          "default_value": "${time.interval}",
-          "default_value_provider": {
-            "name": "rotation.config.provider"
-          },
-          "importance": "HIGH",
-          "group": "Organize my data by...",
-          "order_in_group": 5,
-          "documentation": "The connector\u2019s rotation interval specifies the maximum timespan (in milliseconds) a file can remain open and ready for additional records. In other words, when using rotate.interval.ms, the timestamp for each file starts with the timestamp of the first record inserted in the file. The connector closes and uploads a file to the blob store when the next record's timestamp does not fit into the file's rotate.interval time span from the first record's timestamp. If the connector has no more records to process, the connector may keep the file open until the connector can process another record (which can be a long time).",
-          "display_name": "Maximum span of record time (in ms) before rotation"
-        },
-        {
-          "name": "timestamp.field",
-          "type": "STRING",
-          "required": false,
-          "importance": "HIGH",
-          "group": "Organize my data by...",
-          "default_value": "",
-          "order_in_group": 7,
-          "display_name": "Timestamp field name",
-          "documentation": "Sets the field that contains the timestamp used for the TimeBasedPartitioner",
-          "dependents": [
-            "path.format"
-          ]
         }
       ],
       "connector_configs": [
@@ -920,9 +847,6 @@
         },
         {
           "name": "rotate.schedule.interval.ms"
-        },
-        {
-          "name": "value.converter.connect.meta.data"
         }
       ]
     },
@@ -930,27 +854,6 @@
       "template_id": "input-data-format",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "input.data.format",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "alias": "data.format",
-          "group": "Input messages",
-          "order_in_group": 1,
-          "display_name": "Input Kafka record value format",
-          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or BYTES. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON",
-            "BYTES"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
         {
           "name": "input.data.format",
           "type": "STRING",
@@ -1030,12 +933,10 @@
           }
         },
         {
-          "name": "value.converter.schemas.enable",
-          "switch": {
-            "input.data.format": {
-              "JSON": false
-            }
-          }
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.schema.registry.url",
@@ -1066,12 +967,6 @@
               "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
-        },
-        {
-          "name": "value.converter.schemas.enable"
-        },
-        {
-          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -1522,6 +1417,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },
@@ -1536,7 +1437,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "consumer.override.auto.offset.reset",
-          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset or the \u201clatest\u201d offset (the default). You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
           "recommended_values": [
             "earliest",
             "latest",

@@ -752,12 +752,10 @@
           "value": "PLAIN"
         },
         {
-          "name": "reporter.result.topic.name",
-          "value": "success-${connector}"
+          "name": "reporter.result.topic.name"
         },
         {
-          "name": "reporter.error.topic.name",
-          "value": "error-${connector}"
+          "name": "reporter.error.topic.name"
         },
         {
           "name": "reporter.admin.confluent.lkc.id",
@@ -850,12 +848,6 @@
               "DEFAULT": "https"
             }
           }
-        },
-        {
-          "name": "reporter.result.topic.name"
-        },
-        {
-          "name": "reporter.error.topic.name"
         }
       ]
     },
@@ -1206,6 +1198,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },
@@ -1220,7 +1218,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "consumer.override.auto.offset.reset",
-          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset or the \u201clatest\u201d offset (the default). You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
           "recommended_values": [
             "earliest",
             "latest",

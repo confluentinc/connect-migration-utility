@@ -208,6 +208,20 @@
           "order_in_group": 10,
           "display_name": "Poll Interval (ms)",
           "documentation": "Frequency in ms to poll for new data in each table."
+        },
+        {
+          "name": "quote.sql.identifiers",
+          "type": "STRING",
+          "default_value": "never",
+          "importance": "LOW",
+          "group": "Connector Details",
+          "order_in_group": 11,
+          "display_name": "Quote SQL Identifiers",
+          "documentation": "When to quote table names, column names, and other identifiers in SQL statements. Use `always` when working with case-sensitive identifiers or reserved keywords. Default value is `never`.",
+          "recommended_values": [
+            "never",
+            "always"
+          ]
         }
       ],
       "connector_configs": [
@@ -263,6 +277,9 @@
         },
         {
           "name": "poll.interval.ms"
+        },
+        {
+          "name": "quote.sql.identifiers"
         },
         {
           "name": "value.converter",
@@ -739,8 +756,7 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance",
-          "value": "none"
+          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.max.request.size",
@@ -762,9 +778,6 @@
         },
         {
           "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.security.protocol",
@@ -799,19 +812,6 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "schema.context.name",
-          "type": "STRING",
-          "group": "Schema Config",
-          "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -935,22 +935,6 @@
               "true": "300"
             }
           }
-        },
-        {
-          "name": "value.converter.auto.register.schemas",
-          "switch": {
-            "csfle.enabled": {
-              "true": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.use.latest.version",
-          "switch": {
-            "csfle.enabled": {
-              "true": "true"
-            }
-          }
         }
       ]
     },
@@ -1029,19 +1013,6 @@
           "name": "value.converter.scrub.invalid.names",
           "dynamic.mapper": {
             "name": "value.converter.scrub.invalid.names.mapper"
-          }
-        },
-        {
-          "name": "value.converter.schemas.enable",
-          "value": "true"
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
-            }
           }
         }
       ]
@@ -1393,6 +1364,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },

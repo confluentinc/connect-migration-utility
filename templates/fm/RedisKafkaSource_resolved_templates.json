@@ -1,210 +1,226 @@
 {
   "templates": [
     {
-      "template_id": "SalesforceCdcSource",
+      "template_id": "RedisKafkaSource",
       "connector_type": "SOURCE",
-      "connector.class": "io.confluent.salesforce.SalesforceCdcSourceConnector",
+      "connector.class": "io.confluent.connect.rediskafka.RedisKafkaSourceConnector",
       "config_defs": [
         {
           "name": "output.data.format",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
+          "default_value": "STRING",
           "group": "Output messages",
           "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, JSON or SF_API. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF. When SF_API is selected, the record will be identical in format to the salesforce message as received by the connector. Note that in SF_API, messages are ingested as raw bytes without any schema.",
+          "display_name": "Output Kafka record value format",
+          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF or STRING. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
           "recommended_values": [
             "AVRO",
             "JSON_SR",
             "PROTOBUF",
-            "JSON",
-            "SF_API"
+            "STRING"
           ],
           "dependents": [
             "schema.registry.url"
           ]
         },
         {
-          "name": "salesforce.initial.start",
-          "required": false,
+          "name": "source.type",
           "type": "STRING",
           "importance": "HIGH",
-          "group": "Connection details",
-          "order_in_group": 1,
-          "default_value": "latest",
-          "display_name": "Salesforce initial start",
-          "documentation": "Specify the initial starting point for the connector for replaying events.",
-          "recommended_values": [
-            "latest",
-            "all"
-          ]
-        },
-        {
-          "name": "connection.max.message.size",
-          "type": "INT",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "1048576",
-          "group": "Connection details",
-          "order_in_group": 3,
-          "display_name": "Connection Max Message Size",
-          "documentation": "The maximum message size in bytes that is accepted during a long poll on the Salesforce streaming endpoint."
-        },
-        {
-          "name": "convert.changed.fields",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "false",
-          "group": "Output messages",
-          "order_in_group": 2,
-          "display_name": "Convert Changed Fields",
-          "documentation": "Whether to convert field names within changed fields section of the ChangeEventHeader to match field names present on the Kafka record.",
-          "recommended_values": [
-            "true",
-            "false"
-          ]
-        },
-        {
-          "name": "salesforce.channel.type",
-          "type": "STRING",
-          "importance": "HIGH",
-          "display_name": "Salesforce Channel Type",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 4,
-          "documentation": "Indicates the type of Salesforce CDC channel from which the connector shall consume the events. The value can be SINGLE or MULTI. SINGLE should be used for a single entity channel like `LeadChangeEvent`. MULTI should be used for the Standard (ChangeEvents) channel or a Custom channel like LeadCustom__chn.",
-          "recommended_values": [
-            "SINGLE",
-            "MULTI"
-          ]
-        },
-        {
-          "name": "salesforce.cdc.name",
           "required": true,
-          "type": "STRING",
-          "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 5,
-          "display_name": "Salesforce CDC name",
-          "documentation": "The Salesforce Change Data Capture event name to subscribe to."
+          "default_value": "KEYS",
+          "group": "Source configuration",
+          "order_in_group": 1,
+          "display_name": "Source type",
+          "documentation": "Type of Redis source connector. Select ``KEYS`` to monitor Redis keyspace notifications, or ``STREAM`` to read from Redis Streams.",
+          "recommended_values": [
+            "KEYS",
+            "STREAM"
+          ]
         },
         {
-          "name": "salesforce.channel.entities",
-          "type": "LIST",
-          "required": false,
+          "name": "batch.size",
+          "type": "INT",
           "importance": "MEDIUM",
-          "group": "How should we connect to Salesforce?",
+          "required": false,
+          "default_value": 100,
+          "group": "Source configuration",
+          "order_in_group": 2,
+          "display_name": "Batch size",
+          "documentation": "Number of records to process in each batch for writing into a topic."
+        },
+        {
+          "name": "topic",
+          "type": "STRING",
+          "importance": "HIGH",
+          "required": true,
+          "group": "Source configuration",
+          "order_in_group": 2,
+          "display_name": "Destination topic",
+          "documentation": "Name of the destination Kafka topic where Redis events will be published."
+        },
+        {
+          "name": "redis.keys.pattern",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "*",
+          "group": "Keys source configuration",
+          "order_in_group": 2,
+          "display_name": "Keys pattern",
+          "documentation": "Keyspace glob-style pattern to subscribe to. Use ``*`` to subscribe to all keys."
+        },
+        {
+          "name": "redis.keys.timeout",
+          "type": "LONG",
+          "importance": "LOW",
+          "required": false,
+          "default_value": 0,
+          "group": "Keys source configuration",
+          "order_in_group": 3,
+          "display_name": "Idle timeout",
+          "documentation": "Idle timeout in milliseconds. Use ``0`` to disable."
+        },
+        {
+          "name": "redis.stream.name",
+          "type": "STRING",
+          "importance": "HIGH",
+          "required": false,
+          "group": "Stream source configuration",
+          "order_in_group": 1,
+          "display_name": "Stream name",
+          "documentation": "Name of the Redis stream to read from."
+        },
+        {
+          "name": "redis.stream.offset",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "0-0",
+          "group": "Stream source configuration",
+          "order_in_group": 2,
+          "display_name": "Stream Offset",
+          "documentation": "Stream offset to start reading from. Use ``0-0`` to start from the beginning, ``$`` to read only new messages, or a specific offset like ``1234567890-0``."
+        },
+        {
+          "name": "redis.stream.block",
+          "type": "LONG",
+          "importance": "LOW",
+          "required": false,
+          "default_value": 100,
+          "group": "Stream source configuration",
+          "order_in_group": 3,
+          "display_name": "Block timeout",
+          "documentation": "The maximum amount of time in milliseconds to wait while polling for stream messages (XREAD [BLOCK milliseconds])."
+        },
+        {
+          "name": "redis.stream.delivery",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "at-least-once",
+          "group": "Stream source configuration",
+          "order_in_group": 4,
+          "display_name": "Delivery guarantee",
+          "documentation": "Stream message delivery guarantee. The valid options are ``at-least-once`` or ``at-most-once``.",
+          "recommended_values": [
+            "at-least-once",
+            "at-most-once"
+          ]
+        },
+        {
+          "name": "redis.stream.consumer.group",
+          "type": "STRING",
+          "importance": "HIGH",
+          "required": false,
+          "default_value": "kafka-consumer-group",
+          "group": "Stream source configuration",
+          "order_in_group": 5,
+          "display_name": "Consumer group",
+          "documentation": "Stream consumer group name. This group will be created if it doesn't exist."
+        },
+        {
+          "name": "redis.stream.consumer.name",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": "consumer-${task}",
+          "group": "Stream source configuration",
           "order_in_group": 6,
-          "display_name": "Salesforce Channel Entities List",
-          "documentation": "Comma seperated list of entities in the standard or custom channel. Eg LeadChangeEvent, AccountChangeEvent."
+          "display_name": "Consumer name",
+          "documentation": "A format string for the stream consumer, which may contain '${task}' as a placeholder for the task id. For example, 'consumer-${task}' for the task id '123' will map to the consumer name 'consumer-123'."
         }
       ],
       "connector_configs": [
         {
-          "name": "salesforce.channel.type"
+          "name": "source.type"
         },
         {
-          "name": "salesforce.channel.entities"
+          "name": "batch.size"
         },
         {
-          "name": "kafka.topic"
+          "name": "topic"
         },
         {
-          "name": "salesforce.cdc.name"
+          "name": "redis.keys.pattern"
         },
         {
-          "name": "salesforce.initial.start"
+          "name": "redis.keys.timeout"
         },
         {
-          "name": "producer.override.security.protocol",
-          "value": "SASL_SSL"
+          "name": "redis.stream.name"
         },
         {
-          "name": "producer.override.sasl.mechanism",
-          "value": "PLAIN"
+          "name": "redis.stream.offset"
         },
         {
-          "name": "admin.override.security.protocol",
-          "value": "SASL_SSL"
+          "name": "redis.stream.block"
         },
         {
-          "name": "admin.override.sasl.mechanism",
-          "value": "PLAIN"
+          "name": "redis.stream.delivery"
         },
         {
-          "name": "connection.max.message.size"
+          "name": "redis.stream.consumer.group"
         },
         {
-          "name": "convert.changed.fields"
-        },
-        {
-          "name": "value.converter",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
-              "JSON": "org.apache.kafka.connect.json.JsonConverter",
-              "SF_API": "org.apache.kafka.connect.converters.ByteArrayConverter"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schema.registry.url",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "${schema.registry.url}",
-              "JSON_SR": "${schema.registry.url}",
-              "PROTOBUF": "${schema.registry.url}"
-            }
-          }
-        },
-        {
-          "name": "value.converter.basic.auth.credentials.source",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "USER_INFO",
-              "JSON_SR": "USER_INFO",
-              "PROTOBUF": "USER_INFO"
-            }
-          }
-        },
-        {
-          "name": "value.converter.basic.auth.user.info",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
-              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
-            }
-          }
-        },
-        {
-          "name": "salesforce.cdc.api.format",
-          "switch": {
-            "output.data.format": {
-              "SF_API": "true"
-            }
-          }
+          "name": "redis.stream.consumer.name"
         }
       ]
     },
     {
-      "template_id": "common-salesforce-source",
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
       "abstract": true,
       "config_defs": [
         {
-          "name": "connection.timeout",
-          "type": "LONG",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "30000",
-          "group": "Connection details",
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
           "order_in_group": 2,
-          "display_name": "Connection timeout",
-          "documentation": "The amount of time to wait in milliseconds while connecting to the Salesforce streaming endpoint."
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
         },
         {
           "name": "tasks.max",
@@ -215,169 +231,60 @@
           "order_in_group": 1,
           "display_name": "Tasks",
           "documentation": "Maximum number of tasks for the connector."
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "connection.timeout"
         },
         {
-          "name": "tasks.max",
-          "value": "1"
-        }
-      ]
-    },
-    {
-      "template_id": "common-salesforce",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "salesforce.grant.type",
-          "required": false,
+          "name": "kafka.auth.mode",
           "type": "STRING",
-          "default_value": "PASSWORD",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
           "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
+          "group": "Kafka Cluster credentials",
           "order_in_group": 1,
-          "display_name": "Salesforce grant type",
-          "documentation": "Salesforce grant type. Valid options are 'PASSWORD', 'CLIENT_CREDENTIALS' and 'JWT_BEARER'.",
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
           "recommended_values": [
-            "PASSWORD",
-            "CLIENT_CREDENTIALS",
-            "JWT_BEARER"
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
           ]
         },
         {
-          "name": "salesforce.instance",
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
           "required": false,
-          "type": "STRING",
           "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
+          "group": "Kafka Cluster credentials",
           "order_in_group": 2,
-          "default_value": "https://login.salesforce.com",
-          "display_name": "Salesforce instance",
-          "documentation": "The URL of the Salesforce endpoint to use. When using 'CLIENT_CREDENTIALS' grant type, provide your Salesforce domain URL. The default is https://login.salesforce.com, which directs the connector to use the endpoint specified in the authentication response."
-        },
-        {
-          "name": "salesforce.username",
-          "required": false,
-          "type": "STRING",
-          "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 3,
-          "display_name": "Salesforce username",
-          "documentation": "The Salesforce username the connector should use."
-        },
-        {
-          "name": "salesforce.password",
-          "required": false,
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 4,
-          "display_name": "Salesforce password",
-          "documentation": "The Salesforce password the connector should use."
-        },
-        {
-          "name": "salesforce.password.token",
-          "required": false,
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 5,
-          "display_name": "Salesforce password token",
-          "documentation": "The Salesforce security token associated with the username."
-        },
-        {
-          "name": "salesforce.consumer.key",
-          "required": true,
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 6,
-          "display_name": "Salesforce consumer key",
-          "documentation": "The client id(consumer key) for the Salesforce Connected app."
-        },
-        {
-          "name": "salesforce.consumer.secret",
-          "required": false,
-          "type": "PASSWORD",
-          "default_value": null,
-          "importance": "MEDIUM",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 7,
-          "display_name": "Salesforce consumer secret",
-          "documentation": "The client secret(consumer secret) for the Salesforce Connected app."
-        },
-        {
-          "name": "salesforce.jwt.keystore.file",
-          "required": false,
-          "type": "PASSWORD",
-          "importance": "MEDIUM",
-          "default_value": "",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 8,
-          "display_name": "Salesforce JWT keystore file",
-          "documentation": "Salesforce JWT keystore file which contains the private key."
-        },
-        {
-          "name": "salesforce.jwt.keystore.password",
-          "required": false,
-          "type": "PASSWORD",
-          "default_value": null,
-          "importance": "MEDIUM",
-          "group": "How should we connect to Salesforce?",
-          "order_in_group": 9,
-          "display_name": "Salesforce JWT keystore password",
-          "documentation": "Password used to access JWT keystore file."
-        },
-        {
-          "name": "request.max.retries.time.ms",
-          "type": "LONG",
-          "required": false,
-          "importance": "LOW",
-          "default_value": "30000",
-          "group": "Connection details",
-          "order_in_group": 2,
-          "display_name": "Max Retry Time in Milliseconds",
-          "documentation": "In case of error when making a request to Salesforce, the connector will retry until this time (in ms) elapses. The default value is 30000 (30 seconds). Minimum value is 1 sec"
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
         }
       ],
       "connector_configs": [
         {
-          "name": "salesforce.grant.type"
+          "name": "tasks.max"
         },
         {
-          "name": "salesforce.instance"
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
         },
         {
-          "name": "salesforce.username"
+          "name": "errors.log.enable",
+          "value": "true"
         },
         {
-          "name": "salesforce.password"
+          "name": "errors.log.include.messages",
+          "value": "false"
         },
         {
-          "name": "salesforce.password.token"
+          "name": "errors.retry.timeout",
+          "value": "300000"
         },
         {
-          "name": "salesforce.jwt.keystore.path",
-          "value": "${salesforce.jwt.keystore.file}"
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
         },
         {
-          "name": "salesforce.jwt.keystore.password"
-        },
-        {
-          "name": "salesforce.consumer.key"
-        },
-        {
-          "name": "salesforce.consumer.secret"
-        },
-        {
-          "name": "request.max.retries.time.ms"
-        },
-        {
-          "name": "connector.endpoint",
-          "value": "${salesforce.instance}"
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
         }
       ]
     },
@@ -662,122 +569,6 @@
       ]
     },
     {
-      "template_id": "common",
-      "global_validators": [
-        {
-          "name": "required",
-          "priority": "HIGHEST"
-        },
-        {
-          "name": "recommended.values",
-          "priority": "HIGHER"
-        }
-      ],
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "connector.class",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your data?",
-          "order_in_group": 1,
-          "display_name": "Connector class"
-        },
-        {
-          "name": "name",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your data?",
-          "order_in_group": 2,
-          "display_name": "Connector name",
-          "documentation": "Sets a name for your connector."
-        },
-        {
-          "name": "tasks.max",
-          "type": "INT",
-          "required": true,
-          "importance": "HIGH",
-          "group": "Number of tasks for this connector",
-          "order_in_group": 1,
-          "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector."
-        },
-        {
-          "name": "kafka.auth.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "KAFKA_API_KEY",
-          "importance": "HIGH",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 1,
-          "display_name": "Kafka Cluster Authentication mode",
-          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
-          "recommended_values": [
-            "SERVICE_ACCOUNT",
-            "KAFKA_API_KEY"
-          ]
-        },
-        {
-          "name": "kafka.api.key",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "HIGH",
-          "group": "Kafka Cluster credentials",
-          "order_in_group": 2,
-          "display_name": "Kafka API Key",
-          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "tasks.max"
-        },
-        {
-          "name": "confluent.topic.bootstrap.servers",
-          "value": "Placeholder value to pass connector validations"
-        },
-        {
-          "name": "errors.log.enable",
-          "value": "true"
-        },
-        {
-          "name": "errors.log.include.messages",
-          "value": "false"
-        },
-        {
-          "name": "errors.retry.timeout",
-          "value": "300000"
-        },
-        {
-          "name": "errors.retry.delay.max.ms",
-          "value": "30000"
-        },
-        {
-          "name": "value.converter.ignore.modern.dialects",
-          "value": "true"
-        }
-      ]
-    },
-    {
-      "template_id": "kafka-topic-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "kafka.topic",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "Which topic do you want to send data to?",
-          "order_in_group": 1,
-          "display_name": "Topic name",
-          "documentation": "Identifies the topic name to write the data to."
-        }
-      ],
-      "connector_configs": []
-    },
-    {
       "template_id": "common-source",
       "abstract": true,
       "config_defs": [
@@ -849,8 +640,7 @@
           "value": "1"
         },
         {
-          "name": "errors.tolerance",
-          "value": "none"
+          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.max.request.size",
@@ -872,9 +662,6 @@
         },
         {
           "name": "datapreview.schemas.enable"
-        },
-        {
-          "name": "errors.tolerance"
         },
         {
           "name": "producer.override.security.protocol",
@@ -906,22 +693,119 @@
       ]
     },
     {
-      "template_id": "schema-registry",
+      "template_id": "csfle-source",
       "abstract": true,
       "config_defs": [
         {
-          "name": "schema.context.name",
-          "type": "STRING",
-          "group": "Schema Config",
+          "name": "csfle.enabled",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "CSFLE",
           "order_in_group": 1,
-          "importance": "MEDIUM",
-          "display_name": "Schema context",
-          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
-          "default_value": "default",
-          "dependents": [
-            "schema.registry.url"
+          "docs_hidden": true,
+          "display_name": "Enable Client-Side Field Level Encryption",
+          "documentation": "Determines whether the connector honours CSFLE rules or not",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "csfle.configs.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
           ]
         },
+        {
+          "name": "sr.service.account.id",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 2,
+          "docs_hidden": true,
+          "display_name": "Schema Registry Service Account",
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.enabled": {
+              "true": "ERROR"
+            }
+          }
+        },
+        {
+          "name": "value.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.enabled": {
+              "true": "ERROR"
+            }
+          }
+        },
+        {
+          "name": "key.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "key.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
         {
           "name": "schema.context.name",
           "type": "STRING",
@@ -939,29 +823,209 @@
       "connector_configs": []
     },
     {
-      "template_id": "source-connector-output-data-format",
+      "template_id": "redis-common",
       "abstract": true,
       "config_defs": [
         {
-          "name": "output.data.format",
+          "name": "redis.host",
           "type": "STRING",
-          "required": true,
           "importance": "HIGH",
-          "group": "Output messages",
+          "required": true,
+          "group": "Redis connection",
           "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
+          "display_name": "Redis hostname",
+          "documentation": "The hostname of Redis server to connect to."
         },
+        {
+          "name": "redis.port",
+          "type": "STRING",
+          "importance": "HIGH",
+          "required": true,
+          "group": "Redis connection",
+          "order_in_group": 2,
+          "display_name": "Redis port number",
+          "documentation": "The port number of Redis server to connect to."
+        },
+        {
+          "name": "redis.database",
+          "type": "INT",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": 0,
+          "group": "Redis connection",
+          "order_in_group": 3,
+          "display_name": "Redis database index",
+          "documentation": "The database index to write to."
+        },
+        {
+          "name": "redis.username",
+          "type": "STRING",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis connection",
+          "order_in_group": 4,
+          "display_name": "Redis username",
+          "documentation": "The username of the Redis user connecting to the Redis database server."
+        },
+        {
+          "name": "redis.password",
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis connection",
+          "order_in_group": 5,
+          "display_name": "Redis password",
+          "documentation": "The password of the Redis user connecting to the Redis database server."
+        },
+        {
+          "name": "redis.tls",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": false,
+          "group": "Redis security",
+          "order_in_group": 1,
+          "display_name": "Enable TLS",
+          "documentation": "Establish a secure TLS connection to Redis."
+        },
+        {
+          "name": "redis.insecure",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": false,
+          "group": "Redis security",
+          "order_in_group": 2,
+          "display_name": "Allow insecure TLS",
+          "documentation": "Allow insecure connections (for example, invalid certificates) to Redis when using SSL."
+        },
+        {
+          "name": "redis.cacert",
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis security",
+          "order_in_group": 3,
+          "display_name": "CA certificate file",
+          "documentation": "X.509 CA certificate file to verify with. Use this with or without client certificates."
+        },
+        {
+          "name": "redis.key.file",
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis client certificate auth",
+          "order_in_group": 1,
+          "display_name": "Private key file",
+          "documentation": "Private key file (PEM format) to authenticate with. Use this file along with the certificate file for client certificate authentication."
+        },
+        {
+          "name": "redis.key.cert",
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis client certificate auth",
+          "order_in_group": 2,
+          "display_name": "Certificate file",
+          "documentation": "X.509 certificate chain file (PEM format) to authenticate with. Use this file along with the private key file for client certificate authentication."
+        },
+        {
+          "name": "redis.key.password",
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "required": false,
+          "group": "Redis client certificate auth",
+          "order_in_group": 3,
+          "display_name": "Key password",
+          "documentation": "Password of the private key file. Leave empty if key file is not password-protected."
+        },
+        {
+          "name": "redis.timeout",
+          "type": "LONG",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": 60,
+          "group": "Redis connection options",
+          "order_in_group": 1,
+          "display_name": "Command timeout",
+          "documentation": "Redis command timeout in seconds."
+        },
+        {
+          "name": "redis.pool",
+          "type": "INT",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": 8,
+          "group": "Redis connection options",
+          "order_in_group": 2,
+          "display_name": "Connection pool size",
+          "documentation": "Maximum number of connections in the pool."
+        },
+        {
+          "name": "redis.cluster",
+          "type": "BOOLEAN",
+          "importance": "MEDIUM",
+          "required": false,
+          "default_value": false,
+          "group": "Redis connection options",
+          "order_in_group": 3,
+          "display_name": "Redis cluster",
+          "documentation": "Connect to a redis cluster database."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "redis.host"
+        },
+        {
+          "name": "redis.port"
+        },
+        {
+          "name": "redis.database"
+        },
+        {
+          "name": "redis.password"
+        },
+        {
+          "name": "redis.username"
+        },
+        {
+          "name": "redis.tls"
+        },
+        {
+          "name": "redis.insecure"
+        },
+        {
+          "name": "redis.cacert"
+        },
+        {
+          "name": "redis.key.file"
+        },
+        {
+          "name": "redis.key.cert"
+        },
+        {
+          "name": "redis.key.password"
+        },
+        {
+          "name": "redis.timeout"
+        },
+        {
+          "name": "redis.pool"
+        },
+        {
+          "name": "redis.cluster"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${redis.host}"
+        }
+      ]
+    },
+    {
+      "template_id": "source-connector-output-data-format",
+      "abstract": true,
+      "config_defs": [
         {
           "name": "output.data.format",
           "type": "STRING",
@@ -1024,27 +1088,6 @@
           "required": false,
           "importance": "LOW",
           "display_name": "value.converter.scrub.invalid.names"
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "default_value": "JSON",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Select output record value format",
-          "alias": "data.format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
         }
       ],
       "connector_configs": [
@@ -1060,12 +1103,10 @@
           }
         },
         {
-          "name": "value.converter.schemas.enable",
-          "switch": {
-            "output.data.format": {
-              "JSON": false
-            }
-          }
+          "name": "value.converter.schemas.enable"
+        },
+        {
+          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.schema.registry.url",
@@ -1096,21 +1137,6 @@
               "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
-        },
-        {
-          "name": "value.converter.scrub.invalid.names",
-          "switch": {
-            "output.data.format": {
-              "AVRO": "true",
-              "PROTOBUF": "false"
-            }
-          }
-        },
-        {
-          "name": "value.converter.schemas.enable"
-        },
-        {
-          "name": "value.converter.replace.null.with.default"
         },
         {
           "name": "value.converter.ignore.default.for.nullables"
@@ -1470,6 +1496,12 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
         }
       ]
     },
