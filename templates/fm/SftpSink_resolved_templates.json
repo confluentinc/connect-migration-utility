@@ -181,115 +181,6 @@
           "order_in_group": 2,
           "display_name": "Kafka API Key",
           "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
-        },
-        {
-          "name": "kafka.service.account.api.key",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.api.secret",
-          "type": "PASSWORD",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.region",
-          "type": "STRING",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.endpoint",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "kafka.user.id",
-          "type": "INT",
-          "required": false,
-          "internal": true,
-          "importance": "MEDIUM"
-        },
-        {
-          "name": "cloud.environment",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.dedicated",
-          "type": "STRING",
-          "required": true,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "valid.kafka.api.key",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.service.account.oauth.token",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "kafka.logical.cluster.id",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connect.connector_cross_region.enable",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.key",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.api.secret",
-          "type": "PASSWORD",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "sr.internal.sa.validity.check",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.cloud",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
-        },
-        {
-          "name": "connector.regional.connectivity.enabled",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "internal": true
         }
       ],
       "connector_configs": [
@@ -325,43 +216,7 @@
     {
       "template_id": "common-kafka-connectivity",
       "abstract": true,
-      "config_defs": [
-        {
-          "name": "connect.metadata_property.kafka.itsl.embed.lkc",
-          "type": "STRING",
-          "required": false,
-          "default_value": "SKIP",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.metadata_property.kafka.itsl.bootstrap.servers",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "importance": "HIGH",
-          "internal": true
-        },
-        {
-          "name": "connect.fips.provider",
-          "type": "STRING",
-          "required": false,
-          "default_value": "UNSET",
-          "default_value_provider": {
-            "name": "defaultvalue.fips.provider"
-          },
-          "importance": "HIGH",
-          "internal": true
-        }
-      ],
+      "config_defs": [],
       "connector_configs": [
         {
           "name": "consumer.override.bootstrap.servers",
@@ -751,10 +606,6 @@
           "value": "true"
         },
         {
-          "name": "consumer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "consumer.override.security.protocol",
           "value": "SASL_SSL"
         },
@@ -771,20 +622,12 @@
           "value": "${max.poll.records}"
         },
         {
-          "name": "producer.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
-        },
-        {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
         },
         {
           "name": "producer.override.sasl.mechanism",
           "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.sasl.jaas.config",
-          "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.key}\" password=\"${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:kafka.api.secret}\";"
         },
         {
           "name": "admin.override.security.protocol",
@@ -809,12 +652,6 @@
       "template_id": "schema-registry",
       "abstract": true,
       "config_defs": [
-        {
-          "name": "schema.registry.url",
-          "type": "STRING",
-          "importance": "MEDIUM",
-          "internal": true
-        },
         {
           "name": "schema.context.name",
           "type": "STRING",
