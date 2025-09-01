@@ -1,0 +1,2171 @@
+{
+  "templates": [
+    {
+      "template_id": "SalesforceSObjectSink",
+      "connector_type": "SINK",
+      "connector.class": "io.confluent.salesforce.SalesforceSObjectSinkConnector",
+      "config_defs": [
+        {
+          "name": "salesforce.enable.batching",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "HIGH",
+          "default_value": "false",
+          "group": "Batching configurations",
+          "order_in_group": 1,
+          "display_name": "Enable Batching",
+          "documentation": "Enable Batching Support"
+        },
+        {
+          "name": "salesforce.batch.size",
+          "required": false,
+          "type": "INT",
+          "importance": "HIGH",
+          "default_value": 200,
+          "group": "Batching configurations",
+          "order_in_group": 2,
+          "display_name": "Batch Size",
+          "documentation": "Max number of records to send in a single batch to Salesforce (only applicable if batching is enabled)"
+        },
+        {
+          "name": "salesforce.all.or.none",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "HIGH",
+          "default_value": "false",
+          "group": "Batching configurations",
+          "order_in_group": 3,
+          "display_name": "All Or None",
+          "documentation": "To enable All Or None functionality while batching. When true, entire batch fails if any record fails. When false, individual records can fail within a batch."
+        },
+        {
+          "name": "salesforce.object.num",
+          "required": false,
+          "type": "INT",
+          "importance": "HIGH",
+          "default_value": 1,
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 10,
+          "display_name": "Number of salesforce objects",
+          "documentation": "The number of salesforce objects to write to. This is used when multiple SObjects are enabled.",
+          "recommended_values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "name": "salesforce.object1",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "alias": "salesforce.object",
+          "group": "Object 1 configuration",
+          "order_in_group": 1,
+          "display_name": "Salesforce SObject1 Name",
+          "documentation": "The Salesforce SObject1 to write to."
+        },
+        {
+          "name": "salesforce.object1.topics",
+          "required": false,
+          "type": "LIST",
+          "importance": "HIGH",
+          "alias": "topics",
+          "group": "Object 1 configuration",
+          "order_in_group": 2,
+          "default_value": "",
+          "display_name": "Salesforce SObject1 Topics",
+          "documentation": "The comma separated list of topics associated with Salesforce SObject1"
+        },
+        {
+          "name": "salesforce.object1.override.event.type",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "alias": "salesforce.object.override.event.type",
+          "default_value": "false",
+          "group": "Object 1 configuration",
+          "order_in_group": 3,
+          "display_name": "Salesforce SObject1 Override",
+          "documentation": "A flag to indicate that the Kafka SObject1 source record EventType(create, update, delete) is overridden to use the operation specified in the SObject1 override operation field. ",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object1.sink.operation",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "alias": "salesforce.sink.object.operation",
+          "group": "Object 1 configuration",
+          "order_in_group": 4,
+          "default_value": "insert",
+          "display_name": "Salesforce SObject1 Override Operation",
+          "documentation": "The Salesforce sink operation to perform on the SObject1. One of: insert, update, upsert, delete. Default is insert. This feature works if ``override.event.type`` is true.",
+          "recommended_values": [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+          ]
+        },
+        {
+          "name": "salesforce.object1.ignore.fields",
+          "required": false,
+          "type": "LIST",
+          "importance": "LOW",
+          "alias": "salesforce.ignore.fields",
+          "group": "Object 1 configuration",
+          "order_in_group": 5,
+          "default_value": "",
+          "display_name": "Salesforce SObject1 Ignore Fields",
+          "documentation": "Comma separate list of fields from the source Kafka record to ignore when pushing a record into Salesforce."
+        },
+        {
+          "name": "salesforce.object1.ignore.reference.fields",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "alias": "salesforce.ignore.reference.fields",
+          "group": "Object 1 configuration",
+          "order_in_group": 6,
+          "default_value": "false",
+          "display_name": "Salesforce SObject1 Ignore Reference Fields",
+          "documentation": "Flag to prevent reference type fields from being updated or inserted in Salesforce SObjects.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object1.use.custom.id.field",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "alias": "salesforce.use.custom.id.field",
+          "group": "Object 1 configuration",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Salesforce SObject1 Use Custom Field",
+          "documentation": "Flag to use custom external id field in SObjects."
+        },
+        {
+          "name": "salesforce.object1.custom.id.field.name",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "alias": "salesforce.custom.id.field.name",
+          "group": "Object 1 configuration",
+          "order_in_group": 8,
+          "default_value": null,
+          "display_name": "Salesforce SObject1 Custom Field Name",
+          "documentation": "Name of a custom external id field in SObject to structure Rest Api calls for insert, upsert, delete, and update operations."
+        },
+        {
+          "name": "salesforce.object2",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "Object 2 configuration",
+          "order_in_group": 1,
+          "display_name": "Salesforce SObject2 Name",
+          "documentation": "The Salesforce SObject2 to write to."
+        },
+        {
+          "name": "salesforce.object2.topics",
+          "required": false,
+          "type": "LIST",
+          "importance": "HIGH",
+          "group": "Object 2 configuration",
+          "order_in_group": 2,
+          "default_value": "",
+          "display_name": "Salesforce SObject2 Topics",
+          "documentation": "The comma separated list of topics associated with Salesforce SObject1"
+        },
+        {
+          "name": "salesforce.object2.override.event.type",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "Object 2 configuration",
+          "order_in_group": 3,
+          "display_name": "Salesforce SObject2 Override",
+          "documentation": "A flag to indicate that the Kafka SObject2 source record EventType(create, update, delete) is overridden to use the operation specified in the SObject2 override operation field. ",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object2.sink.operation",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 2 configuration",
+          "order_in_group": 4,
+          "default_value": "insert",
+          "display_name": "Salesforce SObject2 Override Operation",
+          "documentation": "The Salesforce sink operation to perform on the SObject2. One of: insert, update, upsert, delete. Default is insert. This feature works if ``override.event.type`` is true.",
+          "recommended_values": [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+          ]
+        },
+        {
+          "name": "salesforce.object2.ignore.fields",
+          "required": false,
+          "type": "LIST",
+          "importance": "LOW",
+          "group": "Object 2 configuration",
+          "order_in_group": 5,
+          "default_value": "",
+          "display_name": "Salesforce SObject2 Ignore Fields",
+          "documentation": "Comma separate list of fields from the source Kafka record to ignore when pushing a record into Salesforce."
+        },
+        {
+          "name": "salesforce.object2.ignore.reference.fields",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 2 configuration",
+          "order_in_group": 6,
+          "default_value": "false",
+          "display_name": "Salesforce SObject2 Ignore Reference Fields",
+          "documentation": "Flag to prevent reference type fields from being updated or inserted in Salesforce SObjects.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object2.use.custom.id.field",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 2 configuration",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Salesforce SObject2 Use Custom Field",
+          "documentation": "Flag to use custom external id field in SObjects."
+        },
+        {
+          "name": "salesforce.object2.custom.id.field.name",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 2 configuration",
+          "order_in_group": 8,
+          "default_value": null,
+          "display_name": "Salesforce SObject2 Custom Field Name",
+          "documentation": "Name of a custom external id field in SObject to structure Rest Api calls for insert, upsert, delete, and update operations."
+        },
+        {
+          "name": "salesforce.object3",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "Object 3 configuration",
+          "order_in_group": 1,
+          "display_name": "Salesforce SObject3 Name",
+          "documentation": "The Salesforce SObject3 to write to."
+        },
+        {
+          "name": "salesforce.object3.topics",
+          "required": false,
+          "type": "LIST",
+          "importance": "HIGH",
+          "group": "Object 3 configuration",
+          "order_in_group": 2,
+          "default_value": "",
+          "display_name": "Salesforce SObject3 Topics",
+          "documentation": "The comma separated list of topics associated with Salesforce SObject3"
+        },
+        {
+          "name": "salesforce.object3.override.event.type",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "Object 3 configuration",
+          "order_in_group": 3,
+          "display_name": "Salesforce SObject3 Override",
+          "documentation": "A flag to indicate that the Kafka SObject3 source record EventType(create, update, delete) is overridden to use the operation specified in the SObject3 override operation field.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object3.sink.operation",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 3 configuration",
+          "order_in_group": 4,
+          "default_value": "insert",
+          "display_name": "Salesforce SObject3 Override Operation",
+          "documentation": "The Salesforce sink operation to perform on the SObject3. One of: insert, update, upsert, delete. Default is insert. This feature works if override.event.type is true.",
+          "recommended_values": [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+          ]
+        },
+        {
+          "name": "salesforce.object3.ignore.fields",
+          "required": false,
+          "type": "LIST",
+          "importance": "LOW",
+          "group": "Object 3 configuration",
+          "order_in_group": 5,
+          "default_value": "",
+          "display_name": "Salesforce SObject3 Ignore Fields",
+          "documentation": "Comma separate list of fields from the source Kafka record to ignore when pushing a record into Salesforce."
+        },
+        {
+          "name": "salesforce.object3.ignore.reference.fields",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 3 configuration",
+          "order_in_group": 6,
+          "default_value": "false",
+          "display_name": "Salesforce SObject3 Ignore Reference Fields",
+          "documentation": "Flag to prevent reference type fields from being updated or inserted in Salesforce SObjects.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object3.use.custom.id.field",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 3 configuration",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Salesforce SObject3 Use Custom Field",
+          "documentation": "Flag to use custom external id field in SObjects."
+        },
+        {
+          "name": "salesforce.object3.custom.id.field.name",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 3 configuration",
+          "order_in_group": 8,
+          "default_value": null,
+          "display_name": "Salesforce SObject3 Custom Field Name",
+          "documentation": "Name of a custom external id field in SObject to structure Rest Api calls for insert, upsert, delete, and update operations."
+        },
+        {
+          "name": "salesforce.object4",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "Object 4 configuration",
+          "order_in_group": 1,
+          "display_name": "Salesforce SObject4 Name",
+          "documentation": "The Salesforce SObject4 to write to."
+        },
+        {
+          "name": "salesforce.object4.topics",
+          "required": false,
+          "type": "LIST",
+          "importance": "HIGH",
+          "group": "Object 4 configuration",
+          "order_in_group": 2,
+          "default_value": "",
+          "display_name": "Salesforce SObject4 Topics",
+          "documentation": "The comma separated list of topics associated with Salesforce SObject4"
+        },
+        {
+          "name": "salesforce.object4.override.event.type",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "Object 4 configuration",
+          "order_in_group": 3,
+          "display_name": "Salesforce SObject4 Override",
+          "documentation": "A flag to indicate that the Kafka SObject4 source record EventType(create, update, delete) is overridden to use the operation specified in the SObject4 override operation field.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object4.sink.operation",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 4 configuration",
+          "order_in_group": 4,
+          "default_value": "insert",
+          "display_name": "Salesforce SObject4 Override Operation",
+          "documentation": "The Salesforce sink operation to perform on the SObject4. One of: insert, update, upsert, delete. Default is insert. This feature works if override.event.type is true.",
+          "recommended_values": [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+          ]
+        },
+        {
+          "name": "salesforce.object4.ignore.fields",
+          "required": false,
+          "type": "LIST",
+          "importance": "LOW",
+          "group": "Object 4 configuration",
+          "order_in_group": 5,
+          "default_value": "",
+          "display_name": "Salesforce SObject4 Ignore Fields",
+          "documentation": "Comma separate list of fields from the source Kafka record to ignore when pushing a record into Salesforce."
+        },
+        {
+          "name": "salesforce.object4.ignore.reference.fields",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 4 configuration",
+          "order_in_group": 6,
+          "default_value": "false",
+          "display_name": "Salesforce SObject4 Ignore Reference Fields",
+          "documentation": "Flag to prevent reference type fields from being updated or inserted in Salesforce SObjects.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object4.use.custom.id.field",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 4 configuration",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Salesforce SObject4 Use Custom Field",
+          "documentation": "Flag to use custom external id field in SObjects."
+        },
+        {
+          "name": "salesforce.object4.custom.id.field.name",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 4 configuration",
+          "order_in_group": 8,
+          "default_value": null,
+          "display_name": "Salesforce SObject4 Custom Field Name",
+          "documentation": "Name of a custom external id field in SObject to structure Rest Api calls for insert, upsert, delete, and update operations."
+        },
+        {
+          "name": "salesforce.object5",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "Object 5 configuration",
+          "order_in_group": 1,
+          "display_name": "Salesforce SObject5 Name",
+          "documentation": "The Salesforce SObject5 to write to."
+        },
+        {
+          "name": "salesforce.object5.topics",
+          "required": false,
+          "type": "LIST",
+          "importance": "HIGH",
+          "group": "Object 5 configuration",
+          "order_in_group": 2,
+          "default_value": "",
+          "display_name": "Salesforce SObject5 Topics",
+          "documentation": "The comma separated list of topics associated with Salesforce SObject5"
+        },
+        {
+          "name": "salesforce.object5.override.event.type",
+          "type": "BOOLEAN",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "false",
+          "group": "Object 5 configuration",
+          "order_in_group": 3,
+          "display_name": "Salesforce SObject5 Override",
+          "documentation": "A flag to indicate that the Kafka SObject5 source record EventType(create, update, delete) is overridden to use the operation specified in the SObject5 override operation field.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object5.sink.operation",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 5 configuration",
+          "order_in_group": 4,
+          "default_value": "insert",
+          "display_name": "Salesforce SObject5 Override Operation",
+          "documentation": "The Salesforce sink operation to perform on the SObject5. One of: insert, update, upsert, delete. Default is insert. This feature works if override.event.type is true.",
+          "recommended_values": [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+          ]
+        },
+        {
+          "name": "salesforce.object5.ignore.fields",
+          "required": false,
+          "type": "LIST",
+          "importance": "LOW",
+          "group": "Object 5 configuration",
+          "order_in_group": 5,
+          "default_value": "",
+          "display_name": "Salesforce SObject5 Ignore Fields",
+          "documentation": "Comma separate list of fields from the source Kafka record to ignore when pushing a record into Salesforce."
+        },
+        {
+          "name": "salesforce.object5.ignore.reference.fields",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 5 configuration",
+          "order_in_group": 6,
+          "default_value": "false",
+          "display_name": "Salesforce SObject5 Ignore Reference Fields",
+          "documentation": "Flag to prevent reference type fields from being updated or inserted in Salesforce SObjects.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "salesforce.object5.use.custom.id.field",
+          "required": false,
+          "type": "BOOLEAN",
+          "importance": "LOW",
+          "group": "Object 5 configuration",
+          "order_in_group": 7,
+          "default_value": "false",
+          "display_name": "Salesforce SObject5 Use Custom Field",
+          "documentation": "Flag to use custom external id field in SObjects."
+        },
+        {
+          "name": "salesforce.object5.custom.id.field.name",
+          "required": false,
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Object 5 configuration",
+          "order_in_group": 8,
+          "default_value": null,
+          "display_name": "Salesforce SObject5 Custom Field Name",
+          "documentation": "Name of a custom external id field in SObject to structure Rest Api calls for insert, upsert, delete, and update operations."
+        },
+        {
+          "name": "connection.timeout",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "30000",
+          "group": "Connection details",
+          "order_in_group": 1,
+          "display_name": "Connection timeout",
+          "documentation": "The amount of time to wait in milliseconds while connecting to the Salesforce streaming endpoint."
+        },
+        {
+          "name": "behavior.on.api.errors",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "ignore",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "Behavior on API errors",
+          "documentation": "Error handling behavior config for any API errors.",
+          "recommended_values": [
+            "ignore",
+            "fail"
+          ]
+        },
+        {
+          "name": "behavior.on.null.record",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "fail",
+          "group": "Connection details",
+          "order_in_group": 3,
+          "display_name": "Behavior on null record",
+          "documentation": "Error handling behavior config for null records",
+          "recommended_values": [
+            "ignore",
+            "fail",
+            "delete"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "salesforce.object",
+          "value": "${salesforce.object1}"
+        },
+        {
+          "name": "override.event.type",
+          "switch": {
+            "salesforce.object1.override.event.type": {
+              "true": "true",
+              "false": "false"
+            }
+          }
+        },
+        {
+          "name": "salesforce.sink.object.operation",
+          "value": "${salesforce.object1.sink.operation}"
+        },
+        {
+          "name": "salesforce.enable.batching"
+        },
+        {
+          "name": "salesforce.batch.size"
+        },
+        {
+          "name": "salesforce.all.or.none"
+        },
+        {
+          "name": "behavior.on.null.record"
+        },
+        {
+          "name": "salesforce.object1"
+        },
+        {
+          "name": "salesforce.object1.topics"
+        },
+        {
+          "name": "salesforce.object1.override.event.type"
+        },
+        {
+          "name": "salesforce.object1.sink.operation"
+        },
+        {
+          "name": "salesforce.object1.ignore.fields"
+        },
+        {
+          "name": "salesforce.object1.ignore.reference.fields"
+        },
+        {
+          "name": "salesforce.object1.use.custom.id.field"
+        },
+        {
+          "name": "salesforce.object1.custom.id.field.name"
+        },
+        {
+          "name": "salesforce.object2"
+        },
+        {
+          "name": "salesforce.object2.topics"
+        },
+        {
+          "name": "salesforce.object2.override.event.type"
+        },
+        {
+          "name": "salesforce.object2.sink.operation"
+        },
+        {
+          "name": "salesforce.object2.ignore.fields"
+        },
+        {
+          "name": "salesforce.object2.ignore.reference.fields"
+        },
+        {
+          "name": "salesforce.object2.use.custom.id.field"
+        },
+        {
+          "name": "salesforce.object2.custom.id.field.name"
+        },
+        {
+          "name": "salesforce.object3"
+        },
+        {
+          "name": "salesforce.object3.topics"
+        },
+        {
+          "name": "salesforce.object3.override.event.type"
+        },
+        {
+          "name": "salesforce.object3.sink.operation"
+        },
+        {
+          "name": "salesforce.object3.ignore.fields"
+        },
+        {
+          "name": "salesforce.object3.ignore.reference.fields"
+        },
+        {
+          "name": "salesforce.object3.use.custom.id.field"
+        },
+        {
+          "name": "salesforce.object3.custom.id.field.name"
+        },
+        {
+          "name": "salesforce.object4"
+        },
+        {
+          "name": "salesforce.object4.topics"
+        },
+        {
+          "name": "salesforce.object4.override.event.type"
+        },
+        {
+          "name": "salesforce.object4.sink.operation"
+        },
+        {
+          "name": "salesforce.object4.ignore.fields"
+        },
+        {
+          "name": "salesforce.object4.ignore.reference.fields"
+        },
+        {
+          "name": "salesforce.object4.use.custom.id.field"
+        },
+        {
+          "name": "salesforce.object4.custom.id.field.name"
+        },
+        {
+          "name": "salesforce.object5"
+        },
+        {
+          "name": "salesforce.object5.topics"
+        },
+        {
+          "name": "salesforce.object5.override.event.type"
+        },
+        {
+          "name": "salesforce.object5.sink.operation"
+        },
+        {
+          "name": "salesforce.object5.ignore.fields"
+        },
+        {
+          "name": "salesforce.object5.ignore.reference.fields"
+        },
+        {
+          "name": "salesforce.object5.use.custom.id.field"
+        },
+        {
+          "name": "salesforce.object5.custom.id.field.name"
+        },
+        {
+          "name": "salesforce.object.num"
+        },
+        {
+          "name": "salesforce.ignore.fields",
+          "value": "${salesforce.object1.ignore.fields}"
+        },
+        {
+          "name": "salesforce.ignore.reference.fields",
+          "value": "${salesforce.object1.ignore.reference.fields}"
+        },
+        {
+          "name": "salesforce.use.custom.id.field",
+          "value": "${salesforce.object1.use.custom.id.field}"
+        },
+        {
+          "name": "salesforce.custom.id.field.name",
+          "value": "${salesforce.object1.custom.id.field.name}"
+        },
+        {
+          "name": "connection.timeout"
+        },
+        {
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.storage.StringConverter"
+        },
+        {
+          "name": "key.converter.schemas.enable",
+          "value": "false"
+        },
+        {
+          "name": "enhanced.avro.schema.support",
+          "value": "true"
+        },
+        {
+          "name": "behavior.on.api.errors",
+          "switch": {
+            "behavior.on.api.errors": {
+              "ignore": "log",
+              "fail": "fail"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "common",
+      "global_validators": [
+        {
+          "name": "required",
+          "priority": "HIGHEST"
+        },
+        {
+          "name": "recommended.values",
+          "priority": "HIGHER"
+        }
+      ],
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "connector.class",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 1,
+          "display_name": "Connector class"
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "How should we connect to your data?",
+          "order_in_group": 2,
+          "display_name": "Connector name",
+          "documentation": "Sets a name for your connector."
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
+        },
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "KAFKA_API_KEY",
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
+          "recommended_values": [
+            "SERVICE_ACCOUNT",
+            "KAFKA_API_KEY"
+          ]
+        },
+        {
+          "name": "kafka.api.key",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka API Key",
+          "documentation": "Kafka API Key. Required when kafka.auth.mode==KAFKA_API_KEY."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "confluent.topic.bootstrap.servers",
+          "value": "Placeholder value to pass connector validations"
+        },
+        {
+          "name": "errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "errors.log.include.messages",
+          "value": "false"
+        },
+        {
+          "name": "errors.retry.timeout",
+          "value": "300000"
+        },
+        {
+          "name": "errors.retry.delay.max.ms",
+          "value": "30000"
+        },
+        {
+          "name": "value.converter.ignore.modern.dialects",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "template_id": "common-salesforce",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "salesforce.grant.type",
+          "required": false,
+          "type": "STRING",
+          "default_value": "PASSWORD",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 1,
+          "display_name": "Salesforce grant type",
+          "documentation": "Salesforce grant type. Valid options are 'PASSWORD', 'CLIENT_CREDENTIALS' and 'JWT_BEARER'.",
+          "recommended_values": [
+            "PASSWORD",
+            "CLIENT_CREDENTIALS",
+            "JWT_BEARER"
+          ]
+        },
+        {
+          "name": "salesforce.instance",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 2,
+          "default_value": "https://login.salesforce.com",
+          "display_name": "Salesforce instance",
+          "documentation": "The URL of the Salesforce endpoint to use. When using 'CLIENT_CREDENTIALS' grant type, provide your Salesforce domain URL. The default is https://login.salesforce.com, which directs the connector to use the endpoint specified in the authentication response."
+        },
+        {
+          "name": "salesforce.username",
+          "required": false,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 3,
+          "display_name": "Salesforce username",
+          "documentation": "The Salesforce username the connector should use."
+        },
+        {
+          "name": "salesforce.password",
+          "required": false,
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 4,
+          "display_name": "Salesforce password",
+          "documentation": "The Salesforce password the connector should use."
+        },
+        {
+          "name": "salesforce.password.token",
+          "required": false,
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 5,
+          "display_name": "Salesforce password token",
+          "documentation": "The Salesforce security token associated with the username."
+        },
+        {
+          "name": "salesforce.consumer.key",
+          "required": true,
+          "type": "PASSWORD",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 6,
+          "display_name": "Salesforce consumer key",
+          "documentation": "The client id(consumer key) for the Salesforce Connected app."
+        },
+        {
+          "name": "salesforce.consumer.secret",
+          "required": false,
+          "type": "PASSWORD",
+          "default_value": null,
+          "importance": "MEDIUM",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 7,
+          "display_name": "Salesforce consumer secret",
+          "documentation": "The client secret(consumer secret) for the Salesforce Connected app."
+        },
+        {
+          "name": "salesforce.jwt.keystore.file",
+          "required": false,
+          "type": "PASSWORD",
+          "importance": "MEDIUM",
+          "default_value": "",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 8,
+          "display_name": "Salesforce JWT keystore file",
+          "documentation": "Salesforce JWT keystore file which contains the private key."
+        },
+        {
+          "name": "salesforce.jwt.keystore.password",
+          "required": false,
+          "type": "PASSWORD",
+          "default_value": null,
+          "importance": "MEDIUM",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 9,
+          "display_name": "Salesforce JWT keystore password",
+          "documentation": "Password used to access JWT keystore file."
+        },
+        {
+          "name": "request.max.retries.time.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "30000",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "Max Retry Time in Milliseconds",
+          "documentation": "In case of error when making a request to Salesforce, the connector will retry until this time (in ms) elapses. The default value is 30000 (30 seconds). Minimum value is 1 sec"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "salesforce.grant.type"
+        },
+        {
+          "name": "salesforce.instance"
+        },
+        {
+          "name": "salesforce.username"
+        },
+        {
+          "name": "salesforce.password"
+        },
+        {
+          "name": "salesforce.password.token"
+        },
+        {
+          "name": "salesforce.jwt.keystore.path",
+          "value": "${salesforce.jwt.keystore.file}"
+        },
+        {
+          "name": "salesforce.jwt.keystore.password"
+        },
+        {
+          "name": "salesforce.consumer.key"
+        },
+        {
+          "name": "salesforce.consumer.secret"
+        },
+        {
+          "name": "request.max.retries.time.ms"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${salesforce.instance}"
+        }
+      ]
+    },
+    {
+      "template_id": "common-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.service.account.id",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 2,
+          "display_name": "Kafka Service Account",
+          "documentation": "The Service Account that will be used to generate the API keys to communicate with Kafka Cluster."
+        },
+        {
+          "name": "kafka.api.secret",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 3,
+          "display_name": "Kafka API Secret",
+          "documentation": "Secret associated with Kafka API key. Required when kafka.auth.mode==KAFKA_API_KEY.",
+          "dependents": [
+            "kafka.api.key"
+          ]
+        },
+        {
+          "name": "topics",
+          "type": "LIST",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 1,
+          "display_name": "Topic names",
+          "documentation": "Identifies the topic name or a comma-separated list of topic names.",
+          "dependents": [
+            "kafka.api.secret"
+          ],
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "max.poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 1,
+          "display_name": "Max poll interval(ms)",
+          "default_value": "300000",
+          "documentation": "The maximum delay between subsequent consume requests to Kafka. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 300000 milliseconds (5 minutes)."
+        },
+        {
+          "name": "max.poll.records",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "group": "Consumer configuration",
+          "order_in_group": 2,
+          "display_name": "Max poll records",
+          "default_value": "500",
+          "documentation": "The maximum number of records to consume from Kafka in a single request. This configuration property may be used to improve the performance of the connector, if the connector cannot send records to the sink system. Defaults to 500 records."
+        },
+        {
+          "name": "errors.tolerance",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "all",
+          "display_name": "errors.tolerance",
+          "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
+          "recommended_values": [
+            "none",
+            "all"
+          ]
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "topics"
+        },
+        {
+          "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
+        },
+        {
+          "name": "errors.deadletterqueue.topic.replication.factor",
+          "value": "3"
+        },
+        {
+          "name": "errors.deadletterqueue.context.headers.enable",
+          "value": "true"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "consumer.override.max.poll.interval.ms",
+          "value": "${max.poll.interval.ms}"
+        },
+        {
+          "name": "consumer.override.max.poll.records",
+          "value": "${max.poll.records}"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        }
+      ]
+    },
+    {
+      "template_id": "common-kafka-connectivity",
+      "abstract": true,
+      "config_defs": [],
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "schema-registry",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "schema.context.name",
+          "type": "STRING",
+          "group": "Schema Config",
+          "order_in_group": 1,
+          "importance": "MEDIUM",
+          "display_name": "Schema context",
+          "documentation": "Add a schema context name. A schema context represents an independent scope in Schema Registry. It is a separate sub-schema tied to topics in different Kafka clusters that share the same Schema Registry instance. If not used, the connector uses the default schema configured for Schema Registry in your Confluent Cloud environment.",
+          "default_value": "default",
+          "dependents": [
+            "schema.registry.url"
+          ]
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "reporter",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "reporter.result.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 3,
+          "display_name": "Reporter Result Topic Name",
+          "default_value": "success-${connector}",
+          "documentation": "The name of the topic to produce records to after successfully processing a sink record. Defaults to 'success-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 4,
+          "display_name": "Reporter Error Topic Name",
+          "default_value": "error-${connector}",
+          "documentation": "The name of the topic to produce records to after each unsuccessful record sink attempt. Defaults to 'error-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "reporter.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.producer.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.admin.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "reporter.admin.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "reporter.result.topic.name"
+        },
+        {
+          "name": "reporter.error.topic.name"
+        },
+        {
+          "name": "reporter.admin.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "reporter.producer.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "reporter.admin.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "input-data-format-sr-backed",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "input.data.format",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "alias": "data.format",
+          "group": "Input messages",
+          "order_in_group": 1,
+          "display_name": "Input Kafka record value format",
+          "documentation": "Sets the input Kafka record value format. Valid entries are AVRO, JSON_SR and PROTOBUF. Note that you need to have Confluent Cloud Schema Registry configured",
+          "recommended_values": [
+            "AVRO",
+            "JSON_SR",
+            "PROTOBUF"
+          ],
+          "dependents": [
+            "schema.registry.url"
+          ]
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables",
+          "alias": "ignore.default.for.nullables",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "value.converter.ignore.default.for.nullables",
+          "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "type": "BOOLEAN",
+          "documentation": "Whether to scrub invalid names by replacing invalid characters with valid characters. Applicable for Avro and Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.scrub.invalid.names"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.storage.StringConverter"
+        },
+        {
+          "name": "value.converter",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "io.confluent.connect.avro.AvroConverter",
+              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
+              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter"
+            }
+          }
+        },
+        {
+          "name": "value.converter.schema.registry.url",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${schema.registry.url}",
+              "JSON_SR": "${schema.registry.url}",
+              "PROTOBUF": "${schema.registry.url}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.credentials.source",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "USER_INFO",
+              "JSON_SR": "USER_INFO",
+              "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
+          "name": "value.converter.ignore.default.for.nullables"
+        },
+        {
+          "name": "value.converter.scrub.invalid.names",
+          "dynamic.mapper": {
+            "name": "value.converter.scrub.invalid.names.mapper"
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "super",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "auto.restart.on.user.error",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "MEDIUM",
+          "group": "Auto-restart policy",
+          "order_in_group": 1,
+          "display_name": "Enable Connector Auto-restart",
+          "documentation": "Enable connector to automatically restart on user-actionable errors."
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information and Enums. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data",
+          "type": "BOOLEAN",
+          "documentation": "Allow the Connect converter to add its metadata to the output schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support",
+          "type": "BOOLEAN",
+          "documentation": "Enable enhanced schema support to preserve package information. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate an index suffix for unions. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums",
+          "type": "BOOLEAN",
+          "documentation": "Whether to represent enums as integers. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should be specified with an optional label. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls",
+          "type": "BOOLEAN",
+          "documentation": "Whether to generate a struct variable for null values. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables",
+          "type": "BOOLEAN",
+          "documentation": "Whether nullable fields should use primitive wrapper messages. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives",
+          "type": "BOOLEAN",
+          "documentation": "Whether a wrapper message should be interpreted as a raw primitive at root level. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties",
+          "type": "BOOLEAN",
+          "documentation": "Whether to allow additional properties for object schemas. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired",
+          "type": "BOOLEAN",
+          "documentation": "Whether to set non-required properties to be optional. Applicable for JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format",
+          "type": "STRING",
+          "recommended_values": [
+            "BASE64",
+            "NUMERIC"
+          ],
+          "documentation": "Specify the JSON/JSON_SR serialization format for Connect DECIMAL logical type values with two allowed literals:\nBASE64 to serialize DECIMAL logical types as base64 encoded binary data and\nNUMERIC to serialize Connect DECIMAL logical type values in JSON/JSON_SR as a number representing the decimal value.",
+          "group": "Additional Configs",
+          "alias": "json.output.decimal.format",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.decimal.format",
+          "default_value": "BASE64"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "type": "BOOLEAN",
+          "documentation": "Specify if the Serializer should attempt to register the Schema.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.auto.register.schemas"
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "type": "BOOLEAN",
+          "documentation": "Use latest version of schema in subject for serialization when auto.register.schemas is false.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.use.latest.version"
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict",
+          "type": "BOOLEAN",
+          "documentation": "Verify latest subject version is backward compatible when `use.latest.version` is `true`.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "type": "STRING",
+          "default_value": "TopicNameStrategy",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "alias": "key.subject.name.strategy",
+          "documentation": "How to construct the subject name for key schema registration.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "key.converter.key.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "TopicNameStrategy",
+            "RecordNameStrategy",
+            "TopicRecordNameStrategy"
+          ],
+          "default_value": "TopicNameStrategy",
+          "alias": "subject.name.strategy,value.subject.name.strategy",
+          "documentation": "Determines how to construct the subject name under which the value schema is registered with Schema Registry.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.value.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "type": "STRING",
+          "recommended_values": [
+            "DefaultReferenceSubjectNameStrategy",
+            "QualifiedReferenceSubjectNameStrategy"
+          ],
+          "default_value": "DefaultReferenceSubjectNameStrategy",
+          "documentation": "Set the subject reference name strategy for value. Valid entries are DefaultReferenceSubjectNameStrategy or QualifiedReferenceSubjectNameStrategy. Note that the subject reference name strategy can be selected only for PROTOBUF format with the default strategy being DefaultReferenceSubjectNameStrategy.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.reference.subject.name.strategy"
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys",
+          "type": "BOOLEAN",
+          "documentation": "Allow optional string map key when converting from Connect Schema to Avro Schema. Applicable for Avro Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "documentation": "Whether to flatten singleton unions. Applicable for Avro and JSON_SR Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2",
+          "type": "BOOLEAN",
+          "documentation": "Whether proto2 optionals are supported. Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions",
+          "type": "BOOLEAN",
+          "documentation": "Whether to flatten unions (oneofs). Applicable for Protobuf Converters.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "header.converter",
+          "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
+          "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.DoubleConverter",
+            "org.apache.kafka.connect.converters.FloatConverter",
+            "org.apache.kafka.connect.converters.IntegerConverter",
+            "org.apache.kafka.connect.converters.LongConverter",
+            "org.apache.kafka.connect.converters.ShortConverter"
+          ]
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "auto.restart.on.user.error"
+        },
+        {
+          "name": "value.converter.enhanced.avro.schema.support"
+        },
+        {
+          "name": "value.converter.connect.meta.data"
+        },
+        {
+          "name": "value.converter.enhanced.protobuf.schema.support"
+        },
+        {
+          "name": "value.converter.generate.index.for.unions"
+        },
+        {
+          "name": "value.converter.int.for.enums"
+        },
+        {
+          "name": "value.converter.optional.for.nullables"
+        },
+        {
+          "name": "value.converter.generate.struct.for.nulls"
+        },
+        {
+          "name": "value.converter.wrapper.for.nullables"
+        },
+        {
+          "name": "value.converter.wrapper.for.raw.primitives"
+        },
+        {
+          "name": "value.converter.object.additional.properties"
+        },
+        {
+          "name": "value.converter.use.optional.for.nonrequired"
+        },
+        {
+          "name": "value.converter.decimal.format"
+        },
+        {
+          "name": "value.converter.auto.register.schemas",
+          "dynamic.mapper": {
+            "name": "value.converter.auto.register.schemas.mapper"
+          }
+        },
+        {
+          "name": "value.converter.use.latest.version",
+          "dynamic.mapper": {
+            "name": "value.converter.use.latest.version.mapper"
+          }
+        },
+        {
+          "name": "value.converter.latest.compatibility.strict"
+        },
+        {
+          "name": "value.converter.value.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "key.converter.key.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.value.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.reference.subject.name.strategy",
+          "dynamic.mapper": {
+            "name": "value.converter.reference.subject.name.strategy.mapper"
+          }
+        },
+        {
+          "name": "value.converter.allow.optional.map.keys"
+        },
+        {
+          "name": "value.converter.flatten.singleton.unions"
+        },
+        {
+          "name": "value.converter.optional.for.proto2"
+        },
+        {
+          "name": "value.converter.flatten.unions"
+        },
+        {
+          "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
+        }
+      ]
+    },
+    {
+      "template_id": "super-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "consumer.override.auto.offset.reset",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
+        }
+      ]
+    }
+  ]
+}

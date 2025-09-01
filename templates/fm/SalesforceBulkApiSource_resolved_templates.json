@@ -1,324 +1,103 @@
 {
   "templates": [
     {
-      "template_id": "SchedulerCdcPostgresSource",
+      "template_id": "SalesforceBulkApiSource",
       "connector_type": "SOURCE",
-      "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+      "connector.class": "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector",
       "config_defs": [
         {
-          "name": "connection.host",
+          "name": "salesforce.instance",
+          "required": false,
           "type": "STRING",
-          "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
+          "group": "How should we connect to Salesforce?",
           "order_in_group": 1,
-          "display_name": "Connection host",
-          "documentation": "JDBC connection host."
+          "default_value": "https://login.salesforce.com",
+          "display_name": "Salesforce instance",
+          "documentation": "The URL of the Salesforce endpoint to use. The default is https://login.salesforce.com. This directs the connector to use the endpoint specified in the authentication response."
         },
         {
-          "name": "connection.port",
-          "type": "INT",
+          "name": "salesforce.username",
           "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 2,
-          "display_name": "Connection port",
-          "documentation": "JDBC connection port."
-        },
-        {
-          "name": "connection.user",
           "type": "STRING",
-          "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 3,
-          "display_name": "Connection user",
-          "documentation": "JDBC connection user."
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 2,
+          "display_name": "Salesforce username",
+          "documentation": "The Salesforce username the connector should use."
         },
         {
-          "name": "connection.password",
+          "name": "salesforce.password",
+          "required": true,
           "type": "PASSWORD",
-          "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 4,
-          "display_name": "Connection password",
-          "documentation": "JDBC connection password."
-        },
-        {
-          "name": "db.name",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 5,
-          "display_name": "Database name",
-          "documentation": "JDBC database name."
-        },
-        {
-          "name": "mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": null,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 1,
-          "display_name": "Mode",
-          "documentation": "The mode for updating a table each time it is polled."
-        },
-        {
-          "name": "table.whitelist",
-          "type": "LIST",
-          "required": true,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 2,
-          "display_name": "Table names",
-          "documentation": "List of tables to include in copying. Use a comma-separated list to specify multiple tables (for example: \"User, Address, Email\").",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "timestamp.column.name",
-          "required": false,
-          "default_value": null
-        },
-        {
-          "name": "incrementing.column.name",
-          "type": "STRING",
-          "required": false,
-          "default_value": null,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 4,
-          "display_name": "Incrementing column name",
-          "documentation": "The name of the strictly incrementing column to use to detect new rows. Any empty value indicates the column should be autodetected by looking for an auto-incrementing column. This column may not be nullable."
-        },
-        {
-          "name": "table.types",
-          "type": "LIST",
-          "required": true,
-          "default_value": "TABLE",
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 5,
-          "display_name": "Table types",
-          "documentation": "By default, the JDBC connector will only detect tables with type TABLE from the source Database. This config allows a command separated list of table types to extract.",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ],
-          "recommended_values": [
-            "TABLE",
-            "VIEW",
-            "ALIAS"
-          ]
-        },
-        {
-          "name": "schema.pattern",
-          "type": "STRING",
-          "required": false,
-          "default_value": null,
-          "importance": "HIGH",
-          "group": "Database details",
-          "order_in_group": 6,
-          "display_name": "Schema pattern",
-          "documentation": "Schema pattern to fetch table metadata from the database."
-        },
-        {
-          "name": "db.timezone",
-          "type": "STRING",
-          "required": true,
-          "default_value": "UTC",
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 7,
-          "display_name": "Database timezone",
-          "documentation": "Name of the JDBC timezone used in the connector when querying with time-based criteria. Defaults to UTC.",
-          "recommender": {
-            "name": "timezone"
-          }
-        },
-        {
-          "name": "poll.interval.ms",
-          "type": "INT",
-          "default_value": "5000",
-          "importance": "HIGH",
-          "group": "Connection details",
-          "order_in_group": 1,
-          "display_name": "Poll interval (ms)",
-          "documentation": "Frequency in ms to poll for new data in each table."
-        },
-        {
-          "name": "batch.max.rows",
-          "type": "INT",
-          "default_value": "100",
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 2,
-          "display_name": "Max rows per batch",
-          "documentation": "Maximum number of rows to include in a single batch when polling for new data. This setting can be used to limit the amount of data buffered internally in the connector."
-        },
-        {
-          "name": "timestamp.delay.interval.ms",
-          "type": "INT",
-          "default_value": "0",
-          "importance": "HIGH",
-          "group": "Connection details",
+          "group": "How should we connect to Salesforce?",
           "order_in_group": 3,
-          "display_name": "Delay interval (ms)",
-          "documentation": "How long to wait after a row with a certain timestamp appears before we include it in the result. You may choose to add some delay to allow transactions with an earlier timestamp to complete. The first execution will fetch all available records (starting at timestamp 0) until current time minus the delay. Every following execution will get data from the last time we fetched until current time minus the delay."
+          "display_name": "Salesforce password",
+          "documentation": "The Salesforce password the connector should use."
         },
         {
-          "name": "output.data.format",
-          "type": "STRING",
+          "name": "salesforce.password.token",
+          "required": true,
+          "type": "PASSWORD",
           "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "default_value_provider": {
-            "name": "data.format.provider"
-          },
-          "display_name": "Output message format",
-          "documentation": "Sets the output message format. Valid entries are AVRO or JSON",
-          "recommended_values": [
-            "AVRO",
-            "JSON"
-          ]
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 4,
+          "display_name": "Salesforce password token",
+          "documentation": "The Salesforce security token associated with the username."
         },
         {
-          "name": "topic.prefix"
+          "name": "request.max.retries.time.ms",
+          "type": "LONG",
+          "required": false,
+          "importance": "LOW",
+          "default_value": "30000",
+          "group": "Connection details",
+          "order_in_group": 2,
+          "display_name": "Max Retry Time in Milliseconds",
+          "documentation": "In case of error when making a request to Salesforce, the connector will retry until this time (in ms) elapses. The default value is 30000 (30 seconds). Minimum value is 1 sec"
+        },
+        {
+          "name": "batch.enable",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "true",
+          "importance": "LOW",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 13,
+          "display_name": "Enable Batching",
+          "documentation": "Enable batching by applying PK-chunking. The default value is TRUE.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
         }
       ],
       "connector_configs": [
         {
-          "name": "connection.attempts",
-          "value": "3"
+          "name": "salesforce.instance"
         },
         {
-          "name": "connection.backoff.ms",
-          "value": "1000"
+          "name": "salesforce.username"
         },
         {
-          "name": "numeric.mapping",
-          "value": null
+          "name": "salesforce.password"
         },
         {
-          "name": "dialect.name",
-          "value": "PostgreSqlDatabaseDialect"
+          "name": "salesforce.password.token"
         },
         {
-          "name": "driver.class",
-          "value": "org.postgresql.Driver"
+          "name": "request.max.retries.time.ms"
         },
         {
-          "name": "table.poll.interval.ms",
-          "value": "60000"
-        },
-        {
-          "name": "validate.non.null",
-          "value": false
-        },
-        {
-          "name": "connection.url",
-          "value": "jdbc:postgresql://${connection.host}:${connection.port}/${db.name}"
-        },
-        {
-          "name": "connection.sslmode",
-          "switch": {
-            "ssl.mode": {
-              "prefer": null,
-              "require": "require",
-              "verify-ca": null,
-              "verify-all": null
-            }
-          }
-        },
-        {
-          "name": "connection.user"
-        },
-        {
-          "name": "connection.password"
-        },
-        {
-          "name": "table.whitelist"
-        },
-        {
-          "name": "schema.pattern"
-        },
-        {
-          "name": "mode"
-        },
-        {
-          "name": "incrementing.column.name"
-        },
-        {
-          "name": "table.types"
-        },
-        {
-          "name": "poll.interval.ms"
+          "name": "batch.enable"
         },
         {
           "name": "batch.max.rows"
         },
         {
-          "name": "topic.prefix"
-        },
-        {
-          "name": "timestamp.delay.interval.ms"
-        },
-        {
-          "name": "db.timezone"
-        },
-        {
-          "name": "consumer.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "consumer.override.sasl.mechanism",
-          "value": "PLAIN"
-        },
-        {
-          "name": "producer.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "producer.override.sasl.mechanism",
-          "value": "PLAIN"
-        },
-        {
-          "name": "admin.override.security.protocol",
-          "value": "SASL_SSL"
-        },
-        {
-          "name": "admin.override.sasl.mechanism",
-          "value": "PLAIN"
-        },
-        {
-          "name": "tasks.max"
-        },
-        {
-          "name": "confluent.topic.bootstrap.servers",
-          "value": "Placeholder value to pass connector validations"
-        },
-        {
-          "name": "enhanced.avro.schema.support",
-          "value": "true"
-        },
-        {
-          "name": "locale",
-          "value": "en"
-        },
-        {
-          "name": "timezone",
-          "value": "UTC"
-        },
-        {
-          "name": "timestamp.extractor",
-          "value": "Record"
+          "name": "connector.endpoint",
+          "value": "${salesforce.instance}"
         }
       ]
     },
@@ -702,39 +481,103 @@
       ]
     },
     {
-      "template_id": "timestamp-column",
+      "template_id": "common-salesforce-bulk-api-source",
       "abstract": true,
       "config_defs": [
         {
-          "name": "timestamp.column.name",
-          "type": "LIST",
+          "name": "salesforce.object",
+          "required": true,
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 10,
+          "display_name": "Salesforce Object",
+          "documentation": "The Salesforce object to create topic for."
+        },
+        {
+          "name": "poll.interval.ms",
+          "type": "INT",
           "required": false,
           "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 3,
-          "display_name": "Timestamp column name",
-          "documentation": "Comma separated list of one or more timestamp columns to detect new or modified rows using the COALESCE SQL function. Rows whose first non-null timestamp value is greater than the largest previous timestamp value seen will be discovered with each poll. At least one column should not be nullable."
+          "default_value": 30000,
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 11,
+          "display_name": "Poll interval (ms)",
+          "documentation": "How often to query Salesforce for new records."
+        },
+        {
+          "name": "salesforce.since",
+          "type": "STRING",
+          "required": true,
+          "importance": "MEDIUM",
+          "group": "How should we connect to Salesforce?",
+          "order_in_group": 12,
+          "display_name": "Salesforce since",
+          "documentation": "CreatedDate after which the records should be pulled. Note that the time is in UTC and has required format: yyyy-MM-dd.",
+          "sanitizers": [
+            {
+              "name": "trim"
+            }
+          ]
+        },
+        {
+          "name": "tasks.max",
+          "type": "INT",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Number of tasks for this connector",
+          "order_in_group": 1,
+          "display_name": "Tasks",
+          "documentation": "Maximum number of tasks for the connector."
         }
       ],
       "connector_configs": [
         {
-          "name": "timestamp.column.name"
+          "name": "kafka.topic"
+        },
+        {
+          "name": "tasks.max"
+        },
+        {
+          "name": "poll.interval.ms"
+        },
+        {
+          "name": "salesforce.since"
+        },
+        {
+          "name": "salesforce.object"
+        },
+        {
+          "name": "producer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "admin.override.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
+          "name": "producer.override.sasl.mechanism",
+          "value": "PLAIN"
         }
       ]
     },
     {
-      "template_id": "topic-prefix-source",
+      "template_id": "kafka-topic-source",
       "abstract": true,
       "config_defs": [
         {
-          "name": "topic.prefix",
+          "name": "kafka.topic",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How do you want to prefix table names?",
+          "group": "Which topic do you want to send data to?",
           "order_in_group": 1,
-          "display_name": "Topic prefix",
-          "documentation": "Prefix to prepend to table names to generate the name of the Apache Kafka\u00ae topic to publish data to."
+          "display_name": "Topic name",
+          "documentation": "Identifies the topic name to write the data to."
         }
       ],
       "connector_configs": []
