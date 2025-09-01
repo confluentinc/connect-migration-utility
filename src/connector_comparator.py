@@ -7,6 +7,8 @@ This product includes software developed at The Apache Software Foundation.
 
 import json
 import logging
+import os
+
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set
 import re
@@ -1427,22 +1429,33 @@ class ConnectorComparator:
         }
 
     @staticmethod
-    def parse_connector_file(file, all_connectors_dict, logger):
+    def parse_connector_file(file, all_connectors_dict, logger=None):
+        if not os.path.exists(file):
+            raise FileNotFoundError(f"File not found: {file}")
+        if logger is None:
+            logger = logging.getLogger("config_parser")
+
         if not (file.suffix == '.json' and file.is_file()):
             return
         try:
+            # Output -> all_connectors_dict = { "connector_name": {"name":"", "config":""}, ... }
             with open(file, 'r') as f:
                 data = json.load(f)
                 if isinstance(data, dict) and 'connectors' in data:
                     # Structure: {"connectors": {"connector_name": {"name":"", "config":""}, ...}}
                     all_connectors_dict.update(data['connectors'])
                 elif isinstance(data, list):
-                    # Structure: [ {"connector_name_02": {"name":"", "config":""} }, ... ]
                     for item in data:
-                        if isinstance(item, dict):
-                            all_connectors_dict.update(item)
-                        else:
-                            logger.warning(f"Skipping non-dict item in list in {file}: {item}")
+                        if isinstance(item, dict) and 'name' in item and 'config' in item:
+                            # Structure: [ {"connector_name_02": {"name":"", "config":""} }, ... ]
+                            all_connectors_dict[item['name']] = item
+                        elif isinstance(item, dict):
+                            # list of configs [ { "name":..., "config":{...} }, { "name":..., "config":{...} }, ... ]
+                            for value in item.values():
+                                if isinstance(value, dict) and 'name' in value and 'config' in value:
+                                    all_connectors_dict[value['name']] = value
+                                else:
+                                    logger.warning(f"Skipping non-connector dict item in list in {file}: {value}")
                 elif isinstance(data, dict) and 'name' in data and 'config' in data:
                     # Structure: {"name": ..., "config": ...} (single connector config)
                     connector_name = data['name']
@@ -1505,10 +1518,6 @@ class ConnectorComparator:
                     'mapping_errors': result['errors'],
                     'mapping_warnings': result['warnings'],
                 }
-
-                # Add offsets to FM config if they are supported
-                if 'offsets' in connector and OffsetManager.get_instance(self.logger).is_offset_supported_connector(connector.get('type', ''), fm_config['config']['connector.class']):
-                    fm_config['offsets'] = connector['offsets']
 
                 fm_configs[connector['name']] = fm_config
 

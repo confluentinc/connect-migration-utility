@@ -9,6 +9,8 @@ import os
 import logging
 
 from offset_manager import OffsetManager
+from connector_comparator import ConnectorComparator
+
 
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
@@ -36,71 +38,6 @@ def setup_logging(output_dir: Path):
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
-
-def extract_connectors_configs_from_json(json_file_path: str) -> List[Dict[str, Any]]:
-    """
-    Loads a connector JSON file and returns a list of dicts, each with keys:
-    "name": connector name,
-    "config": config dictionary,
-    "offsets": list of offset dictionaries (or None if not present).
-
-    Accepts single or multiple connector formats.
-    """
-    if not os.path.exists(json_file_path):
-        raise FileNotFoundError(f"File not found: {json_file_path}")
-    with open(json_file_path, 'r') as f:
-        data = json.load(f)
-
-    results = []
-
-    # Single connector format
-    if isinstance(data, dict) and 'name' in data and 'config' in data:
-        results.append({
-            "name": data['name'],
-            "config": data['config'],
-            "offsets": data.get('offsets')
-        })
-    # Multiple connectors: {"connectors": { ... }}
-    elif isinstance(data, dict) and 'connectors' in data:
-        for conn in data['connectors'].values():
-            if isinstance(conn, dict) and 'name' in conn and 'config' in conn:
-                results.append({
-                    "name": conn['name'],
-                    "config": conn['config'],
-                    "offsets": conn.get('offsets')
-                })
-    # Multiple connectors: list of dicts
-    elif isinstance(data, list):
-        for item in data:
-            if isinstance(item, dict):
-                for conn in item.values():
-                    if isinstance(conn, dict) and 'name' in conn and 'config' in conn:
-                        results.append({
-                            "name": conn['name'],
-                            "config": conn['config'],
-                            "offsets": conn.get('offsets')
-                        })
-    # Special case: {"conn1": {"name":..., "config":...}, ...}
-    elif isinstance(data, dict):
-        for conn in data.values():
-            if isinstance(conn, dict) and 'name' in conn and 'config' in conn:
-                results.append({
-                    "name": conn['name'],
-                    "config": conn['config'],
-                    "offsets": conn.get('offsets')
-                })
-            # Nested Info: {"special_connector1": {"Info": {"name":..., "config":...}}}
-            elif isinstance(conn, dict) and 'Info' in conn:
-                info = conn['Info']
-                if isinstance(info, dict) and 'name' in info and 'config' in info:
-                    results.append({
-                        "name": info['name'],
-                        "config": info['config'],
-                        "offsets": info.get('offsets')
-                    })
-    if not results:
-        raise ValueError(f"No valid connector 'name', 'config' and 'offsets' found in {json_file_path}")
-    return results
 
 
 class ConnectorCreator:
@@ -223,7 +160,8 @@ class ConnectorCreator:
         Returns a list of new connector information dicts (one per connector in the file).
         """
         self.logger.info(f"[INFO] Creating connector(s) from {json_file_path}")
-        connector_entries = extract_connectors_configs_from_json(json_file_path)
+        connectors_dict = {}
+        ConnectorComparator.parse_connector_file(json_file_path, connectors_dict, self.logger)
         results = []
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
         headers = {
@@ -235,11 +173,10 @@ class ConnectorCreator:
         self.logger.info(f"[INFO] Headers: {{'Content-Type': 'application/json', 'Authorization': '***'}}")
 
         #TODO: Create source connectors before sink connectors to ensure topics exist
-        for entry in connector_entries:
-            name = entry['name']
-            config = entry['config']
-            offsets = entry.get('offsets', None)
-            self.logger.info(f"[INFO] Creating connector '{name}' with config keys: {list(config.keys())} and offsets: {'present' if offsets else 'not present'}")
+        for key, entry in connectors_dict.items():
+            name = key
+            config = entry.get('config', None)
+            self.logger.info(f"[INFO] Creating connector '{name}' with config keys: {list(config.keys())} ")
 
             # Ensure config is a dict
             if config is None or not isinstance(config, dict):
@@ -255,8 +192,6 @@ class ConnectorCreator:
                 "name": name,
                 "config": config
             }
-            if offsets is not None:
-                body["offsets"] = offsets
             # Redact sensitive info in body for print
             redacted_body = body.copy()
             if 'config' in redacted_body:
@@ -290,12 +225,12 @@ def main():
     parser.add_argument('--kafka-api-key', type=str, help='Kafka API key for LKC cluster')
     parser.add_argument('--kafka-api-secret', type=str, help='Kafka API secret for LKC cluster')
     # parser.add_argument('--service-account', type=str, help='Confluent Cloud service account (optional, alternative to api_key/api_secret)')
-    parser.add_argument('--environment-id', type=str, help='Confluent Cloud environment ID')
-    parser.add_argument('--cluster-id', type=str, help='Confluent Cloud LKC cluster ID')
+    parser.add_argument('--environment-id', type=str, required=True, help='Confluent Cloud environment ID')
+    parser.add_argument('--cluster-id', type=str, required=True, help='Confluent Cloud LKC cluster ID')
     parser.add_argument('--environment', type=str, choices=['prod', 'stag', 'devel'], default='prod',
                         help='Environment to create connectors in (choose from prod, stag, devel)')
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs to fetch latest offsets from')
-    parser.add_argument('--migration-mode', type=str, choices=['stop_create_latest_offset', 'create', 'create_latest_offset'],)
+    parser.add_argument('--migration-mode', type=str, choices=['stop_create_latest_offset', 'create', 'create_latest_offset'], required=True)
     parser.add_argument('--disable-ssl-verify', type= bool, default=False, action='store_true',
                         help='Disable SSL certificate verification for HTTPS requests')
 
@@ -318,16 +253,16 @@ def main():
 
 
     bearer_token = args.bearer_token
-    kafka_api_key = args.kafka_api_key
-    kafka_api_secret = args.kafka_api_secret
+    kafka_api_key = getattr(args, 'kafka_api_key', None)
+    kafka_api_secret = getattr(args, 'kafka_api_secret', None)
     # service_account = args.service_account
-    env_id = getattr(args, 'environment_id', None)
-    lkc_id = getattr(args, 'cluster_id', None)
+    env_id = args.environment_id
+    lkc_id = args.cluster_id
     environment = args.environment
     worker_urls = args.worker_urls.split(',') if args.worker_urls else []
 
     disable_ssl_verify = getattr(args, 'disable_ssl_verify', False)
-    migration_mode = getattr(args, 'migration_mode', None)
+    migration_mode = args.migration_mode
 
     creator = ConnectorCreator(environment)
 
@@ -361,17 +296,13 @@ def main():
         connector_fm_configs = {}
         for json_file in fm_config_dir.glob("*.json"):
             try:
-                connector_entries = extract_connectors_configs_from_json(json_file)
+                ConnectorComparator.parse_connector_file(json_file, connector_fm_configs, logger)
             except Exception as e:
                 logger.error(f"Failed to extract connectors from {json_file}: {str(e)}")
                 continue
 
-            for entry in connector_entries:
-                name = entry['name']
-                connector_fm_configs[name] = entry
-
         # Get connector configs and offsets from workers
-        worker_connector_configs = offset_manager.get_connector_configs_offsets(worker_urls)
+        worker_connector_configs = offset_manager.get_connector_configs_offsets(worker_urls, disable_ssl_verify)
 
         for connector_name in connector_fm_configs:
             fm_entry = connector_fm_configs[connector_name]
