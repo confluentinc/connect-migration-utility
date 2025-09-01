@@ -16,8 +16,6 @@ from semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
 
-from offset_manager import OffsetManager
-
 
 class ConnectorComparator:
     SUCCESSFUL_CONFIGS_DIR = "successful_configs"

@@ -88,7 +88,7 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
     logger.info(f"Saved {len(fm_configs)} FM configurations to {discovered_dir}")
 
     # Save all FM configs (full) in discovered_configs
-    all_configs_file = discovered_dir / 'compiled_configs.json'
+    all_configs_file = discovered_dir / 'compiled_output_fm_configs.json'
     with open(all_configs_file, 'w') as f:
         json.dump(fm_configs, f, indent=2)
 
@@ -107,6 +107,8 @@ def main():
     parser.add_argument('--output-dir', type=str, default='output', help='Output directory for all files')
 
     # Confluent Cloud credentials for FM transforms (optional)
+    parser.add_argument('--environment-id', type=str, help='Confluent Cloud environment ID')
+    parser.add_argument('--cluster-id', type=str, help='Confluent Cloud LKC cluster ID')
     parser.add_argument('--bearer-token', type=str, help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
@@ -196,8 +198,8 @@ def main():
             input_file=connectors_json,
             output_dir=output_dir,
             worker_urls=worker_urls_list,
-            env_id=getattr(args, 'env_id', None),
-            lkc_id=getattr(args, 'lkc_id', None),
+            env_id=getattr(args, 'environment_id', None),
+            lkc_id=getattr(args, 'cluster_id', None),
             bearer_token=bearer_token,
             disable_ssl_verify=getattr(args, 'disable_ssl_verify', None)
         )

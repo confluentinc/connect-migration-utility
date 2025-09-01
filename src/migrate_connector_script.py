@@ -173,7 +173,6 @@ class ConnectorCreator:
         self.logger.info(f"[INFO] API URL: {url}")
         self.logger.info(f"[INFO] Headers: {{'Content-Type': 'application/json', 'Authorization': '***'}}")
 
-        #TODO: Create source connectors before sink connectors to ensure topics exist
         for key, entry in connectors_dict.items():
             name = key
             config = entry.get('config', None)
@@ -267,7 +266,6 @@ def main():
         for json_file in fm_config_dir.glob("*.json"):
 
             try:
-                #TODO: Try creating source connectors before sink connectors to ensure topics exist
                 print(f"Creating connector(s) from file: {json_file}")
                 created_connectors = creator.create_connector_from_json_file(
                     environment_id=env_id,
@@ -325,14 +323,8 @@ def main():
 
             # Create new connector with chosen offsets
             try:
-                #TODO: This should be default False, change it to True if want to test without validation
-                config_validation = False
-                #validation
-
-
-
                 #stop connector
-                if config_validation and migration_mode=='stop_create_latest_offset' and sm_worker is not None:
+                if migration_mode=='stop_create_latest_offset' and sm_worker is not None:
                     logger.info("Stopping CP connector after validation as per migration mode")
                     creator.stop_cp_connector(sm_worker, fm_name, disable_ssl_verify)
 
