@@ -1,3 +1,10 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
 #!/usr/bin/env python3
 import argparse
 import logging
@@ -5,7 +12,12 @@ import sys
 from pathlib import Path
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
+from summary import generate_migration_summary
 import json
+
+FM_CONFIGS_DIR = "fm_configs"
+SM_CONFIGS_DIR = "sm_configs_compiled"
+
 
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
@@ -59,7 +71,7 @@ def main():
     # Create output directory if it doesn't exist
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / 'fm_configs').mkdir(exist_ok=True)
+    (output_dir / FM_CONFIGS_DIR).mkdir(exist_ok=True)
 
     # Setup logging
     setup_logging(output_dir)
@@ -141,6 +153,16 @@ def main():
         )
         comparator.process_connectors()
         logger.info("Connector processing completed successfully")
+
+        # Generate migration summary automatically
+        logger.info("Generating migration summary...")
+        try:
+            summary_report = generate_migration_summary(output_dir)
+            logger.info("Migration summary generated successfully")
+            logger.info(f"Summary: {summary_report['total_successful_files']} successful, {summary_report['total_unsuccessful_files']} failed")
+        except Exception as e:
+            logger.warning(f"Failed to generate migration summary: {e}")
+            logger.info("Continuing without summary generation...")
 
     except Exception as e:
         logger.error(f"Migration failed: {str(e)}", exc_info=True)

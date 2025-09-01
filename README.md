@@ -37,6 +37,7 @@ connect-migration-utility/
 │   ├── connector_comparator.py    # Main migration logic
 │   ├── config_discovery.py        # HTTP client for fetching templates
 │   ├── semantic_matcher.py        # Semantic matching engine
+│   ├── summary.py                 # Migration summary and analytics
 │   └── main.py                    # CLI entry point
 ├── templates/
 │   ├── fm/                        # FM template files
@@ -52,6 +53,12 @@ connect-migration-utility/
 
 ```bash
 python src/main.py --config-file connectors.json --output-dir output/
+```
+
+### Basic Usage - From Directory of config files
+
+```bash
+python src/main.py --config-dir configDir --output-dir output/
 ```
 
 ### Basic Usage - From Worker Discovery
@@ -87,6 +94,7 @@ python src/main.py \
 | Option | Description | Required |
 |--------|-------------|----------|
 | `--config-file` | Path to JSON file containing connector configurations | No* |
+| `--config-dir` | Path of directory with multiple json connector configuration files | No* |
 | `--worker-urls` | Comma-separated list of worker URLs | No* |
 | `--worker-urls-file` | Path to file containing worker URLs | No* |
 | `--output-dir` | Output directory for all files (default: output) | No |
@@ -99,7 +107,7 @@ python src/main.py \
 | `--worker-config-file` | Path to file containing additional worker configs | No |
 | `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
 
-*Either `--config-file` or `--worker-urls`/`--worker-urls-file` is required
+*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required
 
 ## 🔒 SSL Certificate Verification
 
@@ -115,7 +123,75 @@ python src/main.py --config-file connectors.json --output-dir output/
 python src/main.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
 ```
 
+## 📈 Migration Summary Reports
 
+The utility automatically generates comprehensive migration summary reports after each migration process. This feature provides detailed analytics about your migration process, including:
+
+### Summary Features
+- **Success/Failure Statistics**: Track migration success rates and identify common failure patterns
+- **Connector Type Analysis**: Analyze which connector types were most/least successful
+- **Error Analysis**: Categorize and count different types of migration errors
+- **Per-Cluster Analysis**: Detailed breakdown by connector cluster
+- **Mapping Error Details**: Specific error messages with occurrence counts
+- **Console Output**: Human-readable summary printed to console
+- **Text File Output**: Summary saved to `migration_summary.txt` in your output directory
+
+### Usage
+```bash
+# Summary is automatically generated after migration
+python src/main.py --config-file connectors.json --output-dir output/
+
+# Summary is automatically generated after worker discovery
+python src/main.py --worker-urls "http://worker1:8083" --output-dir output/
+```
+
+### What Gets Analyzed
+The summary analyzes the following directory structure in your output directory:
+- **`fm_configs/`** - Fully Managed configurations
+  - **`successful_configs/`** - Successfully migrated connectors
+  - **`unsuccessful_configs_with_errors/`** - Failed migrations with error details
+
+### Generated Files
+After each migration, the utility automatically creates:
+- **`summary.txt`** - Complete summary report in your output directory
+- **Console output** - Summary displayed in terminal/logs
+- **Log file** - Summary also written to `migration.log`
+
+### Example Summary Output
+```
+===============================================================================
+ Overall Summary
+===============================================================================
+Number of Connector clusters scanned: 2
+Total Connector configurations scanned: 25
+Total Connectors that can be successfully migrated: 22
+Total Connectors that have errors in migration: 3
+
+===============================================================================
+Summary By Connector Type
+===============================================================================
+✅ Connector types (successful across all clusters):
+  - io.confluent.connect.jdbc.JdbcSinkConnector: 15
+  - io.confluent.connect.elasticsearch.ElasticsearchSinkConnector: 7
+
+❌ Connector types (with errors across all clusters):
+  - io.confluent.connect.jdbc.JdbcSourceConnector: 3
+
+===============================================================================
+ Per-Cluster Summary (sorted by successful configurations for migration)
+===============================================================================
+Cluster Details: cluster-1
+  Total Connector configurations scanned: 15
+  Total Connectors that can be successfully migrated: 13
+    ✅ Connector types (successful):
+      - io.confluent.connect.jdbc.JdbcSinkConnector: 10
+      - io.confluent.connect.elasticsearch.ElasticsearchSinkConnector: 3
+  Total Connectors that have errors in migration: 2
+    ❌ Connector types (with errors):
+      - io.confluent.connect.jdbc.JdbcSourceConnector: 2
+    ⚠️ Mapping errors:
+      - 'Transform 'complex_transform' is not supported': found in 2 file(s)
+```
 
 ## 📊 Input Format
 

@@ -1,3 +1,10 @@
+"""
+Apache Connect Migration Utility
+Copyright 2024-2025 The Apache Software Foundation
+
+This product includes software developed at The Apache Software Foundation.
+"""
+
 import json
 import logging
 from pathlib import Path
@@ -8,6 +15,9 @@ import base64
 import requests
 
 class ConnectorComparator:
+    SUCCESSFUL_CONFIGS_DIR = "successful_configs"
+    UNSUCCESSFUL_CONFIGS_DIR = "unsuccessful_configs_with_errors"
+
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
                  env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False):
         self.logger = logging.getLogger(__name__)
@@ -729,13 +739,46 @@ class ConnectorComparator:
         return 'unknown'
 
     def _parse_jdbc_url(self, url: str) -> Dict[str, str]:
-        """Parse JDBC URL to extract connection details from real JDBC URLs"""
+        """Parse JDBC URL to extract connection details from real JDBC URLs, including Oracle complex formats."""
+
         original_url = url
         url = url.lower()
         connection_info = {}
 
         self.logger.debug(f"Parsing JDBC URL: {original_url}")
 
+        # Detect Oracle complex format by presence of '@(DESCRIPTION='
+        # "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=<span>{connection.host})(PORT=</span>{connection.port}))(CONNECT_DATA=(<span>{db.connection.type}=</span>{db.name}))(SECURITY=(SSL_SERVER_CERT_DN="${ssl.server.cert.dn}")))"
+        if '@(DESCRIPTION=' in original_url:
+            self.logger.debug("Detected Oracle complex format with DESCRIPTION block (uppercase keywords only).")
+            # Extract HOST
+            host_match = re.search(r'\(HOST=([^\)]+)\)', original_url)
+            if host_match:
+                connection_info['host'] = host_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted host: {connection_info['host']}")
+            # Extract PORT
+            port_match = re.search(r'\(PORT=([^\)]+)\)', original_url)
+            if port_match:
+                connection_info['port'] = port_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted port: {connection_info['port']}")
+            # Extract db.connection.type and db.name (fix group assignments)
+            dbtype_dbname_match = re.search(r'\(CONNECT_DATA=\(([^=\)]+)=([^\)]+)\)\)', original_url)
+            if dbtype_dbname_match:
+                connection_info['db.connection.type'] = dbtype_dbname_match.group(1)
+                connection_info['db.name'] = dbtype_dbname_match.group(2)
+                self.logger.debug(f"[ORACLE] Extracted db.connection.type: {connection_info['db.connection.type']}")
+                self.logger.debug(f"[ORACLE] Extracted db.name: {connection_info['db.name']}")
+            # Extract ssl.server.cert.dn
+            ssl_cert_dn_match = re.search(r'SSL_SERVER_CERT_DN=\\?"?([^\)\"]+)\\?"?\)', original_url)
+            if ssl_cert_dn_match:
+                connection_info['ssl.server.cert.dn'] = ssl_cert_dn_match.group(1)
+                self.logger.debug(f"[ORACLE] Extracted ssl.server.cert.dn: {connection_info['ssl.server.cert.dn']}")
+            self.logger.debug(f"[ORACLE] Final connection_info: {connection_info}")
+            return connection_info
+        else:
+            self.logger.debug("Using standard JDBC URL parsing logic.")
+
+        # Existing logic for standard format
         # Extract host - look for pattern like jdbc:postgresql://localhost:5432/dbname
         host_match = re.search(r'jdbc:[^:]+://([^:/]+)', url)
         if host_match:
@@ -754,8 +797,8 @@ class ConnectorComparator:
         db_match = re.search(r'://[^/]+/([^/?]+)', url)
         if db_match:
             db_name = db_match.group(1)
-            connection_info['db_name'] = db_name
-            self.logger.debug(f"Extracted db_name: {connection_info['db_name']}")
+            connection_info['db.name'] = db_name
+            self.logger.debug(f"Extracted db_name: {connection_info['db.name']}")
 
         # Extract user from query parameters
         user_match = re.search(r'[?&]user=([^&]+)', url)
@@ -1092,6 +1135,7 @@ class ConnectorComparator:
 
         return recommended_values
 
+# not being used
     def _generate_fm_config(self, connector: Dict[str, Any]) -> Dict[str, Any]:
         """Generate FM configuration for a connector"""
         name = connector['name']
@@ -1461,13 +1505,13 @@ class ConnectorComparator:
                 # Categorize configs based on mapping_errors
                 if result['errors'] and len(result['errors']) > 0:
                     # There are mapping errors, save to unsuccessful_configs_with_errors
-                    complete_dir = self.fm_configs_dir / "unsuccessful_configs_with_errors"
+                    complete_dir = self.fm_configs_dir / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
                     complete_dir.mkdir(exist_ok=True)
                     config_file = complete_dir / f"{connector['name']}.json"
                     category = "unsuccessful_configs_with_errors"
                 else:
                     # There are no mapping errors, save to successful_configs
-                    error_dir = self.fm_configs_dir / "successful_configs"
+                    error_dir = self.fm_configs_dir / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
                     error_dir.mkdir(exist_ok=True)
                     config_file = error_dir / f"{connector['name']}.json"
                     category = "successful_configs"
@@ -1739,10 +1783,6 @@ class ConnectorComparator:
             except Exception as e:
                 self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
                 self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
-            if user_config_key in fm_configs:
-                if user_config_key in semantic_match_list:
-                    semantic_match_list.remove(user_config_key)
-                continue
 
         # Step 5: do semantic matching for the configs that are not present in the template
         self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
@@ -1854,6 +1894,8 @@ class ConnectorComparator:
             'connection.password': self._derive_connection_password,
             'connection.database': self._derive_connection_database,
             'db.name': self._derive_db_name,
+            'db.connection.type': self._derive_db_connection_type,
+            'ssl.server.cert.dn': self._derive_ssl_server_cert_dn,
 
 
             # Data format configs
@@ -1910,7 +1952,7 @@ class ConnectorComparator:
             return
 
         # Case 3: Connector config def is a dynamic mapper
-        if connector_config_def.get('dynamic_mapper') is not None:
+        if connector_config_def.get('dynamic.mapper') is not None:
             self._process_dynamic_mapper_case(connector_config_def, user_config_value, user_configs, template_config_defs, fm_configs, warnings, semantic_match_list)
             return
 
@@ -2067,6 +2109,22 @@ class ConnectorComparator:
                 else:
                     warnings.append(f"User value '{user_value}' for '{connector_config_def.get('name')}' does not match any value in templateswitch case.")
 
+    def infer_dynamic_mappings(self, dynamic_mapper_fun_name: str, user_config_value: str) -> Optional[str]:
+        """
+        Infer dynamic mappings for a given FM property name.
+        This is a placeholder method that should be implemented based on specific requirements.
+        """
+        if dynamic_mapper_fun_name and dynamic_mapper_fun_name== 'value.converter.reference.subject.name.strategy.mapper':
+            sm_to_fm_mapping = {
+                "io.confluent.kafka.serializers.subject.TopicNameStrategy": "TopicNameStrategy",
+                "io.confluent.kafka.serializers.subject.RecordNameStrategy": "RecordNameStrategy",
+                "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy": "TopicRecordNameStrategy"
+            }
+            return sm_to_fm_mapping.get(user_config_value, None)
+
+        # Placeholder implementation - in real code, this would infer the mapping based on some logic
+        self.logger.warning(f"Dynamic mapping inference not implemented for {dynamic_mapper_fun_name}. Returning None.")
+        return None
 
     def _process_dynamic_mapper_case(
         self,
@@ -2087,10 +2145,27 @@ class ConnectorComparator:
         if template_config_def is not None:
             # If it exists in template config defs, add to fm_configs
             fm_configs[connector_config_name] = user_config_value
-        else:
-            # If not found in template config defs, add to semantic matching list
-            semantic_match_list.add(connector_config_name)
-            self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
+            return
+        elif connector_config_def.get('dynamic.mapper') is not None and connector_config_def.get('dynamic.mapper').get('name') is not None :
+            # Check if it has a dynamic mapper defined name is present in fm_template
+            fm_template_def = self._find_template_config_def_by_name(connector_config_name, template_config_defs)
+
+            if fm_template_def is not None:
+                # If it has a fm template dynamic mapper defined and not present in fm_configs, try to infer the mapping
+                dynamic_mapping_value = self.infer_dynamic_mappings(connector_config_def.get('dynamic.mapper').get('name'), user_config_value)
+                if dynamic_mapping_value is not None:
+                    # If dynamic mapping is found, add it to fm_configs
+                    fm_configs[fm_template_def.get('name')] = dynamic_mapping_value
+                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' inferred as '{dynamic_mapping_value}'")
+                    return
+                elif fm_configs.get(fm_template_def.get('name')) is not None:
+                    # If dynamic mapping is not found but fm_configs already has this config, skip
+                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' already exists in fm_configs, skipping inference.")
+                    return
+
+        # If not found in template config defs, add to semantic matching list
+        semantic_match_list.add(connector_config_name)
+        self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
 
     def _process_null_value_case(
         self,
@@ -2213,8 +2288,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db_name', not 'database'
-                return parsed.get('db_name')
+                # The _parse_jdbc_url method returns 'db.name', not 'database'
+                return parsed.get('db.name')
         return None
 
     def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
@@ -2225,8 +2300,8 @@ class ConnectorComparator:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
                 parsed = self._parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db_name', not 'database'
-                return parsed.get('db_name')
+                # The _parse_jdbc_url method returns 'db.name', not 'database'
+                return parsed.get('db.name')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
@@ -2250,7 +2325,39 @@ class ConnectorComparator:
             return user_configs['database']
 
         return None
-    
+
+    def _derive_db_connection_type(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+        """Derive db.connection.type from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('db.connection.type')
+
+        # Check for direct db.connection.type config
+        if 'db.connection.type' in user_configs:
+            return user_configs['db.connection.type']
+
+        # Default fallback
+        return None
+
+    def _derive_ssl_server_cert_dn(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+        """Derive ssl.server.cert.dn from user configs (e.g., from JDBC URL)"""
+        # Try to extract from JDBC URL
+        if 'connection.url' in user_configs:
+            jdbc_url = user_configs['connection.url']
+            if jdbc_url.startswith('jdbc:'):
+                parsed = self._parse_jdbc_url(jdbc_url)
+                return parsed.get('ssl.server.cert.dn')
+
+        # Check for direct ssl.server.cert.dn config
+        if 'ssl.server.cert.dn' in user_configs:
+            return user_configs['ssl.server.cert.dn']
+
+        # Default fallback
+        return None
+
     def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive database.server.name from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
