@@ -5,7 +5,7 @@ import requests
 import base64
 from typing import Dict, Any, List, Optional, Tuple
 import json
-import os
+import shutil
 import logging
 
 from offset_manager import OffsetManager
@@ -52,7 +52,8 @@ class ConnectorCreator:
         else:
             raise ValueError(f"Unknown environment: {environment}")
 
-    def encode_to_base64(self, bearer_token: str) -> str:
+    @staticmethod
+    def encode_to_base64(bearer_token: str) -> str:
         """
         Encode the bearer token as per documentation: echo -n "bearer_token" | base64
         This encodes only the bearer_token string, not ":bearer_token".
@@ -128,7 +129,7 @@ class ConnectorCreator:
             "Content-Type": "application/json",
         }
         self.logger.info(f"[INFO] Bearer token: {bearer_token}")
-        headers["Authorization"] = f"Basic {self.encode_to_base64(bearer_token)}"
+        headers["Authorization"] = f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}"
 
         body = {
             "name": name,
@@ -166,7 +167,7 @@ class ConnectorCreator:
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Basic {self.encode_to_base64(bearer_token)}"
+            "Authorization": f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}"
         }
 
         self.logger.info(f"[INFO] API URL: {url}")
@@ -204,19 +205,6 @@ class ConnectorCreator:
 
 def main():
     parser = argparse.ArgumentParser(description="Create Confluent Cloud connectors from JSON file")
-    '''
-    --fm-config-dir output/discovered_configs/fm_configs
-    --bearer_token
-    --api_key, --api-secret or --service_account - This becomes optional if this is provided as part of the config
-    --envId
-    --clusterId
-    --workerURL list
-    Options
-    --migration-mode
-        --stop_create_latest_offset
-        --create - workerURL is not needed.
-        --create_latest_offset
-    '''
     parser.add_argument('--fm-config-dir', type=str, required=True,
                         help='Directory containing FM connector JSON config files')
     parser.add_argument('--migration-output-dir', type=str, default='migration_output')
@@ -231,8 +219,7 @@ def main():
                         help='Environment to create connectors in (choose from prod, stag, devel)')
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs to fetch latest offsets from')
     parser.add_argument('--migration-mode', type=str, choices=['stop_create_latest_offset', 'create', 'create_latest_offset'], required=True)
-    parser.add_argument('--disable-ssl-verify', type= bool, default=False, action='store_true',
-                        help='Disable SSL certificate verification for HTTPS requests')
+    parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
 
 
 
@@ -244,7 +231,10 @@ def main():
     args = parser.parse_args()
 
     fm_config_dir = Path(args.fm_config_dir)
-    migration_output_dir = Path(args.migration_output_dir)
+    migration_output_dir = Path(getattr(args, 'migration_output_dir', None) or "migration_output")
+    if migration_output_dir.exists():
+        # Remove existing directory and its contents
+        shutil.rmtree(migration_output_dir)
     migration_output_dir.mkdir(parents=True)
 
     # Setup logging
@@ -259,7 +249,11 @@ def main():
     env_id = args.environment_id
     lkc_id = args.cluster_id
     environment = args.environment
-    worker_urls = args.worker_urls.split(',') if args.worker_urls else []
+    worker_urls = getattr(args, 'worker_urls', None)
+    if worker_urls:
+        worker_urls = worker_urls.split(',')
+    else:
+        worker_urls = []
 
     disable_ssl_verify = getattr(args, 'disable_ssl_verify', False)
     migration_mode = args.migration_mode
@@ -267,6 +261,8 @@ def main():
     creator = ConnectorCreator(environment)
 
     logger.info("Starting connector creation process")
+    successes = []
+    failures = []
     if migration_mode=='create':
         for json_file in fm_config_dir.glob("*.json"):
 
@@ -278,18 +274,23 @@ def main():
                     kafka_cluster_id=lkc_id,
                     kafka_api_key=kafka_api_key,
                     kafka_api_secret=kafka_api_secret,
-                    json_file_path=str(json_file),
+                    json_file_path=json_file,
                     bearer_token=bearer_token
                 )
                 for conn in created_connectors:
+                    # Heuristic: error_code or status >= 400 means failure
+                    if 'error_code' in conn or (isinstance(conn.get('status'), int) and conn['status'] >= 400):
+                        failures.append(conn)
+                    else:
+                        successes.append(conn)
                     print(f"Created connector: {conn.get('name')}")
             except Exception as e:
+                failures.append({"file": str(json_file), "error": str(e)})
                 print(f"Failed to create connectors from {json_file}: {str(e)}")
                 continue
     elif migration_mode in  ['stop_create_latest_offset', 'create_latest_offset']:
         if not getattr(args, 'worker_urls', None):
             parser.error(f"--worker-urls is required for migration mode '{migration_mode}'")
-            sys.exit(0)
 
         offset_manager = OffsetManager.get_instance(logger)
 
@@ -308,7 +309,6 @@ def main():
             fm_entry = connector_fm_configs[connector_name]
             fm_name = fm_entry['name']
 
-
             # Find matching connector from workers by name
             matching_worker_sm_config = next((wc for wc in worker_connector_configs if wc['name'] == fm_name), None)
             if not matching_worker_sm_config:
@@ -323,7 +323,6 @@ def main():
                 logger.info(f"Found offsets on workers for connector '{fm_name}': {worker_offsets}")
                 fm_entry['offsets'] = worker_offsets
 
-
             # Create new connector with chosen offsets
             try:
                 #TODO: This should be default False, change it to True if want to test without validation
@@ -337,7 +336,6 @@ def main():
                     logger.info("Stopping CP connector after validation as per migration mode")
                     creator.stop_cp_connector(sm_worker, fm_name, disable_ssl_verify)
 
-
                 #create connector
                 logger.info(f"Creating connector '{fm_name}' with offsets from workers")
                 created_connector = creator.create_connector_from_config(
@@ -348,10 +346,23 @@ def main():
                     fm_config=fm_entry,
                     bearer_token=bearer_token
                 )
-                logger.info(f"Created connector: {created_connector.get('name')}")
+                if created_connector is not None and not ('error_code' in created_connector or (isinstance(created_connector.get('status'), int) and created_connector['status'] >= 400)):
+                    successes.append(created_connector)
+                    logger.info(f"Created connector: {created_connector.get('name') if created_connector else fm_name}")
+                else:
+                    failures.append(created_connector)
+                    logger.info(f"Failed to create connector '{fm_name}': {created_connector}")
+
             except Exception as e:
+                failures.append({"connector": fm_name, "error": str(e)})
                 logger.info(f"Failed to create connector '{fm_name}': {str(e)}")
                 continue
+
+    # Write results to files
+    with open(migration_output_dir / "successful_migration.json", "w") as f:
+        json.dump(successes, f, indent=2)
+    with open(migration_output_dir / "unsuccessful_migration.json", "w") as f:
+        json.dump(failures, f, indent=2)
 
 
 if __name__ == "__main__":
