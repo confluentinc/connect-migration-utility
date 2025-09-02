@@ -7,7 +7,7 @@ Follow the steps below to migrate your connectors to Confluent Cloud.
 ## Prerequisites
 
 - Python 3.8+
-- self-managed Kafka Connect worker URLs
+- Self-managed Kafka Connect worker URLs
 - Confluent Cloud environment with API access. (optional)
 
 ## Installation
@@ -35,28 +35,28 @@ pip install -r requirements.txt
 
 This section covers the steps about using the migration utility tool to migrate your connector(s).
 
-### Step 1: Translate the connector configuration
+### Step 1: Specify the connector configuration
 
 To get started with migration, you first need to translate the configuration of the self-managed connector you want to migrate. 
 You can provide the connector configurations in the following ways:
 
-1. Worker URL (Configurations are fetched directly from the workers)
-2. Configuration directory or configuration file 
+1. Worker URL (Configurations are fetched directly from the workers).
+2. Configuration directory or configuration file.
 
 #### Using the worker URL
 
 Run the following command to check the the migration feasibilty using the worker URL:
 
 ```bash
-python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
+python src/discovery_script.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
 ```
 
-##### SSL Certificate Verification
+##### SSL certificate verification
 
-While using the worker URL, the utility makes HTTP(s) requests to fetch templates and configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services. Refer to the command below:
+While using the worker URL, the utility makes HTTP(s) requests to fetch configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services. Refer to the command below:
 
 ```bash
-python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/ --disable-ssl-verify
+python src/discovery_script.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/ --disable-ssl-verify
 ```
 
 #### Using configuration file or directory
@@ -173,10 +173,10 @@ The examples below show the sample input format of the connector configuration f
 
 ##### Using directory of configuration files
 
-Run the following command to check the the migration feasibilty using the directory of configuration file:
+Run the following command to check the migration feasibilty using the directory of configuration file:
 
 ```bash
-python src/main.py --config-dir configDir --output-dir output/
+python src/discovery_script.py --config-dir configDir --output-dir output/
 ```
 
 ##### Using a configuration file
@@ -184,7 +184,7 @@ python src/main.py --config-dir configDir --output-dir output/
 Run the following command to check the the migration feasibilty using the configuration file:
 
 ```bash
-python src/main.py --config-file connectors.json --output-dir output/
+python src/discovery_script.py --config-file connectors.json --output-dir output/
 ```
 
 
@@ -192,11 +192,11 @@ python src/main.py --config-file connectors.json --output-dir output/
 > If you want to include the latest transforms available on Confluent Cloud, you can provide additional information as shown in the command below:
 > 
 > ```bash
-> python src/main.py \
+> python src/discovery_script.py \
 >   --config-file connectors.json \
 >   --output-dir output/ \
->   --env-id <environment-id> \
->   --lkc-id <lkc-id> \
+>   --environment-id <environment-id> \
+>   --cluster-id <lkc-id> \
 >   --bearer-token <api-token>
 > ```
 > 
@@ -206,8 +206,8 @@ python src/main.py --config-file connectors.json --output-dir output/
 > python src/main.py \
 >   --config-file connectors.json \
 >   --output-dir output/ \
->   --env-id <environment-id> \
->   --lkc-id <lkc-id> \
+>   --environment-id <environment-id> \
+>   --cluster-id <cluster-id> \
 >   --prompt-bearer-token
 > ```
 
@@ -229,9 +229,55 @@ output/
 |       ├── fm_configs
 ```
 
-The examples below show the sample output format of the connector configuration.
+##### Migration summary (summary.txt)
 
-##### Successful Migration (successful_configs)
+The utility automatically generates migration summary reports in the `summary.txt` file after each migration process. 
+It provides detailed analytics about the migration process, including:
+
+- **Success/Failure Statistics**: Track migration success rates and identify common failure patterns.
+- **Connector Type Analysis**: Analyze which connector types were most/least successful.
+- **Error Analysis**: Categorize and count different types of migration errors.
+- **Per-Cluster Analysis**: Detailed breakdown by connector cluster.
+- **Mapping Error Details**: Specific error messages with occurrence counts.
+
+The example below shows a sample summary in the output:
+
+```
+===============================================================================
+ Overall Summary
+===============================================================================
+Number of Connector clusters scanned: 2
+Total Connector configurations scanned: 25
+Total Connectors that can be successfully migrated: 22
+Total Connectors that have errors in migration: 3
+
+===============================================================================
+Summary By Connector Type
+===============================================================================
+✅ Connector types (successful across all clusters):
+  - io.confluent.connect.jdbc.JdbcSinkConnector: 15
+  - io.confluent.connect.elasticsearch.ElasticsearchSinkConnector: 7
+
+❌ Connector types (with errors across all clusters):
+  - io.confluent.connect.jdbc.JdbcSourceConnector: 3
+
+===============================================================================
+ Per-Cluster Summary (sorted by successful configurations for migration)
+===============================================================================
+Cluster Details: cluster-1
+  Total Connector configurations scanned: 15
+  Total Connectors that can be successfully migrated: 13
+    ✅ Connector types (successful):
+      - io.confluent.connect.jdbc.JdbcSinkConnector: 10
+      - io.confluent.connect.elasticsearch.ElasticsearchSinkConnector: 3
+  Total Connectors that have errors in migration: 2
+    ❌ Connector types (with errors):
+      - io.confluent.connect.jdbc.JdbcSourceConnector: 2
+    ⚠️ Mapping errors:
+      - 'Transform 'complex_transform' is not supported': found in 2 file(s)
+```
+
+##### Successful migration (successful_configs)
 
 The example below show the output that has no errors and warnings. 
 If the output has no mapping errors, you can move to Step 2.
@@ -251,7 +297,7 @@ If the output has no mapping errors, you can move to Step 2.
 }
 ```
 
-##### Migration with Errors (unsuccessful_configs)
+##### Migration with errors (unsuccessful_configs)
 
 The example below show the output that has mapping errors and warnings.
 You must fix the mapping errors before moving further. If you migrate the connector with mapping errors in the configurations, it will lead to errors.
@@ -270,7 +316,7 @@ You must fix the mapping errors before moving further. If you migrate the connec
 ```
 ### Command line options
 
-The table below shows the command line options valid for the python translation script:
+The table below shows the command line options valid for the python translation script (`discovery_script.py`):
 
 | Option | Description | Required |
 |--------|-------------|----------|
@@ -288,7 +334,7 @@ The table below shows the command line options valid for the python translation 
 | `--worker-config-file` | Path to file containing additional worker configs | No |
 | `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
 
-*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required
+*Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required.
 
 
 
@@ -302,12 +348,12 @@ Once you have fixed the mapping errors (if any), you can follow the steps below 
 - A Kafka cluster on Confluent Cloud (Cluster ID, Environment ID).
 
 
-#### Create a connector with No Data loss/duplication
+#### Create a connector with no data loss/duplication
 
 To create a connector with no data loss and data duplication, run the command below to create a fully-managed connector:
 
 ```bash
-python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<stop_create_latest_offset>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
+python src/migrate_connector_script.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "stop_create_latest_offset" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
 > The python script stops the self-managed connector and fetches the latest offset and creates a fully-managed connector on Confluent Cloud using the fetched offset.
 
@@ -316,9 +362,9 @@ python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUST
 To create a connector with no downtime, run the command below to create a fully-managed connector:
 
 ```bash
-python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<create_latest_offset>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
+python src/migrate_connector_script.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "create_latest_offset" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
-> The python script fetched the latest offset without stopping the connector and creates a fully-managed connector on Confluent Cloud using the fetched offset. This option may cause data duplication as the self-managed connector is still running.
+> The python script fetches the latest offset without stopping the connector and creates a fully-managed connector on Confluent Cloud using the fetched offset. This option may cause data duplication as the self-managed connector is still running.
 
 
 #### Create connector without any offset consideration
@@ -326,99 +372,119 @@ python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUST
 If you want to create a fully-managed connector without stopping the self-managed connector and without any offset consideration, run the following command:
 
 ```bash
-python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<create>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
+python src/migrate_connector_script.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "create" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
-> The python script creates the fully-managed connector on Confluent Cloud using the translated configurations.
+> The python script creates the fully-managed connector on Confluent Cloud using the fully-managed configurations.
 
-#### Command Line Options
+#### Command line options
 
-Table with command line options
+The table below shows the command line options valid for the python migration script (`migrate_connector_script.py`):
+
+| Option | Description | Required |
+|--------|-------------|----------|
+| `--fm-config-dir` | Path of directory with multiple fully-managed connector configuration files | Yes |
+| `--worker-urls` | Comma-separated list of worker URLs | No *(1)* |
+| `--migration-output-dir` | Output directory for migration output files (default: migration_output) | No |
+| `--environment-id` | Confluent Cloud environment ID | Yes |
+| `--cluster-id` | Confluent Cloud LKC cluster ID | Yes |
+| `--bearer-token` | Confluent Cloud bearer token (api_key:api_secret) | Yes *(2)* |
+| `--prompt-bearer-token` | Prompt for bearer token securely | Yes *(2)* |
+| `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
+| `--migration-mode` | Connector migration mode. Options - [`stop_create_latest_offset`, `create`, `create_latest_offset`] | Yes |
+| `--kafka-auth-mode` | Current mode for authentication between Kafka client (connector) and Kafka broker. Options ['SERVICE_ACCOUNT','KAFKA_API_KEY']. (default: `kafka_api_key`) | No |
+| `--kafka-api-key` | Kafka API key for authentication. | Yes *(3)* |
+| `--kafka-api-secret` | Kafka API secret for authentication. | Yes *(3)* |
+| `--kafka-service-account-id` | Service account ID for authentication. | Yes *(3)* |
 
 
-## Errors
 
-### Mapping Errors
+*(1)* - Required when the migration mode is set to `stop_create_latest_offset` or `create_latest_offset`
+*(2)* - If you are using `--bearer-token`,  `--prompt-bearer-token` is not applicable and vice versa.
+*(3)* - You can use one of the two authentication modes. When `kafka-auth-mode` is set to `KAFKA_API_KEY`, you need to provide the Kafka API key and secret. If it is set to `SERVICE_ACCOUNT`, you need to provide the Kafka Service account ID.
 
-The utility provides comprehensive error reporting to help you understand and resolve mapping issues:
 
-#### Transform Errors
 
-**Unsupported Transform Type**
+## Mapping errors
+
+The utility provides comprehensive error reporting to help you understand and resolve mapping issues. Some of the mapping errors are listed below:
+
+### Template errors
+
+**Fully-managed template not found**
+
 ```
-"Transform 'unwrap' of type 'io.debezium.transforms.ExtractNewRecordState' is not supported in fully-managed connectors. Potentially Custom SMT can be used."
-```
-*Solution: Consider implementing the transform as a Custom SMT in Confluent Cloud*
+No FM template found for connector class: io.debezium.connector.sqlserver.SqlServerConnector
 
-#### Predicate Errors
+*Solution: Reach out to Confluent support.
+```
 
-**Associated with Unsupported Transform**
-```
-"Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
-```
-*Solution: The predicate is automatically filtered when its associated transform is not supported. To include the predicate along the transform, create a Custom SMT.*
+### Property mapping errors
 
-#### Property Mapping Errors
+**Required properties not translated**
 
-**Unmapped Properties**
 ```
-"Config 'custom.property' not exposed for fully managed connector"
-```
-*Solution: The property is not available in FM - check if it's needed or can be replaced or reach out Confluent support*
+"Required FM Config 'connection.host' could not be derived from given configs.",
 
-**Invalid Values**
+*Solution: Reach out to Confluent support.*
 ```
-"Value 'invalid_value' for 'property.name' is not in recommended values: ['value1', 'value2']"
+
+**Invalid values**
+```
+"FM Config 'input.key.format' value 'BYTES' is not in the recommended values list: ['AVRO', 'JSON_SR', 'PROTOBUF', 'STRING']"
 ```
 *Solution: Use one of the recommended values or check the default value*
 
-**Required Properties Missing**
+**Required properties missing**
 ```
 "Required property 'connection.url' needs a value but none was provided"
 ```
 *Solution: Add the missing required property to your SM config*
 
-**Semantic Match Failures**
+**Semantic match failures**
 ```
 "Failed to map property 'sm_property' - no semantic match found"
 ```
 *Solution: The property couldn't be automatically mapped - may need manual configuration*
 
-#### Validation Errors
 
-**Config Defs Filtering**
+### Transform errors
+
+**Unsupported transform type**
+
+**Example 1**:
+
 ```
-"Config 'internal.property' not exposed for fully managed connector"
+"Transform 'AddStreamTimestampField' of type 'com.github.jcustenborder.kafka.connect.transform.common.TimestampNowField$Value' is not supported in Fully Managed Connector. Potentially Custom SMT can be used.
 ```
-*Solution: Property filtered out as it's not in FM template config_defs*
+*Solution: Consider implementing the transform as a Custom SMT in Confluent Cloud*
+
+**Example 2**:
+
+```
+"Predicate 'predicate_0' is filtered out because it's associated with an unsupported transform."
+```
+*Solution: The predicate is automatically filtered when its associated transform is not supported. To include the predicate along the transform, create a Custom SMT.*
 
 
-## Troubleshooting
+## Mapping warnings
 
-### Common Issues
+The utility provides mapping warnings for certain configurations that may affect the connector behavior. Refer the examples below:
 
-**HTTP Connection Errors**
-- Verify worker URLs are accessible.
-- Check network connectivity.
-- Ensure proper authentication for Confluent Cloud API.
+**Value mismatch**
 
-**Template Not Found**
-- Verify FM template files exist in `templates/fm/`.
-- Check template naming convention.
-- Ensure connector.class matches template.
+**Example 1**:
 
-**Transform Filtering**
-- Review FM transform support documentation.
-- Consider Custom SMT alternatives.
-- Check if transforms are essential for your use case.
+```
+"errors.log.include.messages : FM config has constant value 'false' but user provided 'true'. User given value will be ignored."
+```
+
+**Example 2**:
+
+```
+"Unused connector config 'catalog.pattern'. Given value will be ignored. Default value will be used if any."
+```
 
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
 ## License
 
@@ -426,10 +492,7 @@ Apache 2.0 License
 
 ## Support
 
-For issues and questions:
-- Create an issue in the repository.
-- Check the troubleshooting section.
-- Review the mapping errors documentation above.
+For issues and questions, reach out to [Confluent support](https://support.confluent.io/hc/en-us).
 
 ---
 
