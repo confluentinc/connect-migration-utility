@@ -84,14 +84,30 @@
           ]
         },
         {
+          "name": "mongodb.instance.type",
+          "type": "STRING",
+          "required": true,
+          "default_value": "MONGODB_ATLAS",
+          "importance": "HIGH",
+          "group": "How should we connect to your MongoDB database?",
+          "order_in_group": 1,
+          "display_name": "MongoDB instance type",
+          "documentation": "Specifies the type of MongoDB instance the connector will connect to.",
+          "recommended_values": [
+            "MONGODB_SELF_MANAGED",
+            "MONGODB_ATLAS"
+          ]
+        },
+        {
           "name": "connection.host",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 1,
+          "default_value": "",
+          "group": "How should we connect to your MongoDB database?",
+          "order_in_group": 2,
           "display_name": "Connection host",
-          "documentation": "MongoDB Atlas connection host (e.g. confluent-test.mycluster.mongodb.net).",
+          "documentation": "For MongoDB Atlas, provide the SRV connection host (e.g., mycluster.abc123.mongodb.net). For Self Managed MongoDB, provide the host and port in MongoDB URI format, e.g., host1:27017 or host1:27017/?replicaSet=myReplicaSet.",
           "sanitizers": [
             {
               "name": "trim"
@@ -103,10 +119,10 @@
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 2,
+          "group": "How should we connect to your MongoDB database?",
+          "order_in_group": 3,
           "display_name": "Connection user",
-          "documentation": "MongoDB Atlas connection user.",
+          "documentation": "MongoDB connection user.",
           "sanitizers": [
             {
               "name": "trim"
@@ -118,20 +134,20 @@
           "type": "PASSWORD",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 3,
+          "group": "How should we connect to your MongoDB database?",
+          "order_in_group": 4,
           "display_name": "Connection password",
-          "documentation": "MongoDB Atlas connection password."
+          "documentation": "MongoDB connection password."
         },
         {
           "name": "database",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your MongoDB Atlas database?",
-          "order_in_group": 4,
+          "group": "How should we connect to your MongoDB database?",
+          "order_in_group": 5,
           "display_name": "Database name",
-          "documentation": "MongoDB Atlas database name."
+          "documentation": "MongoDB database name."
         },
         {
           "name": "collection",
@@ -139,7 +155,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Database details",
-          "order_in_group": 3,
+          "order_in_group": 1,
           "display_name": "Collection name",
           "documentation": "Collection name to write to. If the connector is sinking data from multiple topics, this is the default collection the topics are mapped to."
         },
@@ -233,6 +249,27 @@
           "order_in_group": 5,
           "display_name": "Rate limiting batch number",
           "documentation": "The number of processed batches that will trigger rate limiting. The default value of 0 sets no rate limiting."
+        },
+        {
+          "name": "delete.write.strategy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "DeleteOneDefaultStrategy",
+          "importance": "LOW",
+          "group": "Writes",
+          "order_in_group": 7,
+          "display_name": "Delete Write Model Strategy",
+          "documentation": "The class that handles how to build the delete write models for the sink documents.",
+          "recommended_values": [
+            "InsertOneDefaultStrategy",
+            "ReplaceOneDefaultStrategy",
+            "ReplaceOneBusinessKeyStrategy",
+            "DeleteOneDefaultStrategy",
+            "DeleteOneBusinessKeyStrategy",
+            "UpdateOneDefaultStrategy",
+            "UpdateOneTimestampsStrategy",
+            "UpdateOneBusinessKeyTimestampStrategy"
+          ]
         },
         {
           "name": "doc.id.strategy",
@@ -529,7 +566,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Namespace mapping",
-          "order_in_group": 6,
+          "order_in_group": 38,
           "display_name": "Mapped field error",
           "documentation": "Whether to throw an error if the mapped field is missing or invalid. Defaults to false.",
           "recommended_values": [
@@ -551,6 +588,28 @@
             "ALL"
           ],
           "documentation": "Use this property if you would like to configure the connector's error handling behavior differently from the Connect framework's."
+        },
+        {
+          "name": "post.processor.chain",
+          "type": "LIST",
+          "required": false,
+          "default_value": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
+          "importance": "LOW",
+          "group": "Post Processing",
+          "order_in_group": 1,
+          "display_name": "Post Processor Chain",
+          "documentation": "A comma separated list of post processor classes to process the data before saving to MongoDB."
+        },
+        {
+          "name": "field.renamer.mapping",
+          "type": "STRING",
+          "required": false,
+          "default_value": "[]",
+          "importance": "LOW",
+          "group": "Post Processing",
+          "order_in_group": 2,
+          "display_name": "Field Renamer Mapping",
+          "documentation": "An inline JSON array with objects describing field name mappings. Example: ``[{\"oldName\":\"key.fieldA\",\"newName\":\"field1\"},{\"oldName\":\"value.xyz\",\"newName\":\"abc\"}]``"
         }
       ],
       "connector_configs": [
@@ -612,6 +671,16 @@
           }
         },
         {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
           "name": "topics"
         },
         {
@@ -668,6 +737,15 @@
           "name": "document.id.strategy.uuid.format"
         },
         {
+          "name": "cloud.provider",
+          "switch": {
+            "cloud.environment": {
+              "private": "aws",
+              "DEFAULT": "${cloud.provider}"
+            }
+          }
+        },
+        {
           "name": "kafka.region",
           "switch": {
             "cloud.environment": {
@@ -679,8 +757,9 @@
         {
           "name": "connection.uri",
           "switch": {
-            "connection.host": {
-              "DEFAULT": "mongodb+srv://${connection.user}:${connection.password}@${connection.host}"
+            "mongodb.instance.type": {
+              "MONGODB_ATLAS": "mongodb+srv://${connection.user}:${connection.password}@${connection.host}",
+              "MONGODB_SELF_MANAGED": "mongodb://${connection.user}:${connection.password}@${connection.host}"
             }
           }
         },
@@ -822,6 +901,35 @@
         },
         {
           "name": "connector.endpoint"
+        },
+        {
+          "name": "mongo.errors.log.enable",
+          "value": "true"
+        },
+        {
+          "name": "post.processor.chain"
+        },
+        {
+          "name": "field.renamer.mapping"
+        },
+        {
+          "name": "delete.writemodel.strategy",
+          "switch": {
+            "delete.write.strategy": {
+              "InsertOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.InsertOneDefaultStrategy",
+              "ReplaceOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneDefaultStrategy",
+              "ReplaceOneBusinessKeyStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneBusinessKeyStrategy",
+              "DeleteOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.DeleteOneDefaultStrategy",
+              "DeleteOneBusinessKeyStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.DeleteOneBusinessKeyStrategy",
+              "UpdateOneDefaultStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneDefaultStrategy",
+              "UpdateOneTimestampsStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneTimestampsStrategy",
+              "UpdateOneBusinessKeyTimestampStrategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.UpdateOneBusinessKeyTimestampStrategy"
+            }
+          }
+        },
+        {
+          "name": "regex.timeout.ms",
+          "value": "100"
         }
       ]
     },
@@ -928,7 +1036,281 @@
       "template_id": "common-kafka-connectivity",
       "abstract": true,
       "config_defs": [],
-      "connector_configs": []
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
     },
     {
       "template_id": "common-sink",
@@ -1010,6 +1392,16 @@
             "none",
             "all"
           ]
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
         }
       ],
       "connector_configs": [
@@ -1018,6 +1410,12 @@
         },
         {
           "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         },
         {
           "name": "errors.deadletterqueue.topic.replication.factor",
@@ -1081,6 +1479,9 @@
               "arguments": {
                 "config": "csfle.configs.visible",
                 "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
               }
             }
           ]
@@ -1321,6 +1722,16 @@
           }
         },
         {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
           "name": "value.converter.ignore.default.for.nullables"
         },
         {
@@ -1413,6 +1824,16 @@
               "AVRO": "USER_INFO",
               "JSON_SR": "USER_INFO",
               "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "key.converter.basic.auth.user.info",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
         },
@@ -1768,6 +2189,65 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
+        }
+      ]
+    },
+    {
+      "template_id": "super-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "consumer.override.auto.offset.reset",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
         }
       ]
     }
