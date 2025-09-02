@@ -45,10 +45,6 @@ class ConnectorCreator:
         self.logger = logging.getLogger(__name__)
         if environment == "prod":
             self.url_template = "https://api.confluent.cloud/connect/v1/environments/{environment_id}/clusters/{kafka_cluster_id}/connectors"
-        elif environment == "stag":
-            self.url_template = "https://stag.cpdev.cloud/api/connect/v1/environments/{environment_id}/clusters/{kafka_cluster_id}/connectors"
-        elif environment == "devel":
-            self.url_template = "https://devel.cpdev.cloud/api/connect/v1/environments/{environment_id}/clusters/{kafka_cluster_id}/connectors"
         else:
             raise ValueError(f"Unknown environment: {environment}")
 
@@ -214,8 +210,6 @@ def main():
     # parser.add_argument('--service-account', type=str, help='Confluent Cloud service account (optional, alternative to api_key/api_secret)')
     parser.add_argument('--environment-id', type=str, required=True, help='Confluent Cloud environment ID')
     parser.add_argument('--cluster-id', type=str, required=True, help='Confluent Cloud LKC cluster ID')
-    parser.add_argument('--environment', type=str, choices=['prod', 'stag', 'devel'], default='prod',
-                        help='Environment to create connectors in (choose from prod, stag, devel)')
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs to fetch latest offsets from')
     parser.add_argument('--migration-mode', type=str, choices=['stop_create_latest_offset', 'create', 'create_latest_offset'], required=True)
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
@@ -247,7 +241,7 @@ def main():
     # service_account = args.service_account
     env_id = args.environment_id
     lkc_id = args.cluster_id
-    environment = args.environment
+    environment = "prod"
     worker_urls = getattr(args, 'worker_urls', None)
     if worker_urls:
         worker_urls = worker_urls.split(',')
@@ -288,7 +282,7 @@ def main():
                 continue
     elif migration_mode in  ['stop_create_latest_offset', 'create_latest_offset']:
         if not getattr(args, 'worker_urls', None):
-            parser.error(f"--worker-urls is required for migration mode '{migration_mode}'")
+            parser.error(f"--worker-urls is required to fetch offsets for migration mode '{migration_mode}'")
 
         offset_manager = OffsetManager.get_instance(logger)
 
