@@ -1,608 +1,143 @@
 {
   "templates": [
     {
-      "template_id": "PostgresCdcSource",
+      "template_id": "TIBCOSource",
       "connector_type": "SOURCE",
-      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "connector.class": "io.confluent.connect.tibco.TibcoSourceConnector",
       "config_defs": [
         {
-          "name": "database.hostname",
-          "required": true,
-          "documentation": "The address of the PostgreSQL server."
-        },
-        {
-          "name": "database.port",
-          "required": true,
-          "documentation": "Port number of the PostgreSQL server."
-        },
-        {
-          "name": "database.user",
-          "required": true,
-          "documentation": "The name of the PostgreSQL user that has the required authorization."
-        },
-        {
-          "name": "database.password",
-          "required": true,
-          "documentation": "The password for the PostgreSQL user that has the required authorization."
-        },
-        {
-          "name": "database.dbname",
+          "name": "tibco.url",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 5,
-          "display_name": "Database name",
-          "documentation": "The name of the PostgreSQL database to connect to.",
-          "sanitizers": [
-            {
-              "name": "trim"
-            }
-          ]
-        },
-        {
-          "name": "database.server.name",
-          "required": true,
-          "documentation": "The logical name of the PostgreSQL server/cluster. This logical name forms a namespace and is used in all the names of the Kafka topics and the Kafka Connect schema names. The logical name is also used for the namespaces of the corresponding Avro schema, if Avro data format is used. Kafka topics should/will be created with the prefix ``database.server.name``. Only alphanumeric characters, underscores, hyphens and dots are allowed."
-        },
-        {
-          "name": "database.sslmode",
-          "type": "STRING",
-          "required": true,
-          "default_value": "disable",
-          "importance": "LOW",
-          "group": "How should we connect to your database?",
-          "order_in_group": 7,
-          "display_name": "SSL mode",
-          "documentation": "What SSL mode should we use to connect to your database. `require` establishes an encrypted connection or fails if one cannot be made for any reason. If your database server enforces SSL, please use `require`. `disable` uses an unencrypted connection.",
-          "recommended_values": [
-            "disable",
-            "require"
-          ]
-        },
-        {
-          "name": "plugin.name",
-          "type": "STRING",
-          "required": false,
-          "default_value": "pgoutput",
-          "importance": "HIGH",
-          "group": "Database details",
-          "order_in_group": 6,
-          "display_name": "Plugin name",
-          "documentation": "The name of the Postgres logical decoding plugin installed on the server. Note: `pgoutput` is only available in PostgreSQL 10+.",
-          "recommended_values": [
-            "decoderbufs",
-            "pgoutput",
-            "wal2json",
-            "wal2json_rds",
-            "wal2json_streaming",
-            "wal2json_rds_streaming"
-          ]
-        },
-        {
-          "name": "snapshot.mode",
-          "documentation": "Specifies the criteria for running a snapshot upon startup of the connector. The default setting is ``initial``, and specifies the connector can run a snapshot only when no offsets have been recorded for the logical server name. The ``never`` option specifies that the connect should never use snapshots and that, upon first startup with a logical server name, the connector should read from where it last left off (last LSN position) *or* start from the beginning, based on the point of the view of the logical replication slot. The ``exported`` option specifies that the database snapshot will be based on the point in time when the replication slot was created and is an excellent way to perform the snapshot in a lock-free way.",
-          "recommended_values": [
-            "initial",
-            "exported",
-            "never"
-          ]
-        },
-        {
-          "name": "slot.name",
-          "type": "STRING",
-          "required": false,
-          "default_value": "debezium",
-          "importance": "LOW",
-          "group": "Database details",
-          "order_in_group": 7,
-          "display_name": "Slot name",
-          "documentation": "The name of the PostgreSQL logical decoding slot that was created for streaming changes from a particular plug-in and for a particular database/schema. The server uses this slot to stream events to the connector."
-        },
-        {
-          "name": "publication.name",
-          "type": "STRING",
-          "required": false,
-          "default_value": "dbz_publication",
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "display_name": "Publication name",
-          "documentation": "The name of the PostgreSQL publication created for streaming changes when using pgoutput"
-        },
-        {
-          "name": "publication.autocreate.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "all_tables",
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "display_name": "Publication auto-create mode",
-          "documentation": "Determines how creation of a publication should work when using pgoutput. Possible options are: `all_tables`, `disabled`, and `filtered`. Check the documentation for more details on each option.",
-          "recommended_values": [
-            "all_tables",
-            "disabled",
-            "filtered"
-          ]
-        },
-        {
-          "name": "heartbeat.action.query",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 5,
-          "display_name": "Heartbeat action query",
-          "documentation": "Specifies a query that the connector executes on the source database when the connector sends a heartbeat message."
-        },
-        {
-          "name": "hstore.handling.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "json",
-          "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 6,
-          "display_name": "HStore handling mode",
-          "documentation": "Specifies how HSTORE columns should be represented in change events.",
-          "recommended_values": [
-            "json",
-            "map"
-          ]
-        },
-        {
-          "name": "interval.handling.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "numeric",
-          "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 7,
-          "display_name": "Interval handling mode",
-          "documentation": "Specifies how INTERVAL columns should be represented in change events.",
-          "recommended_values": [
-            "string",
-            "numeric"
-          ]
-        },
-        {
-          "name": "schema.refresh.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "columns_diff",
-          "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 8,
-          "display_name": "Schema refresh mode",
-          "documentation": "Specify the conditions that trigger a refresh of the in-memory schema for a table. `columns_diff` (the default) is the safest mode, ensuring the in-memory schema stays in-sync with the database table's schema at all times. `columns_diff_exclude_unchanged_toast` instructs the connector to refresh the in-memory schema cache if there is a discrepancy between it and the schema derived from the incoming message, unless unchanged TOASTable data fully accounts for the discrepancy.",
-          "recommended_values": [
-            "columns_diff",
-            "columns_diff_exclude_unchanged_toast"
-          ]
-        },
-        {
-          "name": "signal.data.collection",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "display_name": "Signal data collection",
-          "documentation": "Fully-qualified name of the data collection that needs to be used to send signals to the connector. Use ``schemaName.tableName`` format to specify the fully-qualified collection name. Note that you need to manually add the signal table to the publication if ``publication.autocreate.mode`` is set to ``filtered`` or ``disabled``."
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "database.dbname"
-        },
-        {
-          "name": "plugin.name"
-        },
-        {
-          "name": "database.sslmode"
-        },
-        {
-          "name": "slot.name"
-        },
-        {
-          "name": "heartbeat.action.query"
-        },
-        {
-          "name": "hstore.handling.mode"
-        },
-        {
-          "name": "interval.handling.mode"
-        },
-        {
-          "name": "schema.refresh.mode"
-        },
-        {
-          "name": "publication.name"
-        },
-        {
-          "name": "publication.autocreate.mode"
-        },
-        {
-          "name": "signal.data.collection"
-        },
-        {
-          "name": "slot.max.retries",
-          "value": "20"
-        },
-        {
-          "name": "slot.retry.delay.ms",
-          "value": "30000"
-        }
-      ]
-    },
-    {
-      "template_id": "common-debezium-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "tasks.max",
-          "type": "INT",
-          "required": true,
-          "importance": "HIGH",
-          "group": "Number of tasks for this connector",
+          "group": "TIBCO Connection",
           "order_in_group": 1,
-          "display_name": "Tasks",
-          "documentation": "Maximum number of tasks for the connector."
+          "display_name": "TIBCO Broker URL",
+          "documentation": "The URL(s) of the TIBCO EMS broker. For high availability and disaster recovery, provide a comma-separated list of URLs like 'tcp://host1:7222,tcp://host2:7222'."
         },
         {
-          "name": "database.hostname",
+          "name": "tibco.username",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 1,
-          "display_name": "Database hostname",
-          "sanitizers": [
-            {
-              "name": "trim"
-            }
-          ]
-        },
-        {
-          "name": "database.port",
-          "type": "INT",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your database?",
+          "group": "TIBCO Connection",
           "order_in_group": 2,
-          "display_name": "Database port",
-          "sanitizers": [
-            {
-              "name": "trim"
-            }
-          ]
+          "display_name": "Username",
+          "documentation": "The username used when connecting to TIBCO EMS."
         },
         {
-          "name": "database.user",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 3,
-          "display_name": "Database username"
-        },
-        {
-          "name": "database.password",
+          "name": "tibco.password",
           "type": "PASSWORD",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 4,
-          "display_name": "Database password"
+          "group": "TIBCO Connection",
+          "order_in_group": 3,
+          "display_name": "Password",
+          "documentation": "The password used when connecting to TIBCO EMS."
         },
         {
-          "name": "database.server.name",
+          "name": "jms.destination.name",
           "type": "STRING",
           "required": true,
           "importance": "HIGH",
-          "group": "How should we connect to your database?",
-          "order_in_group": 6,
-          "display_name": "Database server name",
-          "sanitizers": [
-            {
-              "name": "trim"
-            }
-          ]
-        },
-        {
-          "name": "table.include.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Database details",
+          "group": "TIBCO Session",
           "order_in_group": 1,
-          "display_name": "Tables included",
-          "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be monitored. Any table not included in this config property is excluded from monitoring. Each identifier is in the form ``schemaName.tableName``. By default the connector monitors every non-system table in each monitored schema. May not be used with \"Table excluded\".",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
+          "display_name": "Destination Name",
+          "documentation": "The name of the TIBCO EMS destination (queue or topic) to read from."
         },
         {
-          "name": "table.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 2,
-          "display_name": "Tables excluded",
-          "documentation": "An optional comma-separated list of strings that match fully-qualified table identifiers for tables to be excluded from monitoring. Any table not included in this config property is monitored. Each identifier is in the form ``schemaName.tableName``. May not be used with \"Table included\".",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "snapshot.mode",
+          "name": "jms.destination.type",
           "type": "STRING",
           "required": false,
-          "default_value": "initial",
-          "importance": "LOW",
-          "group": "Database details",
-          "order_in_group": 3,
-          "display_name": "Snapshot mode"
-        },
-        {
-          "name": "tombstones.on.delete",
-          "type": "STRING",
-          "required": false,
-          "default_value": "true",
+          "default_value": "queue",
           "importance": "HIGH",
-          "group": "Database details",
-          "order_in_group": 4,
-          "display_name": "Tombstones on delete",
-          "documentation": "Controls whether a tombstone event should be generated after a delete event. When set to ``true``, the delete operations are represented by a delete event and a subsequent tombstone event. When set to ``false``, only a delete event is sent. Emitting the tombstone event (the default behavior) allows Kafka to completely delete all events pertaining to the given key, once the source record got deleted.",
+          "group": "TIBCO Session",
+          "order_in_group": 2,
+          "display_name": "Destination Type",
+          "documentation": "The type of TIBCO EMS destination, which is either `queue` or `topic`.",
           "recommended_values": [
-            "true",
-            "false"
+            "topic",
+            "queue"
           ]
         },
         {
-          "name": "column.exclude.list",
-          "type": "LIST",
+          "name": "batch.size",
+          "type": "INT",
           "required": false,
           "importance": "MEDIUM",
-          "group": "Database details",
+          "group": "TIBCO Session",
+          "order_in_group": 4,
+          "display_name": "Batch Size",
+          "documentation": "The maximum number of records that a connector task may read from the TIBCO EMS broker before writing to Kafka. The task holds these records until they are acknowledged in Kafka, so this may affect memory usage."
+        },
+        {
+          "name": "max.pending.messages",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "TIBCO Session",
           "order_in_group": 5,
-          "display_name": "Columns Excluded",
-          "documentation": "Regular expressions matching columns to exclude from change events",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
+          "display_name": "Unacknowledged Messages Limit",
+          "documentation": "The maximum number of messages per task that can be received from TIBCO EMS brokers and produced to Kafka before the task acknowledges the TIBCO session/messages. If the task fails and is restarted, this is the maximum number of TIBCO messages the task may duplicate in Kafka. This is typically set larger than ``batch.size``. A smaller value than ``batch.size`` limits the size of the batches."
         },
         {
-          "name": "poll.interval.ms",
+          "name": "max.poll.duration",
           "type": "INT",
           "required": false,
-          "default_value": "1000",
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 1,
-          "display_name": "Poll interval (ms)",
-          "documentation": "Positive integer value that specifies the number of milliseconds the connector should wait during each iteration for new change events to appear. Defaults to 1000 milliseconds, or 1 second."
+          "default_value": "60000",
+          "importance": "MEDIUM",
+          "group": "TIBCO Session",
+          "order_in_group": 6,
+          "display_name": "Maximum time to wait for a single poll in milliseconds.",
+          "documentation": "The maximum amount of time each task can build a batch. The batch is closed and sent to Kafka if not enough messages are read during the time allotted. This helps limit connector lag when the TIBCO EMS queue/topic has a lower throughput."
         },
         {
-          "name": "max.batch.size",
-          "type": "INT",
-          "required": false,
-          "default_value": "1000",
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 2,
-          "display_name": "Max batch size",
-          "documentation": "Positive integer value that specifies the maximum size of each batch of events that should be processed during each iteration of this connector."
-        },
-        {
-          "name": "event.processing.failure.handling.mode",
+          "name": "character.encoding",
           "type": "STRING",
           "required": false,
-          "default_value": "fail",
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 3,
-          "display_name": "Event processing failure handling mode",
-          "documentation": "Specifies how the connector should react to exceptions during processing of binlog events.",
-          "recommended_values": [
-            "fail",
-            "skip",
-            "warn"
-          ]
+          "default_value": "UTF-8",
+          "importance": "MEDIUM",
+          "group": "TIBCO Session",
+          "order_in_group": 7,
+          "display_name": "Character Encoding",
+          "documentation": "The character encoding to use while receiving the message.",
+          "recommender": {
+            "name": "character.encoding"
+          }
         },
         {
-          "name": "heartbeat.interval.ms",
-          "type": "INT",
-          "required": false,
-          "default_value": "0",
-          "importance": "LOW",
-          "group": "Connection details",
-          "order_in_group": 4,
-          "display_name": "Heartbeat interval (ms)",
-          "documentation": "Controls how frequently the connector sends heartbeat messages to a Kafka topic. The behavior of default value 0 is that the connector does not send heartbeat messages."
-        },
-        {
-          "name": "output.data.format",
-          "type": "STRING",
-          "required": true,
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 1,
-          "display_name": "Output Kafka record value format",
-          "documentation": "Sets the output Kafka record value format. Valid entries are AVRO, JSON_SR, PROTOBUF, or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF.",
-          "recommended_values": [
-            "AVRO",
-            "JSON",
-            "JSON_SR",
-            "PROTOBUF"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        },
-        {
-          "name": "after.state.only",
-          "type": "STRING",
-          "required": false,
-          "default_value": "true",
-          "importance": "LOW",
-          "group": "Output messages",
-          "order_in_group": 2,
-          "display_name": "After-state only",
-          "documentation": "Controls whether the generated Kafka record should contain only the state after applying change events.",
-          "recommended_values": [
-            "true",
-            "false"
-          ]
-        },
-        {
-          "name": "provide.transaction.metadata",
-          "type": "STRING",
+          "name": "jms.subscription.durable",
+          "type": "BOOLEAN",
           "required": false,
           "default_value": "false",
-          "importance": "LOW",
-          "group": "Connector details",
-          "order_in_group": 1,
-          "display_name": "Provide transaction metadata",
-          "documentation": "Stores transaction metadata information in a dedicated topic and enables the transaction metadata extraction together with event counting.",
-          "recommended_values": [
-            "true",
-            "false"
-          ]
-        },
-        {
-          "name": "decimal.handling.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "precise",
           "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 2,
-          "display_name": "Decimal handling mode",
-          "documentation": "Specifies how DECIMAL and NUMERIC columns should be represented in change events, including: 'precise' (the default) uses java.math.BigDecimal to represent values, which are encoded in the change events using a binary representation and Kafka Connect's 'org.apache.kafka.connect.data.Decimal' type; 'string' uses string to represent values; 'double' represents values using Java's 'double', which may not offer the precision but will be far easier to use in consumers.",
-          "recommended_values": [
-            "double",
-            "precise",
-            "string"
-          ]
+          "group": "TIBCO Session",
+          "order_in_group": 8,
+          "display_name": "Durable Subscription",
+          "documentation": "Whether the subscription of the connector tasks to a TIBCO EMS topic is durable or not. Durable subscriptions require a subscription name to be set via ``jms.subscription.name``. "
         },
         {
-          "name": "binary.handling.mode",
+          "name": "jms.subscription.name",
           "type": "STRING",
           "required": false,
-          "default_value": "bytes",
-          "importance": "LOW",
-          "group": "Connector details",
-          "order_in_group": 3,
-          "display_name": "Binary handling mode",
-          "documentation": "Specifies how binary (blob, binary, etc.) columns should be represented in change events, including: 'bytes' (the default) represents binary data as byte array; 'base64' represents binary data as base64-encoded string; 'hex' represents binary data as hex-encoded (base16) string.",
-          "recommended_values": [
-            "bytes",
-            "base64",
-            "hex"
-          ]
-        },
-        {
-          "name": "time.precision.mode",
-          "type": "STRING",
-          "required": false,
-          "default_value": "adaptive",
           "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 4,
-          "display_name": "Time precision mode",
-          "documentation": "Time, date, and timestamps can be represented with different kinds of precisions, including: 'adaptive' (the default) bases the precision of time, date, and timestamp values on the database column's precision; 'adaptive_time_microseconds' like 'adaptive' mode, but TIME fields always use microseconds precision; 'connect' always represents time, date, and timestamp values using Kafka Connect's built-in representations for Time, Date, and Timestamp, which uses millisecond precision regardless of the database columns' precision.",
-          "recommended_values": [
-            "adaptive",
-            "adaptive_time_microseconds",
-            "connect"
-          ]
+          "group": "TIBCO Session",
+          "order_in_group": 8,
+          "display_name": "Subscription Name",
+          "documentation": "The name of the TIBCO EMS subscription. Supported only in durable subscriptions (``jms.subscription.durable = true``) and is applicable only to TIBCO EMS topics."
         },
         {
-          "name": "datatype.propagate.source.type",
-          "type": "LIST",
-          "required": false,
-          "importance": "LOW",
-          "group": "Database details",
-          "order_in_group": 4,
-          "display_name": "Propagate Source Types by Data Type",
-          "documentation": "A comma-separated list of regular expressions matching the database-specific data type names that adds the data type's original type and original length as parameters to the corresponding field schemas in the emitted change records.",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "cleanup.policy",
+          "name": "jms.message.selector",
           "type": "STRING",
           "required": false,
-          "default_value": "delete",
           "importance": "MEDIUM",
-          "group": "Connector details",
-          "order_in_group": 5,
-          "display_name": "Topic cleanup policy",
-          "documentation": "Set the topic cleanup policy",
-          "recommended_values": [
-            "compact",
-            "delete"
-          ]
+          "group": "TIBCO Session",
+          "order_in_group": 10,
+          "display_name": "Message Selector",
+          "documentation": "The message selector that should be applied to messages in the destination."
         }
       ],
       "connector_configs": [
-        {
-          "name": "database.hostname"
-        },
-        {
-          "name": "database.port"
-        },
-        {
-          "name": "database.user"
-        },
-        {
-          "name": "database.password"
-        },
-        {
-          "name": "database.server.name"
-        },
-        {
-          "name": "table.include.list"
-        },
-        {
-          "name": "table.exclude.list"
-        },
-        {
-          "name": "table.whitelist"
-        },
-        {
-          "name": "table.blacklist"
-        },
-        {
-          "name": "snapshot.mode"
-        },
-        {
-          "name": "column.exclude.list"
-        },
-        {
-          "name": "tombstones.on.delete"
-        },
-        {
-          "name": "poll.interval.ms"
-        },
-        {
-          "name": "max.batch.size"
-        },
-        {
-          "name": "event.processing.failure.handling.mode"
-        },
-        {
-          "name": "heartbeat.interval.ms"
-        },
         {
           "name": "producer.override.security.protocol",
           "value": "SASL_SSL"
@@ -620,67 +155,55 @@
           "value": "PLAIN"
         },
         {
-          "name": "transforms",
-          "switch": {
-            "after.state.only": {
-              "true": "unwrap",
-              "false": ""
-            }
-          }
+          "name": "key.converter",
+          "value": "org.apache.kafka.connect.json.JsonConverter"
         },
         {
-          "name": "transforms.unwrap.type",
-          "switch": {
-            "after.state.only": {
-              "true": "io.debezium.transforms.ExtractNewRecordState",
-              "false": ""
-            }
-          }
+          "name": "key.converter.schemas.enable",
+          "value": "false"
         },
         {
-          "name": "transforms.unwrap.drop.tombstones",
-          "switch": {
-            "after.state.only": {
-              "true": "false",
-              "false": ""
-            }
-          }
+          "name": "tibco.url"
         },
         {
-          "name": "transforms.unwrap.delete.handling.mode",
-          "switch": {
-            "after.state.only": {
-              "true": "rewrite",
-              "false": ""
-            }
-          }
+          "name": "tibco.username"
         },
         {
-          "name": "provide.transaction.metadata"
+          "name": "tibco.password"
         },
         {
-          "name": "decimal.handling.mode"
+          "name": "jms.destination.name"
         },
         {
-          "name": "binary.handling.mode"
+          "name": "jms.destination.type"
         },
         {
-          "name": "time.precision.mode"
+          "name": "batch.size"
         },
         {
-          "name": "datatype.propagate.source.type"
+          "name": "max.pending.messages"
         },
         {
-          "name": "topic.creation.default.cleanup.policy",
-          "value": "${cleanup.policy}"
+          "name": "max.poll.duration"
         },
         {
-          "name": "max.queue.size.in.bytes",
-          "value": "209716100"
+          "name": "character.encoding"
+        },
+        {
+          "name": "jms.subscription.durable"
+        },
+        {
+          "name": "jms.subscription.name"
+        },
+        {
+          "name": "jms.message.selector"
+        },
+        {
+          "name": "kafka.topic"
         },
         {
           "name": "connector.endpoint",
-          "value": "${database.hostname}"
+          "value": "${tibco.url}"
         }
       ]
     },
@@ -787,6 +310,297 @@
       "template_id": "common-kafka-connectivity",
       "abstract": true,
       "config_defs": [],
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "template_id": "kafka-topic-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "kafka.topic",
+          "type": "STRING",
+          "required": true,
+          "importance": "HIGH",
+          "group": "Which topic do you want to send data to?",
+          "order_in_group": 1,
+          "display_name": "Topic name",
+          "documentation": "Identifies the topic name to write the data to."
+        }
+      ],
       "connector_configs": []
     },
     {
@@ -902,6 +716,14 @@
         },
         {
           "name": "producer.override.linger.ms"
+        },
+        {
+          "name": "consumer.override.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "consumer.override.sasl.mechanism",
+          "value": "PLAIN"
         }
       ]
     },
@@ -1032,82 +854,22 @@
           }
         },
         {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "output.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
           "name": "value.converter.ignore.default.for.nullables"
         },
         {
           "name": "value.converter.scrub.invalid.names",
           "dynamic.mapper": {
             "name": "value.converter.scrub.invalid.names.mapper"
-          }
-        }
-      ]
-    },
-    {
-      "template_id": "output-key-format-debezium-source",
-      "abstract": true,
-      "config_defs": [
-        {
-          "name": "output.key.format",
-          "type": "STRING",
-          "required": false,
-          "default_value": "JSON",
-          "importance": "HIGH",
-          "group": "Output messages",
-          "order_in_group": 2,
-          "display_name": "Output Kafka record key format",
-          "alias": "key.format",
-          "documentation": "Sets the output Kafka record key format. Valid entries are AVRO, JSON_SR, PROTOBUF, STRING or JSON. Note that you need to have Confluent Cloud Schema Registry configured if using a schema-based message format like AVRO, JSON_SR, and PROTOBUF",
-          "recommended_values": [
-            "AVRO",
-            "JSON_SR",
-            "PROTOBUF",
-            "JSON",
-            "STRING"
-          ],
-          "dependents": [
-            "schema.registry.url"
-          ]
-        }
-      ],
-      "connector_configs": [
-        {
-          "name": "key.converter",
-          "switch": {
-            "output.key.format": {
-              "AVRO": "io.confluent.connect.avro.AvroConverter",
-              "JSON_SR": "io.confluent.connect.json.JsonSchemaConverter",
-              "PROTOBUF": "io.confluent.connect.protobuf.ProtobufConverter",
-              "STRING": "org.apache.kafka.connect.storage.StringConverter",
-              "JSON": "org.apache.kafka.connect.json.JsonConverter"
-            }
-          }
-        },
-        {
-          "name": "key.converter.schemas.enable",
-          "switch": {
-            "output.key.format": {
-              "JSON": false
-            }
-          }
-        },
-        {
-          "name": "key.converter.schema.registry.url",
-          "switch": {
-            "output.key.format": {
-              "AVRO": "${schema.registry.url}",
-              "JSON_SR": "${schema.registry.url}",
-              "PROTOBUF": "${schema.registry.url}"
-            }
-          }
-        },
-        {
-          "name": "key.converter.basic.auth.credentials.source",
-          "switch": {
-            "output.key.format": {
-              "AVRO": "USER_INFO",
-              "JSON_SR": "USER_INFO",
-              "PROTOBUF": "USER_INFO"
-            }
           }
         }
       ]
@@ -1459,6 +1221,39 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
+        }
+      ]
+    },
+    {
+      "template_id": "super-source",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "producer.override.compression.type",
+          "type": "STRING",
+          "recommended_values": [
+            "none",
+            "gzip",
+            "snappy",
+            "lz4",
+            "zstd"
+          ],
+          "documentation": "The compression type for all data generated by the producer. Valid values are none, gzip, snappy, lz4, and zstd.",
+          "group": "Additional Configs",
+          "required": false,
+          "importance": "LOW",
+          "display_name": "producer.override.compression.type"
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "producer.override.compression.type"
         }
       ]
     }
