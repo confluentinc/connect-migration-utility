@@ -10,9 +10,11 @@ import logging
 import requests
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Set
-from urllib.parse import urljoin
 
 class ConfigDiscovery:
+    FM_CONFIGS_DIR = "fm_configs"
+
+
     def __init__(
         self,
         worker_urls: Optional[str] = None,
@@ -29,13 +31,13 @@ class ConfigDiscovery:
         self.sensitive_file = sensitive_file
         self.worker_config_file = worker_config_file
         self.disable_ssl_verify = disable_ssl_verify
-        
+
         # Log SSL verification status
         if self.disable_ssl_verify:
             self.logger.info("SSL certificate verification is DISABLED")
         else:
             self.logger.info("SSL certificate verification is ENABLED")
-        
+
         # Initialize sensitive config handling
         self.static_sensitive_configs = [
             "activemq.password",
@@ -157,19 +159,19 @@ class ConfigDiscovery:
             "vertica.password",
             "zendesk.password"
         ]
-        
+
         self.sensitive_patterns = ["password", "token", "secret", "credential"]
         self.all_sensitive_configs = set(self.static_sensitive_configs)
-        
+
         # Load sensitive keys from file if provided
         if self.sensitive_file:
             loaded_keys = self._load_sensitive_configs(self.sensitive_file)
             self.all_sensitive_configs.update(loaded_keys)
             self.logger.info(f"Loaded {len(loaded_keys)} sensitive keys from file.")
-        
+
         # Worker config prefixes
         self.worker_configs = [
-            "key.", 
+            "key.",
             "value.",
             "header.",
             "producer.",
@@ -179,7 +181,7 @@ class ConfigDiscovery:
             "confluent.",
             "offset."
         ]
-        
+
         # Get worker URLs
         self.worker_urls = self._get_worker_urls(worker_urls, worker_urls_file)
 
@@ -239,7 +241,7 @@ class ConfigDiscovery:
             worker_urls = self._extract_worker_urls_from_file(urls_file)
         elif urls:
             worker_urls = [url.strip().rstrip("/") for url in urls.split(",") if url.strip()]
-            
+
             # Append 'http://' or 'https://' if missing
             for i, url in enumerate(worker_urls):
                 if not url.startswith("http://") and not url.startswith("https://"):
@@ -253,7 +255,7 @@ class ConfigDiscovery:
         if not alive_workers:
             self.logger.error("No reachable Kafka Connect workers found.")
             return []
-        
+
         self.logger.info(f"Found {len(alive_workers)} reachable workers: {alive_workers}")
         return alive_workers
 
@@ -277,16 +279,21 @@ class ConfigDiscovery:
             self.logger.error(f"Error reading the worker configs file: {e}")
         return new_configs
 
-    def _get_json_from_url(self, url: str) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def get_json_from_url(url: str, disable_ssl_verify: bool = False, logger=None) -> Optional[Dict[str, Any]]:
+        if logger is None:
+            logger = logging.getLogger("config_discovery_default")
+
         """Makes an HTTP GET request and returns JSON data."""
         try:
-            response = requests.get(url, timeout=5, verify=not self.disable_ssl_verify)
+            response = requests.get(url, timeout=5, verify=not disable_ssl_verify)
             response.raise_for_status()
+            logger.info(f"Response from {url}: {response.json()}")
             return response.json()
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"HTTP error for {url}: {e}")
+            logger.error(f"HTTP error for {url}: {e}")
         except ValueError:
-            self.logger.error(f"Invalid JSON response from {url}")
+            logger.error(f"Invalid JSON response from {url}")
         return None
 
     def _redact_sensitive_info(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -306,31 +313,30 @@ class ConfigDiscovery:
 
         return redact_dict(config)
 
-    def _get_connector_configs(self, worker_url: str) -> List[Dict[str, Any]]:
+    @staticmethod
+    def get_connector_configs_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None) -> List[Dict[str, Any]]:
         """Get connector configurations from a worker using expanded info endpoint"""
+        if logger is None:
+            logger = logging.getLogger("config_discovery_default")
         try:
             # Use the expanded endpoint to get all connector info in one call
             expanded_url = f"{worker_url}/connectors?expand=info"
-            self.logger.info(f"Fetching connector info from: {expanded_url}")
-            
-            connectors_data = self._get_json_from_url(expanded_url)
+            logger.info(f"Fetching connector info from: {expanded_url}")
+
+            connectors_data = ConfigDiscovery.get_json_from_url(expanded_url, disable_ssl_verify, logger)
             if not connectors_data:
-                self.logger.error(f"No data received from {expanded_url}")
+                logger.error(f"No data received from {expanded_url}")
                 return []
 
             configs = []
             for connector_name, connector_data in connectors_data.items():
-                self.logger.info(f"Processing connector: {connector_name}")
-                
+                logger.info(f"Processing connector: {connector_name}")
+
                 # Get the info section which contains config, tasks, and type
                 info = connector_data.get('info', {})
                 config = info.get('config', {})
                 tasks = info.get('tasks', [])
                 connector_type = info.get('type', 'unknown')
-                
-                # Apply redaction if needed
-                if self.redact:
-                    config = self._redact_sensitive_info(config)
 
                 configs.append({
                     'name': connector_name,
@@ -342,27 +348,31 @@ class ConfigDiscovery:
             return configs
 
         except Exception as e:
-            self.logger.error(f"Error getting connector configs from {worker_url}: {str(e)}")
+            logger.error(f"Error getting connector configs from {worker_url}: {str(e)}")
             return []
 
     def discover_and_save(self) -> Path:
         """Discover connector configurations from all workers and save to JSON"""
         all_connectors = {}
-        
+
         # Load existing worker configs from file (if provided)
         if self.worker_config_file:
             worker_configs = self._load_configs_from_file(self.worker_config_file, allowed_prefixes=self.worker_configs)
             self.logger.info(f"Loaded {len(worker_configs)} worker configs matching allowed prefixes.")
         else:
             worker_configs = {}
-        
+
         for worker_url in self.worker_urls:
             self.logger.info(f"=== Processing worker: {worker_url} ===")
-            configs = self._get_connector_configs(worker_url)
-            
+            configs = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify, self.logger)
+
             # Convert list to dict format for consistency
             for config in configs:
-                all_connectors[config['name']] = config
+                # Apply redaction if needed
+                if self.redact:
+                    all_connectors[config['name']] = self._redact_sensitive_info(config)
+                else:
+                    all_connectors[config['name']] = config
 
         # Create output data structure
         output_data = {
@@ -371,11 +381,9 @@ class ConfigDiscovery:
         }
 
         # Save to JSON file
-        output_file = self.output_dir / 'connectors.json'
-        self.output_dir.mkdir(exist_ok=True)
-        
+        output_file = self.output_dir / 'compiled_input_sm_configs.json'
         with open(output_file, 'w') as f:
             json.dump(output_data, f, indent=2)
 
         self.logger.info(f"Saved {len(all_connectors)} connector configurations to {output_file}")
-        return output_file 
+        return output_file
