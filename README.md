@@ -307,7 +307,7 @@ Once you have fixed the mapping errors (if any), you can follow the steps below 
 To create a connector with no data loss and data duplication, run the command below to create a fully-managed connector:
 
 ```bash
-command
+python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<stop_create_latest_offset>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
 > The python script stops the self-managed connector and fetches the latest offset and creates a fully-managed connector on Confluent Cloud using the fetched offset.
 
@@ -316,7 +316,7 @@ command
 To create a connector with no downtime, run the command below to create a fully-managed connector:
 
 ```bash
-command
+python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<create_latest_offset>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
 > The python script fetched the latest offset without stopping the connector and creates a fully-managed connector on Confluent Cloud using the fetched offset. This option may cause data duplication as the self-managed connector is still running.
 
@@ -326,7 +326,7 @@ command
 If you want to create a fully-managed connector without stopping the self-managed connector and without any offset consideration, run the following command:
 
 ```bash
-command
+python src/create_connector.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "<create>" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
 > The python script creates the fully-managed connector on Confluent Cloud using the translated configurations.
 
