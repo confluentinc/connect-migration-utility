@@ -398,8 +398,10 @@ The table below shows the command line options valid for the python migration sc
 
 
 
-*(1)* - Required when the migration mode is set to `stop_create_latest_offset` or `create_latest_offset`
+*(1)* - Required when the migration mode is set to `stop_create_latest_offset` or `create_latest_offset`.
+
 *(2)* - If you are using `--bearer-token`,  `--prompt-bearer-token` is not applicable and vice versa.
+
 *(3)* - You can use one of the two authentication modes. When `kafka-auth-mode` is set to `KAFKA_API_KEY`, you need to provide the Kafka API key and secret. If it is set to `SERVICE_ACCOUNT`, you need to provide the Kafka Service account ID.
 
 
