@@ -2397,7 +2397,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'input.key.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2435,7 +2436,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'input.data.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2469,7 +2471,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.key.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2503,7 +2506,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2541,7 +2545,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.key.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2578,7 +2583,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.value.format')
             if template_default:
-                return template_default.upper()
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default.upper()
         
         # Default fallback
         return 'JSON'
@@ -2612,7 +2618,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'authentication.method')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         
         # Default fallback
         return 'PLAIN'
@@ -2624,7 +2631,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'csfle.enabled')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         
         # Default fallback
         return 'false'
@@ -2636,7 +2644,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'csfle.onFailure')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         
         # Default fallback
         return 'FAIL'
@@ -2725,7 +2734,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'ssl.mode')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         
         # Default to prefer if no SSL configuration is found
         return 'prefer'
@@ -2823,7 +2833,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'redis.portnumber')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         # Default Redis port
         return '6379'
     
@@ -2886,7 +2897,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'redis.ssl.mode')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
 
         # Default to disabled if no SSL configuration is found
         return 'disabled'
@@ -3202,6 +3214,32 @@ class ConnectorComparator:
             self.logger.error(f"Error loading semantic matcher from {self.semantic_matcher_path}: {e}")
             # Continue with default semantic matcher
 
+    def _is_placeholder(self, value: str) -> bool:
+        """Check if a value is a placeholder like ${xxxx}"""
+        return value.startswith('${')
+    
+    def _extract_placeholder_name(self, placeholder: str) -> str:
+        """Extract the placeholder name from ${xxxx} format"""
+        if placeholder.startswith('${'):
+            # Find the closing } or use the whole string after ${
+            end_pos = placeholder.find('}', 2)
+            if end_pos != -1:
+                return placeholder[2:end_pos]  # Remove ${ and }
+            else:
+                return placeholder[2:]  # Remove ${ only
+        return placeholder
+    
+    def _resolve_template_default(self, template_default: str, fm_configs: Dict[str, str]) -> str:
+        """Resolve template default value, handling placeholders like ${xxxx}"""
+        if self._is_placeholder(template_default):
+            placeholder_name = self._extract_placeholder_name(template_default)
+            if placeholder_name in fm_configs:
+                resolved_value = fm_configs[placeholder_name]
+                return resolved_value
+            else:
+                self.logger.warning(f"   ⚠️ Placeholder '{placeholder_name}' not found in fm_configs")
+        return template_default
+
     def _get_template_default_value(self, template_config_defs: List[Dict[str, Any]], config_name: str) -> Optional[str]:
         """Extract default value for a configuration from template definitions"""
         for template_config_def in template_config_defs:
@@ -3235,7 +3273,8 @@ class ConnectorComparator:
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'connection.url')
             if template_default:
-                return template_default
+                resolved_default = self._resolve_template_default(template_default, fm_configs)
+                return resolved_default
         
         return None
     
