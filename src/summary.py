@@ -12,7 +12,11 @@ import logging
 from collections import defaultdict
 
 def count_files(path):
-    return len(os.listdir(path)) if os.path.exists(path) else 0
+    if not os.path.exists(path):
+        return 0
+    # Only count JSON files (same logic as get_connector_type_counts)
+    json_files = [f for f in os.listdir(path) if f.endswith('.json')]
+    return len(json_files)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -97,7 +101,7 @@ def summarize_output(base_dir):
     }
 
     for root, dirs, files in os.walk(base_dir):
-        if os.path.basename(root) == "fm_configs":
+        if os.path.basename(root) == "discovered_configs":
             summary["fm_configs_found"] += 1
             parent_folder = os.path.relpath(os.path.dirname(root), base_dir)
 
