@@ -52,25 +52,25 @@ connect-migration-utility/
 ### Basic Usage - From Config File
 
 ```bash
-python src/main.py --config-file connectors.json --output-dir output/
+python src/discovery_script.py --config-file connectors.json --output-dir output/
 ```
 
 ### Basic Usage - From Directory of config files
 
 ```bash
-python src/main.py --config-dir configDir --output-dir output/
+python src/discovery_script.py --config-dir configDir --output-dir output/
 ```
 
 ### Basic Usage - From Worker Discovery
 
 ```bash
-python src/main.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
+python src/discovery_script.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
 ```
 
 ### Advanced Usage with Confluent Cloud Integration
 
 ```bash
-python src/main.py \
+python src/discovery_script.py \
   --config-file connectors.json \
   --output-dir output/ \
   --env-id <environment-id> \
@@ -81,7 +81,7 @@ python src/main.py \
 ### Secure Bearer Token Input
 
 ```bash
-python src/main.py \
+python src/discovery_script.py \
   --config-file connectors.json \
   --output-dir output/ \
   --env-id <environment-id> \
@@ -115,12 +115,12 @@ The utility makes HTTPS requests to fetch templates and configurations. By defau
 
 ### Enable SSL Verification (Default - Recommended)
 ```bash
-python src/main.py --config-file connectors.json --output-dir output/
+python src/discovery_script.py --config-file connectors.json --output-dir output/
 ```
 
 ### Disable SSL Verification
 ```bash
-python src/main.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
+python src/discovery_script.py --config-file connectors.json --output-dir output/ --disable-ssl-verify
 ```
 
 ## 📈 Migration Summary Reports
@@ -139,10 +139,10 @@ The utility automatically generates comprehensive migration summary reports afte
 ### Usage
 ```bash
 # Summary is automatically generated after migration
-python src/main.py --config-file connectors.json --output-dir output/
+python src/discovery_script.py --config-file connectors.json --output-dir output/
 
 # Summary is automatically generated after worker discovery
-python src/main.py --worker-urls "http://worker1:8083" --output-dir output/
+python src/discovery_script.py --worker-urls "http://worker1:8083" --output-dir output/
 ```
 
 ### What Gets Analyzed
