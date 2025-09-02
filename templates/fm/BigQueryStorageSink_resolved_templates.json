@@ -263,7 +263,7 @@
           "group": "Insertion and DDL support",
           "order_in_group": 2,
           "display_name": "Kafka Topic to BigQuery Table Map",
-          "documentation": "Map of topics to tables (optional). The required format is comma-separated tuples. For example, <topic-1>:<table-1>,<topic-2>:<table-2>,... Note that a topic name must not be modified using a regex SMT while using this option. Note that if this property is used, ``sanitize.topics`` is ignored. Also, if the topic-to-table map doesn\u2019t contain the topic for a record, the connector creates a table with the same name as the topic name."
+          "documentation": "Map of topics to tables (optional). The required format is comma-separated tuples. For example, <topic-1>:<table-1>,<topic-2>:<table-2>,... Note that a topic name must not be modified using a regex SMT while using this option. If this property is used, ``sanitize.topics`` is ignored. Also, if the topic-to-table map doesn't contain the topic for a record, the connector creates a table with the same name as the topic name."
         },
         {
           "name": "sanitize.topics",
@@ -290,6 +290,21 @@
           "order_in_group": 4,
           "display_name": "Sanitize field names",
           "documentation": "Whether to automatically sanitize field names before using them as field names in BigQuery. BigQuery specifies that field names can only contain letters, numbers, and underscores. The sanitizer replaces invalid symbols with underscores. If the field name starts with a digit, the sanitizer adds an underscore in front of field name. Caution: Key duplication errors can occur if different fields are named a.b and a_b, for instance. After being sanitized, field names a.b and a_b will have same value.",
+          "recommended_values": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "name": "sanitize.field.names.in.array",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "MEDIUM",
+          "group": "Insertion and DDL support",
+          "order_in_group": 5,
+          "display_name": "Sanitize array fields",
+          "documentation": "Whether to automatically sanitize field names inside arrays. When enabled, field names inside arrays will also be sanitized according to BigQuery naming rules. This setting only takes effect if 'sanitize.field.names' is also enabled.",
           "recommended_values": [
             "true",
             "false"
@@ -435,6 +450,14 @@
           "name": "oauth.client.id"
         },
         {
+          "name": "oauth.client.secret",
+          "value": "${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:oauth.client.secret}"
+        },
+        {
+          "name": "oauth.refresh.token",
+          "value": "${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:oauth.refresh.token}"
+        },
+        {
           "name": "transforms",
           "switch": {
             "ingestion.mode": {
@@ -547,6 +570,10 @@
           "value": "${sanitize.field.names}"
         },
         {
+          "name": "sanitizeFieldNamesInArray",
+          "value": "${sanitize.field.names.in.array}"
+        },
+        {
           "name": "timestampPartitionFieldName",
           "switch": {
             "auto.create.tables": {
@@ -588,6 +615,10 @@
         {
           "name": "use.integer.for.int8.int16",
           "value": "${use.integer.for.int8.int16}"
+        },
+        {
+          "name": "enableChangeSequenceNumber",
+          "value": "false"
         }
       ]
     },
@@ -694,7 +725,281 @@
       "template_id": "common-kafka-connectivity",
       "abstract": true,
       "config_defs": [],
-      "connector_configs": []
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
     },
     {
       "template_id": "common-sink",
@@ -776,6 +1081,16 @@
             "none",
             "all"
           ]
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
         }
       ],
       "connector_configs": [
@@ -784,6 +1099,12 @@
         },
         {
           "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         },
         {
           "name": "errors.deadletterqueue.topic.replication.factor",
@@ -824,6 +1145,134 @@
         {
           "name": "admin.override.sasl.mechanism",
           "value": "PLAIN"
+        }
+      ]
+    },
+    {
+      "template_id": "csfle-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "csfle.enabled",
+          "type": "BOOLEAN",
+          "default_value": "false",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 1,
+          "docs_hidden": true,
+          "display_name": "Enable Client-Side Field Level Encryption",
+          "documentation": "Determines whether the connector honours CSFLE rules or not",
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "csfle.configs.visible",
+                "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
+              }
+            }
+          ]
+        },
+        {
+          "name": "csfle.onFailure",
+          "type": "STRING",
+          "required": false,
+          "default_value": "ERROR",
+          "importance": "MEDIUM",
+          "group": "CSFLE",
+          "order_in_group": 3,
+          "docs_hidden": true,
+          "display_name": "Connector behaviour on data decryption failure",
+          "documentation": "Configures the behavior for decryption failures. If set to ERROR, the connector will behave as configured for error behaviour. If set to NONE, the connector will ignore the decryption failure and proceed to write the data in its encrypted form.",
+          "recommended_values": [
+            "ERROR",
+            "NONE"
+          ]
+        },
+        {
+          "name": "sr.service.account.id",
+          "type": "STRING",
+          "importance": "HIGH",
+          "group": "CSFLE",
+          "order_in_group": 2,
+          "docs_hidden": true,
+          "display_name": "Schema Registry Service Account",
+          "documentation": "Select the service account that has appropriate permissions to schemas and encryption keys in the Schema Registry."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "csfle.enabled"
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "value.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "value.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.disabled",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false",
+              "false": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.rule.executors._ENCRYPT_.onFailure",
+          "switch": {
+            "csfle.onFailure": {
+              "ERROR": "ERROR",
+              "NONE": "NONE"
+            }
+          }
+        },
+        {
+          "name": "key.converter.auto.register.schemas",
+          "switch": {
+            "csfle.enabled": {
+              "true": "false"
+            }
+          }
+        },
+        {
+          "name": "key.converter.use.latest.version",
+          "switch": {
+            "csfle.enabled": {
+              "true": "true"
+            }
+          }
+        },
+        {
+          "name": "key.converter.latest.cache.ttl.sec",
+          "switch": {
+            "csfle.enabled": {
+              "true": "300"
+            }
+          }
         }
       ]
     },
@@ -956,6 +1405,16 @@
           }
         },
         {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
+            }
+          }
+        },
+        {
           "name": "value.converter.ignore.default.for.nullables"
         },
         {
@@ -1048,6 +1507,16 @@
               "AVRO": "USER_INFO",
               "JSON_SR": "USER_INFO",
               "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "key.converter.basic.auth.user.info",
+          "switch": {
+            "input.key.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
         },
@@ -1403,6 +1872,65 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
+        }
+      ]
+    },
+    {
+      "template_id": "super-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "consumer.override.auto.offset.reset",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
         }
       ]
     }

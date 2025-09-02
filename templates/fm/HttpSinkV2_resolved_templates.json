@@ -24,36 +24,11 @@
           "group": "Authentication",
           "order_in_group": 26,
           "display_name": "Enable host verification",
-          "documentation": "True if SSL host verification should be enabled",
+          "documentation": "True if SSL host verification should be enabled. This configuration can be set via CLI only.",
           "recommended_values": [
             "true",
             "false"
-          ],
-          "docs_hidden": "true"
-        },
-        {
-          "name": "success.topic.name",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "group": "Reporter",
-          "order_in_group": 1,
-          "default_value": "success-${connector}",
-          "display_name": "Success Topic Name",
-          "documentation": "Name of the success topic",
-          "docs_hidden": true
-        },
-        {
-          "name": "dlq.topic.name",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "group": "DLQ Topic",
-          "order_in_group": 1,
-          "default_value": "dlq-{{.logicalClusterId}}",
-          "display_name": "DLQ Topic Name",
-          "documentation": "Name of the dlq topic",
-          "docs_hidden": true
+          ]
         },
         {
           "name": "api1.topics",
@@ -84,8 +59,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api1.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ]
@@ -181,8 +158,7 @@
           "group": "API-1 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
-          "docs_hidden": "true"
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only."
         },
         {
           "name": "api1.batch.json.as.array",
@@ -203,8 +179,7 @@
           "group": "API-1 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
-          "docs_hidden": "true"
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only."
         },
         {
           "name": "api1.regex.replacements",
@@ -214,8 +189,7 @@
           "group": "API-1 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
-          "docs_hidden": "true"
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only."
         },
         {
           "name": "api1.regex.separator",
@@ -225,8 +199,7 @@
           "group": "API-1 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
-          "docs_hidden": "true"
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only."
         },
         {
           "name": "api1.allow.get.request.body",
@@ -237,8 +210,7 @@
           "group": "API-1 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
-          "docs_hidden": "true"
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only."
         },
         {
           "name": "api1.http.request.body",
@@ -260,6 +232,27 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**."
+        },
+        {
+          "name": "api1.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-1 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record."
+        },
+        {
+          "name": "api1.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-1 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only."
         },
         {
           "name": "api2.topics",
@@ -291,8 +284,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api2.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -396,7 +391,7 @@
           "group": "API-2 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -419,7 +414,7 @@
           "group": "API-2 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -430,7 +425,7 @@
           "group": "API-2 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -441,7 +436,7 @@
           "group": "API-2 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -453,7 +448,7 @@
           "group": "API-2 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -477,6 +472,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api2.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-2 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api2.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-2 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -509,8 +527,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api3.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -614,7 +634,7 @@
           "group": "API-3 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -637,7 +657,7 @@
           "group": "API-3 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -648,7 +668,7 @@
           "group": "API-3 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -659,7 +679,7 @@
           "group": "API-3 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -671,7 +691,7 @@
           "group": "API-3 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -695,6 +715,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api3.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-3 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api3.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-3 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -727,8 +770,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api4.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -832,7 +877,7 @@
           "group": "API-4 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -855,7 +900,7 @@
           "group": "API-4 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -866,7 +911,7 @@
           "group": "API-4 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -877,7 +922,7 @@
           "group": "API-4 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -889,7 +934,7 @@
           "group": "API-4 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -913,6 +958,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api4.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-4 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api4.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-4 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -945,8 +1013,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api5.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -1050,7 +1120,7 @@
           "group": "API-5 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1073,7 +1143,7 @@
           "group": "API-5 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1084,7 +1154,7 @@
           "group": "API-5 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1095,7 +1165,7 @@
           "group": "API-5 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1107,7 +1177,7 @@
           "group": "API-5 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1131,6 +1201,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api5.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-5 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api5.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-5 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1163,8 +1256,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api6.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -1268,7 +1363,7 @@
           "group": "API-6 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1291,7 +1386,7 @@
           "group": "API-6 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1302,7 +1397,7 @@
           "group": "API-6 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1313,7 +1408,7 @@
           "group": "API-6 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1325,7 +1420,7 @@
           "group": "API-6 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1349,6 +1444,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api6.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-6 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api6.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-6 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1381,8 +1499,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api7.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -1486,7 +1606,7 @@
           "group": "API-7 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1509,7 +1629,7 @@
           "group": "API-7 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1520,7 +1640,7 @@
           "group": "API-7 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1531,7 +1651,7 @@
           "group": "API-7 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1543,7 +1663,7 @@
           "group": "API-7 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1567,6 +1687,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api7.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-7 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api7.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-7 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1599,8 +1742,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api8.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -1704,7 +1849,7 @@
           "group": "API-8 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1727,7 +1872,7 @@
           "group": "API-8 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1738,7 +1883,7 @@
           "group": "API-8 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1749,7 +1894,7 @@
           "group": "API-8 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1761,7 +1906,7 @@
           "group": "API-8 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1785,6 +1930,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api8.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-8 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api8.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-8 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1817,8 +1985,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api9.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -1922,7 +2092,7 @@
           "group": "API-9 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1945,7 +2115,7 @@
           "group": "API-9 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1956,7 +2126,7 @@
           "group": "API-9 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1967,7 +2137,7 @@
           "group": "API-9 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -1979,7 +2149,7 @@
           "group": "API-9 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2003,6 +2173,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api9.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-9 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api9.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-9 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2035,8 +2228,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api10.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -2140,7 +2335,7 @@
           "group": "API-10 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2163,7 +2358,7 @@
           "group": "API-10 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2174,7 +2369,7 @@
           "group": "API-10 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2185,7 +2380,7 @@
           "group": "API-10 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2197,7 +2392,7 @@
           "group": "API-10 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2221,6 +2416,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api10.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-10 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api10.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-10 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2253,8 +2471,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api11.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -2358,7 +2578,7 @@
           "group": "API-11 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2381,7 +2601,7 @@
           "group": "API-11 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2392,7 +2612,7 @@
           "group": "API-11 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2403,7 +2623,7 @@
           "group": "API-11 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2415,7 +2635,7 @@
           "group": "API-11 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2439,6 +2659,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api11.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-11 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api11.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-11 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2471,8 +2714,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api12.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -2576,7 +2821,7 @@
           "group": "API-12 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2599,7 +2844,7 @@
           "group": "API-12 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2610,7 +2855,7 @@
           "group": "API-12 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2621,7 +2866,7 @@
           "group": "API-12 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2633,7 +2878,7 @@
           "group": "API-12 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2657,6 +2902,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api12.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-12 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api12.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-12 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2689,8 +2957,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api13.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -2794,7 +3064,7 @@
           "group": "API-13 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2817,7 +3087,7 @@
           "group": "API-13 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2828,7 +3098,7 @@
           "group": "API-13 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2839,7 +3109,7 @@
           "group": "API-13 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2851,7 +3121,7 @@
           "group": "API-13 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2875,6 +3145,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api13.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-13 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api13.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-13 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -2907,8 +3200,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api14.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -3012,7 +3307,7 @@
           "group": "API-14 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3035,7 +3330,7 @@
           "group": "API-14 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3046,7 +3341,7 @@
           "group": "API-14 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3057,7 +3352,7 @@
           "group": "API-14 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3069,7 +3364,7 @@
           "group": "API-14 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3093,6 +3388,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api14.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-14 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api14.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-14 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3125,8 +3443,10 @@
             "POST",
             "PUT",
             "PATCH",
-            "GET"
+            "GET",
+            "DELETE"
           ],
+          "documentation": "The HTTP method to use. This supports ``POST``, ``PUT``, ``PATCH``, ``GET`` and ``DELETE``. If ``DELETE`` is selected, the body is omitted when making the API call. In addition, if the ``api15.http.api.path`` doesn't have ``${key}`` or ``${topic}`` placeholders, ``/${key}`` is appended to the API path.",
           "dependents": [
             "http.api.base.url"
           ],
@@ -3230,7 +3550,7 @@
           "group": "API-15 Configs",
           "order_in_group": 10,
           "display_name": "Batch separator",
-          "documentation": "Separator for records in a batch",
+          "documentation": "Separator for records in a batch. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3253,7 +3573,7 @@
           "group": "API-15 Configs",
           "order_in_group": 12,
           "display_name": "Regular expression patterns",
-          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``",
+          "documentation": "Regular expression patterns used for replacements in the message sent to the HTTP service. Multiple regular expression patterns can be specified, but must be separated by ``regex.separator``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3264,7 +3584,7 @@
           "group": "API-15 Configs",
           "order_in_group": 13,
           "display_name": "Regular expression replacements",
-          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here.",
+          "documentation": "Regex replacements to use with the patterns in ``regex.patterns``.  Multiple replacements can be specified, but must be separated by ``regex.separator``. ``${key}`` and ``${topic}`` can be used here. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3275,7 +3595,7 @@
           "group": "API-15 Configs",
           "order_in_group": 14,
           "display_name": "Regular expression separator",
-          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property.",
+          "documentation": "Separator character used in ``regex.patterns`` and ``regex.replacements`` property. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3287,7 +3607,7 @@
           "group": "API-15 Configs",
           "order_in_group": 15,
           "display_name": "Allow GET Request Body",
-          "documentation": "Allow Request Body in case of GET call",
+          "documentation": "Allow Request Body in case of GET call. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -3311,6 +3631,29 @@
           "order_in_group": 17,
           "display_name": "Report only status code to success topic",
           "documentation": "Whether to report only the status code to the success topic. If the API response payload is huge, it is recommended to set this to true, for better throughput. Please note that this is a **CLI only feature**.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api15.http.path.parameters",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "API-15 Configs",
+          "order_in_group": 18,
+          "display_name": "HTTP Path Parameters",
+          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, or other field references from Kafka record.",
+          "docs_hidden": "true"
+        },
+        {
+          "name": "api15.http.path.parameters.separator",
+          "type": "STRING",
+          "required": false,
+          "default_value": "|",
+          "importance": "MEDIUM",
+          "group": "API-15 Configs",
+          "order_in_group": 19,
+          "display_name": "HTTP Path Parameters Separator",
+          "documentation": "The character that separates multiple distinct path parameters within ``http.path.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         }
       ],
@@ -3378,11 +3721,12 @@
         },
         {
           "name": "https.ssl.endpoint.identification.algorithm",
-          "value": "https"
-        },
-        {
-          "name": "reporter.result.topic.name",
-          "value": "success-${connector}"
+          "switch": {
+            "https.host.verifier.enabled": {
+              "true": "https",
+              "false": ""
+            }
+          }
         },
         {
           "name": "regex.timeout.ms",
@@ -4033,7 +4377,281 @@
       "template_id": "common-kafka-connectivity",
       "abstract": true,
       "config_defs": [],
-      "connector_configs": []
+      "connector_configs": [
+        {
+          "name": "consumer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.bootstrap.servers",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.bootstrap.servers": {
+              "UNSET": "${kafka.endpoint}",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.bootstrap.servers}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.trustmanager.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "SECURED": "ConfluentTls",
+              "DEFAULT": "PKIX"
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.endpoint.identification.algorithm",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.ssl.endpoint.identification.algorithm": {
+              "UNSECURED_PREPROD_ONLY": "",
+              "SECURED": "",
+              "DEFAULT": "https"
+            }
+          }
+        },
+        {
+          "name": "admin.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.security.providers",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "io.confluent.kafka.security.fips.provider.BcFipsProviderCreator,io.confluent.kafka.security.fips.provider.BcFipsJsseProviderCreator,io.confluent.kafka.server.plugins.ssl.ConfluentTrustProviderCreator",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.provider",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "BCJSSE",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.cipher.suites",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CCM,TLS_ECDHE_ECDSA_WITH_AES_128_CCM,TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_SHA256,TLS_AES_128_CCM_8_SHA256",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "admin.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "consumer.override.ssl.enabled.protocols",
+          "switch": {
+            "connect.fips.provider": {
+              "BCJSSE": "TLSv1.2,TLSv1.3",
+              "DEFAULT": null
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.lkc.id",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "",
+              "DEFAULT": "${connect.metadata_property.kafka.itsl.embed.lkc}"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "producer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "consumer.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.mode",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "PROXY",
+              "DEFAULT": "LOCAL"
+            }
+          }
+        },
+        {
+          "name": "admin.override.confluent.proxy.protocol.client.version",
+          "switch": {
+            "connect.metadata_property.kafka.itsl.embed.lkc": {
+              "SKIP": "NONE",
+              "DEFAULT": "V2"
+            }
+          }
+        }
+      ]
     },
     {
       "template_id": "common-sink",
@@ -4115,6 +4733,16 @@
             "none",
             "all"
           ]
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 2,
+          "display_name": "Dead Letter Queue Topic Name",
+          "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. Defaults to 'dlq-${connector}' if not set. The DLQ topic will be created automatically if it does not exist. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID.",
+          "default_value": "dlq-${connector}"
         }
       ],
       "connector_configs": [
@@ -4123,6 +4751,12 @@
         },
         {
           "name": "errors.tolerance"
+        },
+        {
+          "name": "errors.deadletterqueue.topic.name",
+          "dynamic.mapper": {
+            "name": "errors.deadletterqueue.topic.mapper"
+          }
         },
         {
           "name": "errors.deadletterqueue.topic.replication.factor",
@@ -4186,6 +4820,9 @@
               "arguments": {
                 "config": "csfle.configs.visible",
                 "values": "false"
+              },
+              "metadata": {
+                "visibility": "false"
               }
             }
           ]
@@ -4296,18 +4933,6 @@
       "abstract": true,
       "config_defs": [
         {
-          "name": "error.topic.name",
-          "type": "STRING",
-          "required": false,
-          "importance": "LOW",
-          "group": "Reporter",
-          "order_in_group": 1,
-          "default_value": "error-${connector}",
-          "display_name": "Error Topic Name",
-          "documentation": "Name of the error topic",
-          "docs_hidden": true
-        },
-        {
           "name": "report.errors.as",
           "type": "STRING",
           "required": false,
@@ -4341,12 +4966,13 @@
           "group": "Authentication",
           "order_in_group": 2,
           "display_name": "Endpoint Authentication Type",
-          "documentation": "Authentication type of the endpoint. Valid values are ``NONE``, ``BASIC``, ``OAUTH2``, ``BEARER``",
+          "documentation": "Authentication type of the endpoint. Valid values are ``NONE``, ``BASIC``, ``OAUTH2``, ``BEARER``, ``API_KEY``",
           "recommended_values": [
             "NONE",
             "BASIC",
             "OAUTH2",
-            "BEARER"
+            "BEARER",
+            "API_KEY"
           ]
         },
         {
@@ -4480,7 +5106,7 @@
           "group": "Authentication",
           "order_in_group": 14,
           "display_name": "OAuth2 Client Headers",
-          "documentation": "HTTP headers to be included in the OAuth2 client endpoint. Individual headers should be separated by `|`"
+          "documentation": "HTTP headers to be included in the OAuth2 client endpoint. Individual headers should be separated by ``|``. This configuration can be set via CLI only."
         },
         {
           "name": "oauth2.client.header.separator",
@@ -4491,8 +5117,7 @@
           "group": "Authentication",
           "order_in_group": 15,
           "display_name": "OAuth2 Client Headers Separator",
-          "documentation": "Separator character used in OAuth2 Client Headers",
-          "docs_hidden": "true"
+          "documentation": "Separator character used in OAuth2 Client Headers. This configuration can be set via CLI only."
         },
         {
           "name": "oauth2.query.params",
@@ -4573,7 +5198,7 @@
           "group": "Authentication",
           "order_in_group": 22,
           "display_name": "Add JWT token",
-          "documentation": "Whether to generate and add JWT token to request. If selected, JWT token will be added as 'jwt_token' request param",
+          "documentation": "Whether to generate and add JWT token to request. If selected, JWT token will be added as ``jwt_token`` request param.",
           "docs_hidden": true
         },
         {
@@ -4595,7 +5220,7 @@
           "group": "Authentication",
           "order_in_group": 24,
           "display_name": "JWT keystore password",
-          "documentation": "Password to access keystore",
+          "documentation": "Password to access keystore.",
           "docs_hidden": true
         },
         {
@@ -4645,7 +5270,7 @@
           "group": "Authentication",
           "order_in_group": 28,
           "display_name": "Key Store",
-          "documentation": "The key store containing the server certificate."
+          "documentation": "The key store containing the server certificate. Should be in JKS format."
         },
         {
           "name": "https.ssl.keystore.password",
@@ -4676,7 +5301,7 @@
           "group": "Authentication",
           "order_in_group": 31,
           "display_name": "Trust Store",
-          "documentation": "The trust store containing a server CA certificate."
+          "documentation": "The trust store containing a server CA certificate. Should be in JKS format."
         },
         {
           "name": "https.ssl.truststore.password",
@@ -4724,6 +5349,82 @@
           "order_in_group": 25,
           "display_name": "SSL Protocol",
           "documentation": "The protocol to use for SSL connections"
+        },
+        {
+          "name": "api.key.location",
+          "type": "STRING",
+          "required": false,
+          "default_value": "HEADER",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 26,
+          "display_name": "API Key location",
+          "documentation": "Specifies where the API key is included in the HTTP request. Choose ``HEADER`` to send the API key as an HTTP header (for example, ``X-API-KEY: your-api-key``), or ``QUERY`` to include it as a query parameter in the URL (for example, ``?api_key=your-api-key``). The default is ``HEADER`` which is the most common and secure approach.",
+          "recommended_values": [
+            "HEADER",
+            "QUERY"
+          ]
+        },
+        {
+          "name": "api.key.name",
+          "type": "STRING",
+          "required": false,
+          "default_value": "X-API-KEY",
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 27,
+          "display_name": "API Key Name",
+          "documentation": "The identifier for the API key used in authentication. The format depends on the ``api.key.location`` configuration. If location is ``HEADER``, use the HTTP header name (for example, ``X-API-KEY``). If location is ``QUERY``, use the query parameter name (for example, ``api_key``, ``app_id``). The default value ``X-API-KEY`` is commonly used for header-based authentication."
+        },
+        {
+          "name": "api.key.value",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 28,
+          "display_name": "API Key Value",
+          "documentation": "The API key to be used with an endpoint that requires API key-based authentication"
+        },
+        {
+          "name": "http.proxy.host",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 29,
+          "display_name": "Proxy Host",
+          "documentation": "The host or IP address of the HTTP proxy."
+        },
+        {
+          "name": "http.proxy.port",
+          "type": "INT",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 30,
+          "display_name": "Proxy Port",
+          "documentation": "The port number of the HTTP proxy."
+        },
+        {
+          "name": "http.proxy.user",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 31,
+          "display_name": "Proxy Username",
+          "documentation": "The username to be used for proxy authentication."
+        },
+        {
+          "name": "http.proxy.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Authentication",
+          "order_in_group": 32,
+          "display_name": "Proxy Password",
+          "documentation": "The password to be used for proxy authentication."
         },
         {
           "name": "api1.http.api.path",
@@ -4824,8 +5525,7 @@
           "group": "API-1 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
-          "docs_hidden": "true"
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only."
         },
         {
           "name": "api1.http.request.parameters.separator",
@@ -4836,30 +5536,7 @@
           "group": "API-1 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api1.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-1 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record."
-        },
-        {
-          "name": "api1.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-1 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
-          "docs_hidden": "true"
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only."
         },
         {
           "name": "api1.test.api",
@@ -4868,7 +5545,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-1 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -4880,7 +5557,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-1 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
@@ -4991,7 +5668,7 @@
           "group": "API-2 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5003,30 +5680,7 @@
           "group": "API-2 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api2.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-2 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api2.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-2 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5036,7 +5690,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-2 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5048,8 +5702,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-2 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5159,7 +5814,7 @@
           "group": "API-3 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5171,30 +5826,7 @@
           "group": "API-3 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api3.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-3 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api3.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-3 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5204,7 +5836,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-3 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5216,8 +5848,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-3 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5327,7 +5960,7 @@
           "group": "API-4 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5339,30 +5972,7 @@
           "group": "API-4 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api4.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-4 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api4.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-4 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5372,7 +5982,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-4 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5384,8 +5994,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-4 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5495,7 +6106,7 @@
           "group": "API-5 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5507,30 +6118,7 @@
           "group": "API-5 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api5.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-5 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api5.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-5 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5540,7 +6128,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-5 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5552,8 +6140,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-5 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5663,7 +6252,7 @@
           "group": "API-6 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5675,30 +6264,7 @@
           "group": "API-6 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api6.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-6 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api6.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-6 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5708,7 +6274,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-6 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5720,8 +6286,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-6 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5831,7 +6398,7 @@
           "group": "API-7 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5843,30 +6410,7 @@
           "group": "API-7 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api7.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-7 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api7.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-7 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -5876,7 +6420,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-7 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -5888,8 +6432,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-7 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -5999,7 +6544,7 @@
           "group": "API-8 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6011,30 +6556,7 @@
           "group": "API-8 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api8.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-8 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api8.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-8 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6044,7 +6566,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-8 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6056,8 +6578,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-8 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -6167,7 +6690,7 @@
           "group": "API-9 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6179,30 +6702,7 @@
           "group": "API-9 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api9.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-9 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api9.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-9 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6212,7 +6712,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-9 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6224,8 +6724,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-9 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -6335,7 +6836,7 @@
           "group": "API-10 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6347,30 +6848,7 @@
           "group": "API-10 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api10.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-10 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api10.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-10 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6380,7 +6858,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-10 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6392,8 +6870,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-10 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -6503,7 +6982,7 @@
           "group": "API-11 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6515,30 +6994,7 @@
           "group": "API-11 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api11.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-11 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api11.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-11 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6548,7 +7004,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-11 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6560,8 +7016,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-11 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -6671,7 +7128,7 @@
           "group": "API-12 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6683,30 +7140,7 @@
           "group": "API-12 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api12.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-12 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api12.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-12 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6716,7 +7150,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-12 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6728,8 +7162,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-12 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -6839,7 +7274,7 @@
           "group": "API-13 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6851,30 +7286,7 @@
           "group": "API-13 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api13.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-13 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api13.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-13 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -6884,7 +7296,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-13 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -6896,8 +7308,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-13 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -7007,7 +7420,7 @@
           "group": "API-14 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -7019,30 +7432,7 @@
           "group": "API-14 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api14.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-14 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api14.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-14 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -7052,7 +7442,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-14 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -7064,8 +7454,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-14 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         },
         {
@@ -7175,7 +7566,7 @@
           "group": "API-15 Configs",
           "order_in_group": 9,
           "display_name": "HTTP Request Headers Separator",
-          "documentation": "The character that separates multiple distinct headers in the config 'http.request.headers'.",
+          "documentation": "The character that separates multiple distinct headers within ``http.request.headers``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -7187,30 +7578,7 @@
           "group": "API-15 Configs",
           "order_in_group": 10,
           "display_name": "HTTP Request Parameters Separator",
-          "documentation": "The character that separates multiple distinct request parameters in the config 'http.request.parameters'.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api15.http.path.parameters",
-          "type": "STRING",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "API-15 Configs",
-          "order_in_group": 11,
-          "display_name": "HTTP Path Parameters",
-          "documentation": "HTTP path parameters to be added to the request. Parameter names and values should be separated by ``:``. Distinct parameters should be separated by ``|``. Parameter values can be templated with different template values like ``${key}``, ``${topic}``, ``${offset}`` or other field references from kafka record.",
-          "docs_hidden": "true"
-        },
-        {
-          "name": "api15.http.path.parameters.separator",
-          "type": "STRING",
-          "required": false,
-          "default_value": "|",
-          "importance": "MEDIUM",
-          "group": "API-15 Configs",
-          "order_in_group": 12,
-          "display_name": "HTTP Path Parameters Separator",
-          "documentation": "The character that separates multiple distinct path parameters in the config `http.path.parameters`",
+          "documentation": "The character that separates multiple distinct request parameters within ``http.request.parameters``. This configuration can be set via CLI only.",
           "docs_hidden": "true"
         },
         {
@@ -7220,7 +7588,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "API-15 Configs",
-          "order_in_group": 13,
+          "order_in_group": 11,
           "display_name": "Test api",
           "documentation": "Flag to determine if the api needs to be tested",
           "internal": false,
@@ -7232,8 +7600,9 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "API-15 Configs",
-          "order_in_group": 17,
+          "order_in_group": 15,
           "display_name": "Sensitive HTTP Request Headers",
+          "docs_hidden": "true",
           "documentation": "Sensitive HTTP headers to include in each request. Sensitive header names and values should be separated by ``:``. Distinct headers should be separated by ``|``. For example: ``From:abcxyz@confluent.io|Content-Length:348``. If a key is present in both regular and sensitive headers, the value in sensitive headers takes priority. This is a **CLI-only feature**."
         }
       ],
@@ -7274,6 +7643,10 @@
         },
         {
           "name": "oauth2.client.secret"
+        },
+        {
+          "name": "oauth2.refresh.token",
+          "value": "${file:/mnt/secrets/connect-external-secrets-{{.logicalClusterId}}.properties:oauth2.refresh.token}"
         },
         {
           "name": "oauth2.token.property"
@@ -7335,12 +7708,29 @@
           "name": "https.ssl.protocol"
         },
         {
-          "name": "connector.endpoint",
-          "value": "${http.api.base.url}"
+          "name": "api.key.location"
         },
         {
-          "name": "reporter.error.topic.name",
-          "value": "error-${connector}"
+          "name": "api.key.name"
+        },
+        {
+          "name": "api.key.value"
+        },
+        {
+          "name": "http.proxy.host"
+        },
+        {
+          "name": "http.proxy.port"
+        },
+        {
+          "name": "http.proxy.user"
+        },
+        {
+          "name": "http.proxy.password"
+        },
+        {
+          "name": "connector.endpoint",
+          "value": "${http.api.base.url}"
         },
         {
           "name": "report.errors.as",
@@ -7360,6 +7750,9 @@
         },
         {
           "name": "sensitive.headers.validation.enabled"
+        },
+        {
+          "name": "max.in.flight.requests"
         },
         {
           "name": "api1.http.api.path"
@@ -8040,7 +8433,28 @@
     {
       "template_id": "reporter",
       "abstract": true,
-      "config_defs": [],
+      "config_defs": [
+        {
+          "name": "reporter.result.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 3,
+          "display_name": "Reporter Result Topic Name",
+          "default_value": "success-${connector}",
+          "documentation": "The name of the topic to produce records to after successfully processing a sink record. Defaults to 'success-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        },
+        {
+          "name": "reporter.error.topic.name",
+          "type": "STRING",
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "order_in_group": 4,
+          "display_name": "Reporter Error Topic Name",
+          "default_value": "error-${connector}",
+          "documentation": "The name of the topic to produce records to after each unsuccessful record sink attempt. Defaults to 'error-${connector}' if not set. You can provide ``${connector}`` in the value to use it as a placeholder for the logical cluster ID."
+        }
+      ],
       "connector_configs": [
         {
           "name": "reporter.bootstrap.servers",
@@ -8068,12 +8482,10 @@
           "value": "PLAIN"
         },
         {
-          "name": "reporter.result.topic.name",
-          "value": "success-${connector}"
+          "name": "reporter.result.topic.name"
         },
         {
-          "name": "reporter.error.topic.name",
-          "value": "error-${connector}"
+          "name": "reporter.error.topic.name"
         },
         {
           "name": "reporter.admin.confluent.lkc.id",
@@ -8274,6 +8686,16 @@
               "AVRO": "USER_INFO",
               "JSON_SR": "USER_INFO",
               "PROTOBUF": "USER_INFO"
+            }
+          }
+        },
+        {
+          "name": "value.converter.basic.auth.user.info",
+          "switch": {
+            "input.data.format": {
+              "AVRO": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "JSON_SR": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}",
+              "PROTOBUF": "${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:username}:${file:/mnt/secrets/connect-sr-{{.logicalClusterId}}.properties:password}"
             }
           }
         },
@@ -8635,6 +9057,65 @@
         },
         {
           "name": "header.converter"
+        },
+        {
+          "name": "key.converter.use.apache.http.client"
+        },
+        {
+          "name": "value.converter.use.apache.http.client"
+        }
+      ]
+    },
+    {
+      "template_id": "super-sink",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "consumer.override.auto.offset.reset",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.auto.offset.reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "recommended_values": [
+            "earliest",
+            "latest",
+            "none"
+          ]
+        },
+        {
+          "name": "consumer.override.isolation.level",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "consumer.override.isolation.level",
+          "documentation": "Controls how to read messages written transactionally. If set to read_committed, consumer.poll() will only return transactional messages which have been committed. If set to read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.  More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level",
+          "recommended_values": [
+            "read_committed",
+            "read_uncommitted"
+          ]
+        },
+        {
+          "name": "topics.regex",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Which topics do you want to get data from?",
+          "display_name": "Topics Regex",
+          "documentation": "A regular expression that matches the names of the topics to consume from. This is useful when you want to consume from multiple topics that match a certain pattern without having to list them all individually."
+        }
+      ],
+      "connector_configs": [
+        {
+          "name": "consumer.override.auto.offset.reset"
+        },
+        {
+          "name": "consumer.override.isolation.level"
+        },
+        {
+          "name": "topics.regex"
         }
       ]
     }
