@@ -3242,19 +3242,6 @@ class ConnectorComparator:
         else:
             return template_default
 
-#     def _get_template_default_value(self, template_config_defs: List[Dict[str, Any]], config_name: str) -> Optional[str]:
-#         """Extract default value for a configuration from template definitions"""
-#         for template_config_def in enumerate(template_config_defs):
-#             def_name = template_config_def.get('name')
-#             if def_name == config_name:
-#                 default_value = template_config_def.get('default_value')
-#                 if default_value is not None:
-#                     result = str(default_value)
-#                     return result
-#                 else:
-#                     return None
-#         return None
-
     def _get_template_default_value(self, template_config_defs: List[Dict[str, Any]], config_name: str) -> Optional[str]:
         """Extract default value for a configuration from template definitions"""
         for template_config_def in template_config_defs:
