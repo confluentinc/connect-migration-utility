@@ -2500,7 +2500,7 @@ class ConnectorComparator:
         # Try to get format from user configs (direct format key)
         format_key = user_configs.get('output.data.format') or user_configs.get('value.format')
         if format_key:
-           return format_key
+            return format_key
         
         # Try to get default from template if available
         if template_config_defs:
