@@ -39,6 +39,29 @@ def setup_logging(output_dir: Path):
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
 
+class KafkaAuth:
+    def __init__(self, api_key=None, api_secret=None, service_account_id=None, auth_mode='KAFKA_API_KEY'):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.service_account_id = service_account_id
+        self.auth_mode = auth_mode
+
+    def verify_kafka_auth(self):
+        if self.auth_mode == 'KAFKA_API_KEY':
+            if self.api_key is None or self.api_secret is None:
+                raise ValueError("Kafka API key and secret are required when using KAFKA_API_KEY authentication mode")
+        elif self.auth_mode == 'SERVICE_ACCOUNT':
+            if self.service_account_id is None:
+                raise ValueError("Kafka service account ID is required when using SERVICE_ACCOUNT authentication mode")
+
+    def assign_kafka_auth_to_config(self, config: Dict[str, Any]):
+        if self.auth_mode == 'KAFKA_API_KEY':
+            config["kafka.api.key"] = self.api_key
+            config["kafka.api.secret"] = self.api_secret
+            config["kafka.auth.mode"] = "KAFKA_API_KEY"
+        elif self.auth_mode == 'SERVICE_ACCOUNT':
+            config["kafka.service.account.id"] = self.service_account_id
+            config["kafka.auth.mode"] = "SERVICE_ACCOUNT"
 
 class ConnectorCreator:
     def __init__(self, environment: str):
@@ -97,8 +120,7 @@ class ConnectorCreator:
         self,
         environment_id: str,
         kafka_cluster_id: str,
-        kafka_api_key: str,
-        kafka_api_secret: str,
+        kafka_auth: KafkaAuth,
         fm_config: Dict[str, Any],
         bearer_token: str = None
     ) -> Dict[str, Any] | None:
@@ -115,9 +137,7 @@ class ConnectorCreator:
 
         config = dict(config)
         # Add required kafka fields
-        config["kafka.api.key"] = kafka_api_key
-        config["kafka.api.secret"] = kafka_api_secret
-        config["kafka.auth.mode"] = "KAFKA_API_KEY"
+        kafka_auth.assign_kafka_auth_to_config(config)
 
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
 
@@ -147,8 +167,7 @@ class ConnectorCreator:
         self,
         environment_id: str,
         kafka_cluster_id: str,
-        kafka_api_key: str,
-        kafka_api_secret: str,
+        kafka_auth: KafkaAuth,
         json_file_path: str,
         bearer_token: str = None
     ) -> List[Dict[str, Any]]:
@@ -179,10 +198,8 @@ class ConnectorCreator:
                 self.logger.error(f"[ERROR] Error creating connector. Config for connector '{name}' is not a valid dictionary")
                 continue
             config = dict(config)
-            # Add required kafka fields
-            config["kafka.api.key"] = kafka_api_key
-            config["kafka.api.secret"] = kafka_api_secret
-            config["kafka.auth.mode"] = "KAFKA_API_KEY"
+            # Assign kafka auth fields
+            kafka_auth.assign_kafka_auth_to_config(config)
 
             body = {
                 "name": name,
@@ -207,7 +224,9 @@ def main():
                         help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
     parser.add_argument('--kafka-api-key', type=str, help='Kafka API key for LKC cluster')
     parser.add_argument('--kafka-api-secret', type=str, help='Kafka API secret for LKC cluster')
-    # parser.add_argument('--service-account', type=str, help='Confluent Cloud service account (optional, alternative to api_key/api_secret)')
+    parser.add_argument('--kafka-service-account-id', type=str, help='Confluent Cloud service account (optional, alternative to api_key/api_secret)')
+    parser.add_argument('--kafka-auth-mode', type=str, choices = ['SERVICE_ACCOUNT','KAFKA_API_KEY'], default='KAFKA_API_KEY', help='Kafka authentication mode (default: KAFKA_API_KEY)')
+
     parser.add_argument('--environment-id', type=str, required=True, help='Confluent Cloud environment ID')
     parser.add_argument('--cluster-id', type=str, required=True, help='Confluent Cloud LKC cluster ID')
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs to fetch latest offsets from')
@@ -236,9 +255,15 @@ def main():
 
 
     bearer_token = args.bearer_token
-    kafka_api_key = getattr(args, 'kafka_api_key', None)
-    kafka_api_secret = getattr(args, 'kafka_api_secret', None)
-    # service_account = args.service_account
+
+    kafka_auth = KafkaAuth(
+        api_key=getattr(args, 'kafka_api_key', None),
+        api_secret=getattr(args, 'kafka_api_secret', None),
+        service_account_id=getattr(args, 'kafka_service_account_id', None),
+        auth_mode=getattr(args, 'kafka_auth_mode', 'KAFKA_API_KEY')
+    )
+    kafka_auth.verify_kafka_auth()
+
     env_id = args.environment_id
     lkc_id = args.cluster_id
     environment = "prod"
@@ -264,8 +289,7 @@ def main():
                 created_connectors = creator.create_connector_from_json_file(
                     environment_id=env_id,
                     kafka_cluster_id=lkc_id,
-                    kafka_api_key=kafka_api_key,
-                    kafka_api_secret=kafka_api_secret,
+                    kafka_auth=kafka_auth,
                     json_file_path=json_file,
                     bearer_token=bearer_token
                 )
@@ -327,8 +351,7 @@ def main():
                 created_connector = creator.create_connector_from_config(
                     environment_id=env_id,
                     kafka_cluster_id=lkc_id,
-                    kafka_api_key=kafka_api_key,
-                    kafka_api_secret=kafka_api_secret,
+                    kafka_auth= kafka_auth,
                     fm_config=fm_entry,
                     bearer_token=bearer_token
                 )

@@ -7,7 +7,38 @@ from config_discovery import ConfigDiscovery
 class OffsetManager:
     _instance = None
     offset_supported_source_connector_types = [
-        'io.confluent.connect.jdbc.JdbcSourceConnector',
+        'io.confluent.connect.jdbc.JdbcSourceConnector', # Amazon DynamoDB Source connector
+        'io.confluent.connect.kinesis.KinesisSourceConnector', # Amazon Kinesis Source connector
+        'io.confluent.connect.s3.source.S3SourceConnector', # Amazon S3 Source connector
+        'io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector', # Azure Blob Storage Source connector
+        'com.azure.cosmos.kafka.connect.source.CosmosDBSourceConnector', # Azure Cosmos DB Source connector
+        'com.couchbase.connect.kafka.CouchbaseSourceConnector', # Couchbase Source connector.
+        'io.confluent.connect.github.GithubSourceConnector', # GitHub Source connector
+        'io.confluent.connect.gcs.GcsSourceConnector', # Google Cloud Storage (GCS) Source connector,
+        'io.confluent.connect.http.source.GenericHttpSourceConnector', # HTTP Source V2 connector
+        'io.confluent.influxdb.v2.source.InfluxDB2SourceConnector', # InfluxDB 2 Source connector
+        'io.confluent.connect.jira.JiraSourceConnector', # Jira Source connector
+        'io.debezium.connector.v2.mariadb.MariaDbConnector', # MariaDB CDC Source connector
+        'io.debezium.connector.v2.sqlserver.SqlServerConnectorV2' # Microsoft SQL Server Change Data Capture (CDC) Source V2 (Debezium) connector
+        'io.confluent.connect.jdbc.JdbcSourceConnector', #Microsoft SQL Server Source (JDBC)
+        'com.mongodb.kafka.connect.MongoSourceConnector', # MongoDB Atlas Source connector
+        'placeholder-mysql-cdc-source-debezium', # MySQL CDC Source (Debezium) [Legacy] connector,
+        'io.debezium.connector.v2.mysql.MySqlConnectorV2', # MySQL CDC Source V2 (Debezium) connector
+        'io.confluent.connect.jdbc.JdbcSourceConnector', # MySQL Source (JDBC)
+        'io.confluent.connect.oracle.cdc.OracleCdcSourceConnector', # Oracle CDC Source connector
+        'io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector', # Oracle XStream CDC Source connector
+        'io.confluent.connect.jdbc.JdbcSourceConnector', # Oracle Database Source (JDBC)
+        'placeholder-postgresql-cdc-source-debezium', # PostgreSQL Change Data Capture (CDC) Source (Debezium) connector
+        'io.debezium.connector.v2.postgresql.PostgresConnectorV2', # PostgreSQL Change Data Capture (CDC) Source V2 (Debezium) connector
+        'io.confluent.connect.jdbc.JdbcSourceConnector', # PostgreSQL Source (JDBC)
+        'io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector', # Salesforce Bulk API 2.0 Source connector
+        'io.confluent.salesforce.SalesforceCdcSourceConnector', # Salesforce Change Data Capture (CDC) Source connector
+        'io.confluent.salesforce.SalesforcePlatformEventSourceConnector', # Salesforce Platform Event Source connector
+        'io.confluent.salesforce.SalesforcePushTopicSourceConnector', # Salesforce PushTopic Source connector
+        'io.confluent.connect.servicenow.ServiceNowSourceConnector', # ServiceNow Source [Legacy] connector
+        'io.confluent.connect.http.source.GenericHttpSourceConnector', # ServiceNow Source V2 connector
+        'io.confluent.connect.snowflake.jdbc.SnowflakeSourceConnector', # Snowflake Source connector
+        'io.confluent.connect.zendesk.ZendeskSourceConnector', # Zendesk Source connector
     ]
 
     def __init__(self, logger):
