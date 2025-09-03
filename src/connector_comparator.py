@@ -18,8 +18,9 @@ import requests
 
 
 class ConnectorComparator:
-    SUCCESSFUL_CONFIGS_DIR = "successful_configs"
-    UNSUCCESSFUL_CONFIGS_DIR = "unsuccessful_configs_with_errors"
+    DISCOVERED_CONFIGS_DIR: Path = Path("discovered_configs")
+    SUCCESSFUL_CONFIGS_SUBDIR: Path = Path("successful_configs")
+    UNSUCCESSFUL_CONFIGS_SUBDIR: Path = Path("unsuccessful_configs_with_errors")
 
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
                  env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False):

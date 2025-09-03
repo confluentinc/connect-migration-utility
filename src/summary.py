@@ -11,6 +11,9 @@ import re
 import logging
 from collections import defaultdict
 
+from connector_comparator import ConnectorComparator
+
+
 def count_files(path):
     if not os.path.exists(path):
         return 0
@@ -101,12 +104,12 @@ def summarize_output(base_dir):
     }
 
     for root, dirs, files in os.walk(base_dir):
-        if os.path.basename(root) == "discovered_configs":
+        if os.path.basename(root) == str(ConnectorComparator.DISCOVERED_CONFIGS_DIR):
             summary["fm_configs_found"] += 1
             parent_folder = os.path.relpath(os.path.dirname(root), base_dir)
 
-            success_path = os.path.join(root, "successful_configs")
-            fail_path = os.path.join(root, "unsuccessful_configs_with_errors")
+            success_path = os.path.join(root, str(ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR))
+            fail_path = os.path.join(root, str(ConnectorComparator.UNSUCCESSFUL_CONFIGS_SUBDIR))
 
             successful_files = count_files(success_path)
             unsuccessful_files = count_files(fail_path)
