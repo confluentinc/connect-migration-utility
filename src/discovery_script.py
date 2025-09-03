@@ -48,9 +48,8 @@ def setup_logging(output_dir: Path):
 def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
     """Write FM configs to file in the discovered_configs structure"""
     # Directory structure
-    discovered_dir = output_dir / "discovered_configs"
-    successful_dir = discovered_dir / ConnectorComparator.SUCCESSFUL_CONFIGS_DIR
-    unsuccessful_dir = discovered_dir / ConnectorComparator.UNSUCCESSFUL_CONFIGS_DIR
+    successful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
+    unsuccessful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.UNSUCCESSFUL_CONFIGS_SUBDIR
     successful_fm_dir = successful_dir / ConfigDiscovery.FM_CONFIGS_DIR
     unsuccessful_fm_dir = unsuccessful_dir / ConfigDiscovery.FM_CONFIGS_DIR
 
@@ -86,10 +85,10 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
             with open(fm_file, 'w') as f:
                 json.dump(minimal_fm, f, indent=2)
 
-    logger.info(f"Saved {len(fm_configs)} FM configurations to {discovered_dir}")
+    logger.info(f"Saved {len(fm_configs)} FM configurations to {output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR}")
 
     # Save all FM configs (full) in discovered_configs
-    all_configs_file = discovered_dir / 'compiled_output_fm_configs.json'
+    all_configs_file = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / 'compiled_output_fm_configs.json'
     with open(all_configs_file, 'w') as f:
         json.dump(fm_configs, f, indent=2)
 
