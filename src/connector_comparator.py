@@ -111,9 +111,6 @@ class ConnectorComparator:
             'org.apache.kafka.connect.json.JsonConverter': 'JSON'
         }
 
-        self.offset_supported_source_connector_types = [
-            'io.confluent.connect.jdbc.JdbcSourceConnector',
-        ]
 
     def encode_to_base64(self, input_string):
         # Convert the input string to bytes
