@@ -61,12 +61,13 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
     unsuccessful_dir.mkdir(parents=True, exist_ok=True)
 
     for connector_name, fm_config in fm_configs.items():
-        errors = fm_config.get('errors', [])
+        mapping_errors = fm_config.get('mapping_errors', [])
         minimal_fm = {
             "name": connector_name,
             "config": fm_config.get("config", {})
         }
-        if errors:
+        # Consider config unsuccessful if it has either errors or mapping_errors
+        if mapping_errors:
             # Save full config in unsuccessful_configs
             full_config_file = unsuccessful_dir / f"{connector_name}.json"
             with open(full_config_file, 'w') as f:

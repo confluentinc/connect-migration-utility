@@ -22,13 +22,13 @@ class OffsetManager:
         'io.debezium.connector.v2.sqlserver.SqlServerConnectorV2' # Microsoft SQL Server Change Data Capture (CDC) Source V2 (Debezium) connector
         'io.confluent.connect.jdbc.JdbcSourceConnector', #Microsoft SQL Server Source (JDBC)
         'com.mongodb.kafka.connect.MongoSourceConnector', # MongoDB Atlas Source connector
-        'placeholder-mysql-cdc-source-debezium', # MySQL CDC Source (Debezium) [Legacy] connector,
+        'io.debezium.connector.mysql.MySqlConnector', # MySQL CDC Source (Debezium) [Legacy] connector,
         'io.debezium.connector.v2.mysql.MySqlConnectorV2', # MySQL CDC Source V2 (Debezium) connector
         'io.confluent.connect.jdbc.JdbcSourceConnector', # MySQL Source (JDBC)
         'io.confluent.connect.oracle.cdc.OracleCdcSourceConnector', # Oracle CDC Source connector
         'io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector', # Oracle XStream CDC Source connector
         'io.confluent.connect.jdbc.JdbcSourceConnector', # Oracle Database Source (JDBC)
-        'placeholder-postgresql-cdc-source-debezium', # PostgreSQL Change Data Capture (CDC) Source (Debezium) connector
+        'io.debezium.connector.postgresql.PostgresConnector', # PostgreSQL Change Data Capture (CDC) Source (Debezium) connector
         'io.debezium.connector.v2.postgresql.PostgresConnectorV2', # PostgreSQL Change Data Capture (CDC) Source V2 (Debezium) connector
         'io.confluent.connect.jdbc.JdbcSourceConnector', # PostgreSQL Source (JDBC)
         'io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector', # Salesforce Bulk API 2.0 Source connector
