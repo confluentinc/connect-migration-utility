@@ -148,7 +148,7 @@ def summarize_output(base_dir):
     return summary
 
 
-def generate_migration_summary(output_dir, tco_info: dict[str, int | Dict] = None):
+def generate_migration_summary(output_dir, tco_info: dict[str, int | dict] = None):
     """Generate migration summary for the given output directory."""
     report = summarize_output(output_dir)
     total_files_overall = report['total_successful_files'] + report['total_unsuccessful_files']

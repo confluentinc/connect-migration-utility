@@ -1479,7 +1479,7 @@ class ConnectorComparator:
         except Exception as e:
             logger.error(f"Failed to parse {file}: {e}")
 
-    def process_connectors(self) -> dict[Any, Any] | None:
+    def process_connectors(self) -> dict[str, Any] | None:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
@@ -1524,7 +1524,7 @@ class ConnectorComparator:
         return fm_configs
 
 
-    def process_tco_information(self) -> dict[str, int|dict] | None:
+    def process_tco_information(self) -> dict[str, int | dict[str, Any]] | None:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
