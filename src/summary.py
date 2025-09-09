@@ -156,21 +156,6 @@ def generate_migration_summary(output_dir, tco_info: dict[str, int | Dict] = Non
     # Generate summary text
     summary_lines = []
     if tco_info:
-        '''
-        {
-  "total_connectors": 2,
-  "total_tasks": 1,
-  "worker_node_task_map": {
-    "192.168.1.3": {
-      "task_count": 1,
-      "task_list": [
-        "sp_CP_local_Datadog_sink - task-0 - state:RUNNING"
-      ]
-    }
-  },
-  "worker_node_count": 1
-}
-        '''
         summary_lines.append("================================================================================")
         summary_lines.append(" TCO Information")
         summary_lines.append("================================================================================")
