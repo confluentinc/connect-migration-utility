@@ -10,6 +10,7 @@ import json
 import re
 import logging
 from collections import defaultdict
+from typing import Dict
 
 from connector_comparator import ConnectorComparator
 
@@ -147,13 +148,49 @@ def summarize_output(base_dir):
     return summary
 
 
-def generate_migration_summary(output_dir):
+def generate_migration_summary(output_dir, tco_info: dict[str, int | Dict] = None):
     """Generate migration summary for the given output directory."""
     report = summarize_output(output_dir)
     total_files_overall = report['total_successful_files'] + report['total_unsuccessful_files']
 
     # Generate summary text
     summary_lines = []
+    if tco_info:
+        '''
+        {
+  "total_connectors": 2,
+  "total_tasks": 1,
+  "worker_node_task_map": {
+    "192.168.1.3": {
+      "task_count": 1,
+      "task_list": [
+        "sp_CP_local_Datadog_sink - task-0 - state:RUNNING"
+      ]
+    }
+  },
+  "worker_node_count": 1
+}
+        '''
+        summary_lines.append("================================================================================")
+        summary_lines.append(" TCO Information")
+        summary_lines.append("================================================================================")
+        summary_lines.append(f"Total Connectors: {tco_info.get('total_connectors', 0)}")
+        summary_lines.append(f"Total Tasks: {tco_info.get('total_tasks', 0)}")
+        summary_lines.append(f"Total Worker Nodes: {tco_info.get('worker_node_count', 0)}")
+        summary_lines.append("Worker Node Task Distribution:")
+        worker_map = tco_info.get('worker_node_task_map', {})
+        for worker, details in worker_map.items():
+            summary_lines.append(f"  - Worker Node: {worker}")
+            summary_lines.append(f"    - Task Count: {details.get('task_count', 0)}")
+            task_list = details.get('task_list', [])
+            if task_list:
+                summary_lines.append(f"    - Tasks:")
+                for task in task_list:
+                    summary_lines.append(f"      - {task}")
+            else:
+                summary_lines.append(f"    - Tasks: None")
+        summary_lines.append("")
+
     summary_lines.append("================================================================================")
     summary_lines.append(" Overall Summary")
     summary_lines.append("================================================================================")

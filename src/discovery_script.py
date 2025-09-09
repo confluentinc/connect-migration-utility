@@ -209,10 +209,13 @@ def main():
         # Write FM configs to file
         write_fm_configs_to_file(fm_configs, output_dir, logger)
 
+        # TCO information
+        tco_info = comparator.process_tco_information()
+
         # Generate migration summary automatically
         logger.info("Generating migration summary...")
         try:
-            summary_report = generate_migration_summary(output_dir)
+            summary_report = generate_migration_summary(output_dir, tco_info)
             logger.info("Migration summary generated successfully")
             logger.info(f"Summary: {summary_report['total_successful_files']} successful, {summary_report['total_unsuccessful_files']} failed")
         except Exception as e:

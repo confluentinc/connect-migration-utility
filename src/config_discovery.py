@@ -329,20 +329,32 @@ class ConfigDiscovery:
                 return []
 
             configs = []
+
+            connector_status_url = f"{worker_url}/connectors/{{}}/status"
+            # Process each connector's info
             for connector_name, connector_data in connectors_data.items():
                 logger.info(f"Processing connector: {connector_name}")
 
                 # Get the info section which contains config, tasks, and type
                 info = connector_data.get('info', {})
                 config = info.get('config', {})
+
+                #Get status of all tasks here
+                tasks_statuses = ConfigDiscovery.get_json_from_url(connector_status_url.format(connector_name), disable_ssl_verify, logger)
+                if tasks_statuses and 'tasks' in tasks_statuses:
+                    info['tasks'] = tasks_statuses['tasks']
+                else:
+                    info['tasks'] = []
                 tasks = info.get('tasks', [])
+
                 connector_type = info.get('type', 'unknown')
 
                 configs.append({
                     'name': connector_name,
                     'worker': worker_url,
                     'type': connector_type,
-                    'config': config
+                    'config': config,
+                    'tasks': tasks
                 })
 
             return configs

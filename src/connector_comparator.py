@@ -1479,14 +1479,14 @@ class ConnectorComparator:
         except Exception as e:
             logger.error(f"Failed to parse {file}: {e}")
 
-    def process_connectors(self) -> Dict[str, Any]:
+    def process_connectors(self) -> dict[Any, Any] | None:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
 
         if not connectors_dict:
             self.logger.error("No connectors found after parsing the input file.")
-            return
+            return None
         connectors = list(connectors_dict.values())
 
         # Process each connector
@@ -1522,6 +1522,63 @@ class ConnectorComparator:
                 self.logger.error(f"Error processing connector {connector_name}: {str(e)}")
 
         return fm_configs
+
+
+    def process_tco_information(self) -> dict[str, int|dict] | None:
+        """Process all connectors and generate FM configurations"""
+        connectors_dict = {}
+        ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
+
+        if not connectors_dict:
+            self.logger.error("No connectors found after parsing the input file.")
+            return None
+        connectors = list(connectors_dict.values())
+
+        # Process each connector
+        tco_info = {
+            'total_connectors': len(connectors),
+            'total_tasks': 0,
+            'worker_node_task_map': {},
+            'worker_node_count': 0,
+        }
+        for i, connector in enumerate(connectors):
+            connector_name = connector.get('name', f'connector_{i}') if isinstance(connector, dict) else f'connector_{i}'
+            try:
+                # Handle case where connector might be a string or other type
+                if not isinstance(connector, dict):
+                    self.logger.error(f"Connector at index {i} is not a dictionary: {type(connector)}")
+                    continue
+
+                # Ensure connector has tasks information
+                if 'tasks' not in connector:
+                    self.logger.error(f"Connector at index {i} missing required fields 'tasks' or 'config'")
+                    continue
+
+                tco_info['total_tasks'] += len(connector['tasks'])
+
+                for task in connector['tasks']:
+                    worker_id = task.get('worker_id', 'unknown_worker').split(':')[0]
+                    if worker_id != 'unknown_worker':
+                        tco_info['worker_node_count'] += 1
+
+                    if worker_id not in tco_info['worker_node_task_map']:
+                        tco_info['worker_node_task_map'][worker_id] = {
+                            "task_count": 0,
+                            "task_list": []
+                        }
+                    tco_info['worker_node_task_map'][worker_id]["task_list"].append(f"{connector_name} - task-{task.get('id', 'x')}")
+                    tco_info['worker_node_task_map'][worker_id]["task_count"] += 1
+
+            except Exception as e:
+                self.logger.error(f"Error processing connector {connector_name} for TCO information: {str(e)}")
+
+        # Save TCO information to a file
+        tco_info_file = self.output_dir / 'tco_info.json'
+        with open(tco_info_file, 'w') as tco_file:
+            json.dump(tco_info, tco_file, indent=2)
+        self.logger.info(f"TCO information saved to {tco_info_file}")
+
+        return tco_info
 
     def transformSMToFm(self, connector_name:str, user_configs: Dict[str, Any]) -> Dict[str, Any]:
         """
