@@ -1558,8 +1558,6 @@ class ConnectorComparator:
 
                 for task in connector['tasks']:
                     worker_id = task.get('worker_id', 'unknown_worker').split(':')[0]
-                    if worker_id != 'unknown_worker':
-                        tco_info['worker_node_count'] += 1
 
                     if worker_id not in tco_info['worker_node_task_map']:
                         tco_info['worker_node_task_map'][worker_id] = {
@@ -1571,6 +1569,8 @@ class ConnectorComparator:
 
             except Exception as e:
                 self.logger.error(f"Error processing connector {connector_name} for TCO information: {str(e)}")
+
+        tco_info['worker_node_count'] = len(tco_info['worker_node_task_map'])
 
         # Save TCO information to a file
         tco_info_file = self.output_dir / 'tco_info.json'
