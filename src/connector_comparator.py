@@ -16,6 +16,8 @@ from semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
 
+from config_discovery import ConfigDiscovery
+
 
 class ConnectorComparator:
     DISCOVERED_CONFIGS_DIR: Path = Path("discovered_configs")
@@ -432,7 +434,7 @@ class ConnectorComparator:
 
         matching_templates = []
         template_info = []
-        
+
         # For JDBC connectors, handle special cases (like Snowflake) in _auto_select_jdbc_template
         target_connector_class = connector_class
         # Search through all JSON files in the FM template directory
@@ -500,7 +502,7 @@ class ConnectorComparator:
         # Get database type from connection URL
         db_type = self._get_database_type(config)
         self.logger.info(f"Detected database type: {db_type} for connector: {connector_display}")
-        
+
         # Special handling for Snowflake database - search for Snowflake-specific templates
         if db_type == 'snowflake':
             self.logger.info(f"Detected Snowflake database for {connector_class}, looking for Snowflake-specific templates")
@@ -510,14 +512,14 @@ class ConnectorComparator:
             else:  # JdbcSinkConnector
                 target_connector_class = 'io.confluent.connect.snowflake.jdbc.SnowflakeSinkConnector'
             self.logger.info(f"Looking for Snowflake template with connector class: {target_connector_class}")
-            
+
             # Search for Snowflake-specific templates
             snowflake_template_info = []
             for template_file in self.fm_template_dir.glob('*.json'):
                 try:
                     with open(template_file, 'r') as f:
                         template_data = json.load(f)
-                    
+
                     found_connector_class = None
                     if template_data.get('connector.class') == target_connector_class:
                         found_connector_class = template_data.get('connector.class')
@@ -526,7 +528,7 @@ class ConnectorComparator:
                             if template.get('connector.class') == target_connector_class:
                                 found_connector_class = template.get('connector.class')
                                 break
-                    
+
                     if found_connector_class:
                         template_path = str(template_file)
                         template_id = 'Unknown'
@@ -534,18 +536,18 @@ class ConnectorComparator:
                             template_id = template_data.get('template_id')
                         elif 'templates' in template_data and len(template_data['templates']) > 0:
                             template_id = template_data['templates'][0].get('template_id', 'Unknown')
-                        
+
                         snowflake_template_info.append({
                             'path': template_path,
                             'template_id': template_id,
                             'filename': template_file.name
                         })
                         self.logger.info(f"Found Snowflake template: {template_id} (File: {template_file.name})")
-                        
+
                 except Exception as e:
                     self.logger.warning(f"Error reading template {template_file}: {str(e)}")
                     continue
-            
+
             if snowflake_template_info:
                 # Use the first Snowflake template found
                 selected_template = snowflake_template_info[0]
@@ -652,7 +654,7 @@ class ConnectorComparator:
 
         # Handle FM templates - find by connector.class
         fm_template_path = self._find_fm_template_by_connector_class(connector_class, connector_name, config)
-        
+
         # Special mapping for SFTP connectors
         if not fm_template_path and connector_class == 'io.confluent.connect.sftp.SftpCsvSourceConnector':
             # Map to SftpSource template
@@ -662,7 +664,7 @@ class ConnectorComparator:
                 self.logger.info(f"Mapped SFTP connector to SftpSource template: {fm_template_path}")
             else:
                 self.logger.warning(f"SftpSource template not found at expected path: {sftp_template_path}")
-        
+
         if fm_template_path:
             try:
                 with open(fm_template_path, 'r') as f:
@@ -716,7 +718,7 @@ class ConnectorComparator:
         if 'connection.url' in config and isinstance(config['connection.url'], str):
             url = config['connection.url'].lower()
             self.logger.info(f"Analyzing JDBC URL for database type: {url}")
-            
+
             # More precise pattern matching - look for jdbc:database_type:// pattern
             for db_type, info in self.jdbc_database_types.items():
                 for pattern in info['url_patterns']:
@@ -724,21 +726,21 @@ class ConnectorComparator:
                     if f'jdbc:{pattern}://' in url:
                         self.logger.info(f"Detected database type '{db_type}' using precise pattern 'jdbc:{pattern}://'")
                         return db_type
-            
+
             # Fallback to the old method for backward compatibility
             for db_type, info in self.jdbc_database_types.items():
                 if any(pattern in url for pattern in info['url_patterns']):
                     self.logger.info(f"Detected database type '{db_type}' using fallback pattern matching")
                     return db_type
-            
+
             self.logger.warning(f"No database type detected for URL: {url}")
-                    
+
         # Check specific database type config if available
         if 'database.type' in config:
             db_type = config['database.type'].lower()
             self.logger.info(f"Using database type from config: {db_type}")
             return db_type
-            
+
         self.logger.warning("No database type detected, returning 'unknown'")
         return 'unknown'
 
@@ -1234,7 +1236,7 @@ class ConnectorComparator:
                     self.logger.info(f"Using default value for required property: {prop_name}")
             transforms_data = self.get_transforms_config(config, plugin_type)
             mapped_config.update(transforms_data['allowed'])
-            
+
             # Add mapping errors from transforms processing
             if 'mapping_errors' in transforms_data:
                 mapping_errors.extend(transforms_data['mapping_errors'])
@@ -1415,7 +1417,7 @@ class ConnectorComparator:
             self.logger.info("All configurations were successfully mapped")
 
         self.logger.info(f"Mapping completed with {len(filtered_config)} properties mapped and {len(mapping_errors)} errors")
-        
+
         return {
             'name': name,
             'sm_config': config,  # Include original SM config
@@ -1529,9 +1531,20 @@ class ConnectorComparator:
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
 
-        if not connectors_dict:
-            self.logger.error("No connectors found after parsing the input file.")
+        if not connectors_dict or not isinstance(connectors_dict, dict):
+            self.logger.error("No connectors found after parsing the input file or connectors_dict is not a dictionary")
             return None
+
+        for worker_url in self.worker_urls:
+            connector_statuses = ConfigDiscovery.get_connector_statuses_from_worker(worker_url, self.disable_ssl_verify, self.logger)
+            for connector_name, connector_status in connector_statuses.items():
+                if connector_name not in connectors_dict:
+                    continue
+
+                if connector_status and 'tasks_status' in connector_status:
+                    connectors_dict[connector_name]['tasks'] = connector_status['tasks_status']
+                else:
+                    connectors_dict[connector_name]['tasks'] = []
         connectors = list(connectors_dict.values())
 
         # Process each connector
@@ -1546,12 +1559,12 @@ class ConnectorComparator:
             try:
                 # Handle case where connector might be a string or other type
                 if not isinstance(connector, dict):
-                    self.logger.error(f"Connector at index {i} is not a dictionary: {type(connector)}")
+                    self.logger.error(f"{connector_name} SM config is not a dictionary: {type(connector)}")
                     continue
 
                 # Ensure connector has tasks information
-                if 'tasks' not in connector:
-                    self.logger.error(f"Connector at index {i} missing required fields 'tasks' or 'config'")
+                if 'tasks' not in connector or not connector['tasks']:
+                    self.logger.error(f"{connector_name} missing required fields 'tasks' or 'tasks' status data is empty")
                     continue
 
                 tco_info['total_tasks'] += len(connector['tasks'])
@@ -1641,17 +1654,17 @@ class ConnectorComparator:
             # Validate template structure
             if not isinstance(fm_template, dict):
                 raise ValueError(f"Expected fm_template to be a dict, got {type(fm_template)}")
-            
+
             if 'templates' not in fm_template:
                 raise ValueError("fm_template missing 'templates' key")
-            
+
             if not isinstance(fm_template['templates'], (list, tuple)):
                 raise ValueError(f"Expected fm_template['templates'] to be a list, got {type(fm_template['templates'])}")
-            
+
             # Log template structure for debugging
             self.logger.debug(f"Template structure: {list(fm_template.keys())}")
             self.logger.debug(f"Number of templates: {len(fm_template['templates'])}")
-            
+
             connector_config_defs = self._extract_connector_config_defs(fm_template)
             template_config_defs = self._extract_template_config_defs(fm_template)
 
@@ -1872,7 +1885,7 @@ class ConnectorComparator:
     def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract connector config definitions from FM template (following Java pattern)"""
         connector_config_defs = []
-        
+
         if 'templates' in fm_template:
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
@@ -1901,18 +1914,18 @@ class ConnectorComparator:
     def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract template config definitions from FM template (following Java pattern)"""
         template_config_defs = []
-        
+
         if 'templates' in fm_template:
             if not isinstance(fm_template['templates'], (list, tuple)):
                 self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
                 return template_config_defs
-                
+
             for i, template in enumerate(fm_template['templates']):
                 self.logger.debug(f"Processing template {i} for config_defs: {type(template)}")
                 if not isinstance(template, dict):
                     self.logger.warning(f"Template {i} is not a dict: {type(template)}")
                     continue
-                    
+
                 if 'config_defs' in template:
                     self.logger.debug(f"Template {i} has config_defs: {type(template['config_defs'])}")
                     # Ensure config_defs is a list/iterable, not a boolean or other type
@@ -1924,7 +1937,7 @@ class ConnectorComparator:
                         continue
         else:
             self.logger.warning("No 'templates' key found in fm_template")
-            
+
         return template_config_defs
 
     def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
@@ -1988,7 +2001,7 @@ class ConnectorComparator:
 
         # Special logging for validate.non.null configuration
         config_name = connector_config_def.get('name')
-        
+
         # Case 1: value is constant string
         if connector_config_def.get('value') is not None:
             self._process_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings, user_configs, semantic_match_list)
@@ -2247,7 +2260,7 @@ class ConnectorComparator:
                 referenced_keys.add(referenced_key)
 
         return referenced_keys
-    
+
     def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive connection.host from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
@@ -2271,7 +2284,7 @@ class ConnectorComparator:
                 return parsed.get('host')
 
         return None
-    
+
     def _derive_connection_port(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive connection.port from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
@@ -2304,7 +2317,7 @@ class ConnectorComparator:
                 return parsed.get('user')
 
         return None
-    
+
     def _derive_connection_password(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive connection.password from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
@@ -2423,7 +2436,7 @@ class ConnectorComparator:
         if 'server.name' in user_configs:
             return user_configs['server.name']
 
-    
+
     def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive input.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2451,17 +2464,17 @@ class ConnectorComparator:
         # Try to infer from schema registry configs
         if 'key.converter.schemas.enable' in user_configs:
             return 'JSON_SR'
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'input.key.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive input.data.format from user configs using reverse format mapping"""
@@ -2490,17 +2503,17 @@ class ConnectorComparator:
         # Try to infer from schema registry configs
         if 'value.converter.schemas.enable' in user_configs:
             return 'JSON_SR'
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'input.data.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive output.key.format from user configs using reverse format mapping"""
@@ -2525,17 +2538,17 @@ class ConnectorComparator:
         format_key = user_configs.get('output.key.format') or user_configs.get('key.format')
         if format_key:
             return format_key
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.key.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive output.data.format from user configs using reverse format mapping"""
@@ -2560,17 +2573,17 @@ class ConnectorComparator:
         format_key = user_configs.get('output.data.format') or user_configs.get('value.format')
         if format_key:
             return format_key
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive output.data.key.format from user configs using reverse format mapping"""
@@ -2599,17 +2612,17 @@ class ConnectorComparator:
         # Try to infer from output key format if already derived
         if 'output.key.format' in fm_configs:
             return fm_configs['output.key.format']
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.key.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive output.data.value.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2637,17 +2650,17 @@ class ConnectorComparator:
         # Try to infer from output data format if already derived
         if 'output.data.format' in fm_configs:
             return fm_configs['output.data.format']
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'output.data.value.format')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'JSON'
-    
+
     def _derive_authentication_method(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive authentication.method from user configs"""
@@ -2672,17 +2685,17 @@ class ConnectorComparator:
                     return 'SSL'
                 else:
                     return auth_value
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'authentication.method')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'PLAIN'
-    
+
     def _derive_csfle_enabled(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive csfle.enabled from user configs"""
@@ -2692,10 +2705,10 @@ class ConnectorComparator:
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'false'
-    
+
     def _derive_csfle_on_failure(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive csfle.onFailure from user configs"""
@@ -2705,10 +2718,10 @@ class ConnectorComparator:
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default fallback
         return 'FAIL'
-    
+
     def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive ssl.mode from user configs"""
@@ -2788,17 +2801,17 @@ class ConnectorComparator:
                     return 'disabled'
                 else:
                     return 'require'  # Default to require when SSL is enabled in URL
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'ssl.mode')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         # Default to prefer if no SSL configuration is found
         return 'prefer'
-    
+
     def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive redis.hostname from user configs"""
@@ -2844,7 +2857,7 @@ class ConnectorComparator:
                         return host
 
         return None
-    
+
     def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive redis.portnumber from user configs"""
@@ -2896,7 +2909,7 @@ class ConnectorComparator:
                 return resolved_default
         # Default Redis port
         return '6379'
-    
+
     def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
 
         """Derive redis.ssl.mode from user configs"""
@@ -2951,7 +2964,7 @@ class ConnectorComparator:
                     return 'enabled'
                 elif 'redis://' in url and 'ssl=false' in url:
                     return 'disabled'
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'redis.ssl.mode')
@@ -3161,7 +3174,7 @@ class ConnectorComparator:
                     # Try case-insensitive matching for enum-like values
                     fm_config_value_lower = fm_config_value.lower() if isinstance(fm_config_value, str) else str(fm_config_value).lower()
                     recommended_values_lower = [str(v).lower() for v in recommended_values]
-                    
+
                     if fm_config_value_lower not in recommended_values_lower:
                         error_msg = f"FM Config '{config_name}' value '{fm_config_value}' is not in the recommended values list: {recommended_values}"
                         # Check if this error message is already in the errors list to prevent duplicates
@@ -3276,7 +3289,7 @@ class ConnectorComparator:
     def _is_placeholder(self, value: str) -> bool:
         """Check if a value is a placeholder like ${xxxx}"""
         return value.startswith('${')
-    
+
     def _extract_placeholder_name(self, placeholder: str) -> str:
         """Extract the placeholder name from ${xxxx} format"""
         if placeholder.startswith('${'):
@@ -3287,7 +3300,7 @@ class ConnectorComparator:
             else:
                 return placeholder[2:]  # Remove ${ only
         return placeholder
-    
+
     def _resolve_template_default(self, template_default: str, fm_configs: Dict[str, str]) -> str:
         """Resolve template default value, handling placeholders like ${xxxx}"""
         if self._is_placeholder(template_default):
@@ -3312,13 +3325,13 @@ class ConnectorComparator:
 
     def _derive_connection_url(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive connection.url from user configs specifically for Snowflake connectors"""
-        
-        
+
+
         # Check for JDBC URL patterns that might contain Snowflake URLs
         jdbc_patterns = [
             'connection.url'
         ]
-        
+
         for pattern in jdbc_patterns:
             if pattern in user_configs:
                 jdbc_url = user_configs[pattern]
@@ -3329,15 +3342,15 @@ class ConnectorComparator:
                 elif jdbc_url and jdbc_url.startswith('jdbc:'):
                     # For non-Snowflake JDBC URLs, return null
                     return None
-        
+
         # Try to get default from template if available
         if template_config_defs:
             template_default = self._get_template_default_value(template_config_defs, 'connection.url')
             if template_default:
                 resolved_default = self._resolve_template_default(template_default, fm_configs)
                 return resolved_default
-        
+
         return None
-    
+
 
     

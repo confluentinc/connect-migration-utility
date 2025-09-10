@@ -209,8 +209,11 @@ def main():
         # Write FM configs to file
         write_fm_configs_to_file(fm_configs, output_dir, logger)
 
-        # TCO information
-        tco_info = comparator.process_tco_information()
+        # TCO information - only process when we have information about the statuses of tasks/workers
+        if comparator.worker_urls:
+            tco_info = comparator.process_tco_information()
+        else:
+            tco_info = None
 
         # Generate migration summary automatically
         logger.info("Generating migration summary...")

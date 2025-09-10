@@ -175,6 +175,9 @@ def generate_migration_summary(output_dir, tco_info: dict[str, int | dict] = Non
             else:
                 summary_lines.append(f"    - Tasks: None")
         summary_lines.append("")
+    else:
+        summary_lines.append("TCO Information couldn't be evaluated: Please provide worker_urls for TCO Information.")
+        summary_lines.append("")
 
     summary_lines.append("================================================================================")
     summary_lines.append(" Overall Summary")

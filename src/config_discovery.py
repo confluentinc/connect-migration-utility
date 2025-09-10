@@ -338,13 +338,6 @@ class ConfigDiscovery:
                 # Get the info section which contains config, tasks, and type
                 info = connector_data.get('info', {})
                 config = info.get('config', {})
-
-                #Get status of all tasks here
-                tasks_statuses = ConfigDiscovery.get_json_from_url(connector_status_url.format(connector_name), disable_ssl_verify, logger)
-                if tasks_statuses and 'tasks' in tasks_statuses:
-                    info['tasks'] = tasks_statuses['tasks']
-                else:
-                    info['tasks'] = []
                 tasks = info.get('tasks', [])
 
                 connector_type = info.get('type', 'unknown')
@@ -353,8 +346,7 @@ class ConfigDiscovery:
                     'name': connector_name,
                     'worker': worker_url,
                     'type': connector_type,
-                    'config': config,
-                    'tasks': tasks
+                    'config': config
                 })
 
             return configs
@@ -362,6 +354,36 @@ class ConfigDiscovery:
         except Exception as e:
             logger.error(f"Error getting connector configs from {worker_url}: {str(e)}")
             return []
+
+    @staticmethod
+    def get_connector_statuses_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None) -> Dict[str, Any]:
+        """Get connector statuses from a worker using status endpoint"""
+        if logger is None:
+            logger = logging.getLogger("config_discovery_default")
+        try:
+            # Use the expanded endpoint to get all connector info in one call
+            expand_status_url = f"{worker_url}/connectors?expand=status"
+            logger.info(f"Fetching connector statuses info from: {expand_status_url}")
+
+            connectors_data = ConfigDiscovery.get_json_from_url(expand_status_url, disable_ssl_verify, logger)
+            if not connectors_data:
+                logger.error(f"No data received from {expand_status_url}")
+                return {}
+
+            connector_statuses_map = {}
+            # Get the status section which contains tasks statuses
+            for connector_name, connector_data in connectors_data.items():
+                if connector_name in connector_statuses_map:
+                    continue
+                connector_statuses_map[connector_name] = {}
+                connector_status = connector_data.get('status', {})
+                connector_statuses_map[connector_name]['connector_status'] = connector_status.get('connector', {})
+                connector_statuses_map[connector_name]['tasks_status'] = connector_status.get('tasks', [])
+
+            return connector_statuses_map
+        except Exception as e:
+            logger.error(f"Error getting connector statuses from {worker_url}: {str(e)}")
+            return {}
 
     def discover_and_save(self) -> Path:
         """Discover connector configurations from all workers and save to JSON"""
