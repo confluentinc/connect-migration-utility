@@ -169,10 +169,8 @@ def generate_tco_information_output(tco_info: dict[str, int | dict], output_dir:
             commercial_connector_count += value.get('connector_count', 0)
 
         premium_pack_count = premium_connector_count
-        premium_pack_cost = premium_pack_count * 30000
 
         commercial_pack_count = (commercial_connector_count // 5) + (1 if commercial_connector_count % 5 > 0 else 0)
-        commercial_pack_cost = commercial_pack_count * 12500
 
         unknown_names = tco_info.get('unknown_pack_connectors', [])
 

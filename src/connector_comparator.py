@@ -120,14 +120,8 @@ class ConnectorComparator:
             "io.confluent.connect.splunk.s2s.SplunkS2SSourceConnector": {},
 
             #Cloud connectors
-            "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector": {
-                # Oracle CDC Source Connector
-                'connector_type': 'source',
-            },
-            "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector": {
-                # Oracle XStream CDC Source Connector
-                'connector_type': 'source',
-            },
+            "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector": {},
+            "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector": {},
         }
 
         self.commercial_pack_connector_dict = {
@@ -176,10 +170,7 @@ class ConnectorComparator:
             "io.confluent.connect.teradata.TeradataSinkConnector": {},
 
             #Cloud connectors
-            "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink": {
-                # AWS Lambda Sink Connector
-                'connector_type': 'sink',
-            },
+            "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink": {},
             "io.confluent.connect.activemq.ActiveMQSourceConnector": {},
             "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector": {},
             "io.confluent.connect.aws.cloudwatch.metrics.AwsCloudWatchMetricsSinkConnector": {},
