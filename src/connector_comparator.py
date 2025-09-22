@@ -113,6 +113,115 @@ class ConnectorComparator:
             'org.apache.kafka.connect.json.JsonConverter': 'JSON'
         }
 
+        self.premium_pack_connector_dict = {
+
+            "io.confluent.connect.jms.IbmMqSinkConnector":{},
+            "io.confluent.connect.ibm.mq.IbmMQSourceConnector": {},
+            "io.confluent.connect.splunk.s2s.SplunkS2SSourceConnector": {},
+
+            #Cloud connectors
+            "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector": {
+                # Oracle CDC Source Connector
+                'connector_type': 'source',
+            },
+            "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector": {
+                # Oracle XStream CDC Source Connector
+                'connector_type': 'source',
+            },
+        }
+
+        self.commercial_pack_connector_dict = {
+            "io.confluent.connect.amps.AmpsSourceConnector": {},
+            "io.confluent.connect.weblogic.WeblogicSourceConnector": {},
+            "io.confluent.connect.ftps.FtpsSourceConnector": {},
+            "io.confluent.connect.ftps.FtpsSinkConnector": {},
+            "io.confluent.connect.jms.ActiveMqSinkConnector": {},
+            "io.confluent.connect.kudu.KuduSourceConnector": {},
+            "io.confluent.connect.kudu.KuduSinkConnector": {},
+            "io.confluent.connect.appdynamics.metrics.AppDynamicsMetricsSinkConnector": {},
+            "io.confluent.connect.cassandra.CassandraSinkConnector": {},
+            "io.confluent.connect.diode.sink.DataDiodeSinkConnector": {},
+            "io.confluent.connect.diode.source.DataDiodeSourceConnector": {},
+            "io.confluent.connect.firebase.FirebaseSourceConnector": {},
+            "io.confluent.connect.firebase.FirebaseSinkConnector": {},
+            "io.confluent.connect.hbase.HBaseSinkConnector": {},
+            "io.confluent.connect.hdfs2.Hdfs2SourceConnector": {},
+            "io.confluent.connect.hdfs3.Hdfs3SinkConnector": {},
+            "io.confluent.connect.hdfs3.Hdfs3SourceConnector": {},
+            "io.confluent.connect.omnisci.OmnisciSinkConnector": {},
+            "io.confluent.connect.jms.IbmMqSinkConnector": {},
+            "io.confluent.influxdb.source.InfluxdbSourceConnector": {},
+            "io.confluent.influxdb.InfluxDBSinkConnector": {},
+            "io.confluent.connect.jms.JmsSinkConnector": {},
+            "io.confluent.connect.jms.JmsSourceConnector": {},
+            "io.confluent.connect.mapr.db.MapRDBSinkConnector": {},
+            "io.confluent.connect.netezza.NetezzaSinkConnector": {},
+            "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector": {},
+            "io.confluent.connect.snmp.SnmpTrapSourceConnector": {},
+            "io.confluent.salesforce.SalesforcePushTopicSourceConnector": {},
+            "io.confluent.salesforce.SalesforceSObjectSinkConnector": {},
+            "io.confluent.salesforce.SalesforceCdcSourceConnector": {},
+            "io.confluent.salesforce.SalesforcePlatformEventSourceConnector": {},
+            "io.confluent.salesforce.SalesforcePlatformEventSinkConnector": {},
+            "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector": {},
+            "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector": {},
+            "io.confluent.connect.solace.SolaceSourceConnector": {},
+            "io.confluent.connect.SplunkHttpSourceConnector": {},
+            "io.confluent.connect.syslog.SyslogSourceConnector": {},
+            "io.confluent.connect.tibco.TibcoSourceConnector": {},
+            "io.confluent.connect.jms.TibcoSinkConnector": {},
+            "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector": {},
+            "io.confluent.vertica.VerticaSinkConnector": {},
+            "io.confluent.connect.teradata.TeradataSourceConnector": {},
+            "io.confluent.connect.teradata.TeradataSinkConnector": {},
+
+            #Cloud connectors
+            "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink": {
+                # AWS Lambda Sink Connector
+                'connector_type': 'sink',
+            },
+            "io.confluent.connect.activemq.ActiveMQSourceConnector": {},
+            "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector": {},
+            "io.confluent.connect.aws.cloudwatch.metrics.AwsCloudWatchMetricsSinkConnector": {},
+            "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector": {},
+            "io.confluent.connect.kinesis.KinesisSourceConnector": {},
+            "io.confluent.connect.aws.redshift.RedshiftSinkConnector": {},
+            "io.confluent.connect.s3.source.S3SourceConnector": {},
+            "io.confluent.connect.sqs.source.SqsSourceConnector": {},
+            "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector": {},
+            "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector": {},
+            "io.confluent.connect.azure.search.AzureSearchSinkConnector": {},
+            "io.confluent.connect.azure.datalake.gen2.AzureDataLakeGen2SinkConnector": {},
+            "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector": {},
+            "io.confluent.connect.azure.functions.AzureFunctionsSinkConnector": {},
+            "io.confluent.connect.azure.servicebus.ServiceBusSourceConnector": {},
+            "io.confluent.connect.azureloganalytics.AzureLogAnalyticsSinkConnector": {},
+            "io.confluent.connect.databricks.deltalake.DatabricksDeltaLakeSinkConnector": {},
+            "io.confluent.connect.datadog.metrics.DatadogMetricsSinkConnector": {},
+            "io.confluent.connect.github.GithubSourceConnector": {},
+            "io.confluent.connect.gcp.bigtable.BigtableSinkConnector": {},
+            "io.confluent.connect.gcp.functions.GoogleCloudFunctionsSinkConnector": {},
+            "io.confluent.connect.gcp.pubsub.PubSubSourceConnector": {},
+            "io.confluent.connect.gcp.spanner.SpannerSinkConnector": {},
+            "io.confluent.connect.gcs.GcsSourceConnector": {},
+            "io.confluent.connect.gcs.GcsSinkConnector": {},
+            "io.confluent.connect.gcp.dataproc.DataprocSinkConnector": {},
+            "io.confluent.connect.http.HttpSourceConnector": {},
+            "io.confluent.connect.http.HttpSinkConnector": {},
+            "io.confluent.connect.ibm.mq.IbmMQSourceConnector": {},
+            "io.confluent.connect.jira.JiraSourceConnector": {},
+            "io.confluent.connect.mqtt.MqttSinkConnector": {},
+            "io.confluent.connect.pagerduty.PagerDutySinkConnector": {},
+            "io.confluent.connect.rabbitmq.RabbitMQSourceConnector": {},
+            "io.confluent.connect.rabbitmq.sink.RabbitMQSinkConnector": {},
+            "io.confluent.connect.sftp.SftpGenericSourceConnector": {},
+            "io.confluent.connect.sftp.SftpSinkConnector": {},
+            "io.confluent.connect.servicenow.ServiceNowSourceConnector": {},
+            "io.confluent.connect.servicenow.ServiceNowSinkConnector": {},
+            "io.confluent.connect.jms.SolaceSinkConnector": {},
+            "io.confluent.connect.zendesk.ZendeskSourceConnector": {}
+        }
+
 
     def encode_to_base64(self, input_string):
         # Convert the input string to bytes
@@ -1464,18 +1573,15 @@ class ConnectorComparator:
                         if isinstance(connector_val, dict) and 'name' in connector_val and 'config' in connector_val:
                             # Structure: {"connector_name": {"name":"", "config":""}}
                             all_connectors_dict[connector_name] = connector_val
-                        elif (
-                                isinstance(connector_val, dict)
-                                and 'Info' in connector_val
-                                and isinstance(connector_val['Info'], dict)
-                                and 'name' in connector_val['Info']
-                                and 'config' in connector_val['Info']
-                        ):
-                            # Structure: {"connector_name": {"Info": {"name":"", "config":""}}}
-                            all_connectors_dict[connector_name] = connector_val['Info']
                         else:
-                            logger.warning(
-                                f"Skipping connector '{connector_name}' in {file}: missing 'name' and 'config'")
+                            info_key = next((k for k in connector_val if isinstance(k, str) and k.lower() == "info"), None)
+                            info = connector_val.get(info_key) if info_key and isinstance(connector_val[info_key], dict) else None
+
+                            if info and 'name' in info and 'config' in info:
+                                all_connectors_dict[connector_name] = info
+                            else:
+                                logger.warning(
+                                    f"Skipping connector '{connector_name}' in {file}: missing 'name' and 'config'")
                 else:
                     logger.warning(f"Skipping unrecognized format in {file}")
         except Exception as e:
@@ -1525,26 +1631,42 @@ class ConnectorComparator:
 
         return fm_configs
 
+    def connector_pack_type(self, connector_class: str) -> str:
+        """Determine connector pack type based on connector class"""
+        if connector_class in self.premium_pack_connector_dict:
+            return 'premium_pack_connectors'
+        elif connector_class in self.commercial_pack_connector_dict:
+            return 'commercial_pack_connectors'
+        elif connector_class == 'unknown':
+            return 'unknown_pack_connectors'
+        else:
+            return 'non_commercial_pack_connectors'
 
     def process_tco_information(self) -> dict[str, int | dict[str, Any]] | None:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
-        ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
-
-        if not connectors_dict or not isinstance(connectors_dict, dict):
-            self.logger.error("No connectors found after parsing the input file or connectors_dict is not a dictionary")
-            return None
 
         for worker_url in self.worker_urls:
             connector_statuses = ConfigDiscovery.get_connector_statuses_from_worker(worker_url, self.disable_ssl_verify, self.logger)
+            connector_info_list = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify,self.logger)
+            connector_info_dict = {item['name']: item for item in connector_info_list if 'name' in item}
+
             for connector_name, connector_status in connector_statuses.items():
                 if connector_name not in connectors_dict:
-                    continue
+                    connectors_dict[connector_name] = {'name': connector_name, 'tasks': [], 'connector.class': {}}
 
                 if connector_status and 'tasks_status' in connector_status:
                     connectors_dict[connector_name]['tasks'] = connector_status['tasks_status']
                 else:
                     connectors_dict[connector_name]['tasks'] = []
+
+                if connector_name in connector_info_dict and 'config' in connector_info_dict[connector_name]:
+                    connectors_dict[connector_name]['connector.class'] = connector_info_dict[connector_name]['config'].get('connector.class', 'unknown')
+                    connectors_dict[connector_name]['type'] = connector_info_dict[connector_name].get('type', 'unknown')
+                else:
+                    connectors_dict[connector_name]['connector.class'] = 'unknown'
+                    connectors_dict[connector_name]['type'] = 'unknown'
+
         connectors = list(connectors_dict.values())
 
         # Process each connector
@@ -1553,6 +1675,10 @@ class ConnectorComparator:
             'total_tasks': 0,
             'worker_node_task_map': {},
             'worker_node_count': 0,
+            'premium_pack_connectors': {},
+            'commercial_pack_connectors': {},
+            'non_commercial_pack_connectors': {},
+            'unknown_pack_connectors' : [],
         }
         for i, connector in enumerate(connectors):
             connector_name = connector.get('name', f'connector_{i}') if isinstance(connector, dict) else f'connector_{i}'
@@ -1561,6 +1687,20 @@ class ConnectorComparator:
                 if not isinstance(connector, dict):
                     self.logger.error(f"{connector_name} SM config is not a dictionary: {type(connector)}")
                     continue
+
+                connector_class = connector.get('connector.class', 'unknown')
+                connector_type = connector.get('type', 'unknown')
+                connector_pack = self.connector_pack_type(connector_class)
+
+                if connector_name not in tco_info[connector_pack]:
+                    tco_info[connector_pack][connector_name] = {
+                        'connector_class': connector_class.split('.')[-1],
+                        'connector_type': connector_type,
+                        'connector_count': 1
+                    }
+                else:
+                    tco_info[connector_pack][connector_name]['connector_count'] += 1
+
 
                 # Ensure connector has tasks information
                 if 'tasks' not in connector or not connector['tasks']:

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
-from summary import generate_migration_summary
+from summary import generate_migration_summary, generate_tco_information_output
 import json
 
 
@@ -212,13 +212,12 @@ def main():
         # TCO information - only process when we have information about the statuses of tasks/workers
         if comparator.worker_urls:
             tco_info = comparator.process_tco_information()
-        else:
-            tco_info = None
+            generate_tco_information_output(tco_info, output_dir)
 
         # Generate migration summary automatically
         logger.info("Generating migration summary...")
         try:
-            summary_report = generate_migration_summary(output_dir, tco_info)
+            summary_report = generate_migration_summary(output_dir)
             logger.info("Migration summary generated successfully")
             logger.info(f"Summary: {summary_report['total_successful_files']} successful, {summary_report['total_unsuccessful_files']} failed")
         except Exception as e:

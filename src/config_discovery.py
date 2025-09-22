@@ -330,7 +330,6 @@ class ConfigDiscovery:
 
             configs = []
 
-            connector_status_url = f"{worker_url}/connectors/{{}}/status"
             # Process each connector's info
             for connector_name, connector_data in connectors_data.items():
                 logger.info(f"Processing connector: {connector_name}")

@@ -147,37 +147,82 @@ def summarize_output(base_dir):
 
     return summary
 
+def generate_tco_information_output(tco_info: dict[str, int | dict], output_dir: str):
+    """Generate TCO information output file with formatted text summary."""
+    if not tco_info:
+        logger.info("No TCO information provided.")
+        return
 
-def generate_migration_summary(output_dir, tco_info: dict[str, int | dict] = None):
+    summary_file_path = os.path.join(output_dir, "tco_information.txt")
+
+    # Create visually pleasing summary
+    try:
+        # Calculate pack info
+        premium_connectors = tco_info.get('premium_pack_connectors', {})
+        premium_connector_count = 0
+        for key, value in premium_connectors.items():
+            premium_connector_count += value.get('connector_count', 0)
+
+        commercial_connectors = tco_info.get('commercial_pack_connectors', {})
+        commercial_connector_count = 0
+        for key, value in commercial_connectors.items():
+            commercial_connector_count += value.get('connector_count', 0)
+
+        premium_pack_count = premium_connector_count
+        premium_pack_cost = premium_pack_count * 30000
+
+        commercial_pack_count = (commercial_connector_count // 5) + (1 if commercial_connector_count % 5 > 0 else 0)
+        commercial_pack_cost = commercial_pack_count * 12500
+
+        unknown_names = tco_info.get('unknown_pack_connectors', [])
+
+        lines = ["=" * 80, " TCO Information Summary", "=" * 80,
+                 f"Total Connectors: {tco_info.get('total_connectors', 0)}",
+                 f"Total Tasks: {tco_info.get('total_tasks', 0)}",
+                 f"Total Worker Nodes: {tco_info.get('worker_node_count', 0)}"]
+
+        lines.append("=" * 80)
+        # Connector Pack Information
+        lines.append("TCO Information:")
+        lines.append(f"  - Premium Packs required: {premium_pack_count}")
+        lines.append(f"    - Premium pack Connectors: {premium_connectors}")
+
+        lines.append(f"  - Commercial Packs required: {commercial_pack_count}")
+        lines.append(f"    - Commercial pack Connectors: {commercial_connectors}")
+
+        lines.append(f"  - Non-Commercial pack Connectors: {tco_info.get('non_commercial_pack_connectors', 0)}")
+        if unknown_names:
+            lines.append(f"  - Unknown Pack Connector Names: {', '.join(unknown_names)}")
+
+        lines.append("=" * 80)
+
+        worker_map = tco_info.get('worker_node_task_map', {})
+        lines.append("Worker Node Task Distribution:")
+        for worker, details in worker_map.items():
+            lines.append(f"  - Worker Node: {worker}")
+            lines.append(f"    - Task Count: {details.get('task_count', 0)}")
+            task_list = details.get('task_list', [])
+            if task_list:
+                lines.append(f"    - Tasks:")
+                for task in task_list:
+                    lines.append(f"      - {task}")
+            else:
+                lines.append(f"    - Tasks: None")
+
+        lines.append("=" * 80)
+        with open(summary_file_path, 'w') as f:
+            f.write('\n'.join(lines))
+        logger.info(f"TCO summary saved to: {summary_file_path}")
+    except Exception as e:
+        logger.warning(f"Failed to save TCO summary to file: {e}")
+
+def generate_migration_summary(output_dir):
     """Generate migration summary for the given output directory."""
     report = summarize_output(output_dir)
     total_files_overall = report['total_successful_files'] + report['total_unsuccessful_files']
 
     # Generate summary text
     summary_lines = []
-    if tco_info:
-        summary_lines.append("================================================================================")
-        summary_lines.append(" TCO Information")
-        summary_lines.append("================================================================================")
-        summary_lines.append(f"Total Connectors: {tco_info.get('total_connectors', 0)}")
-        summary_lines.append(f"Total Tasks: {tco_info.get('total_tasks', 0)}")
-        summary_lines.append(f"Total Worker Nodes: {tco_info.get('worker_node_count', 0)}")
-        summary_lines.append("Worker Node Task Distribution:")
-        worker_map = tco_info.get('worker_node_task_map', {})
-        for worker, details in worker_map.items():
-            summary_lines.append(f"  - Worker Node: {worker}")
-            summary_lines.append(f"    - Task Count: {details.get('task_count', 0)}")
-            task_list = details.get('task_list', [])
-            if task_list:
-                summary_lines.append(f"    - Tasks:")
-                for task in task_list:
-                    summary_lines.append(f"      - {task}")
-            else:
-                summary_lines.append(f"    - Tasks: None")
-        summary_lines.append("")
-    else:
-        summary_lines.append("TCO Information couldn't be evaluated: Please provide worker_urls for TCO Information.")
-        summary_lines.append("")
 
     summary_lines.append("================================================================================")
     summary_lines.append(" Overall Summary")
