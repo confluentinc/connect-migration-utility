@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
-from summary import generate_migration_summary
+from summary import generate_migration_summary, generate_tco_information_output
 import json
 
 
@@ -45,7 +45,7 @@ def setup_logging(output_dir: Path):
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
 
-def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
+def write_fm_configs_to_file(fm_configs: dict[str, Any], output_dir: Path, logger: logging.Logger):
     """Write FM configs to file in the discovered_configs structure"""
     # Directory structure
     successful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
@@ -204,10 +204,15 @@ def main():
             disable_ssl_verify=getattr(args, 'disable_ssl_verify', None)
         )
         fm_configs = comparator.process_connectors()
-        logger.info("Connector processing completed successfully")
+        if fm_configs:
+            logger.info("Connector processing completed successfully")
+            # Write FM configs to file
+            write_fm_configs_to_file(fm_configs, output_dir, logger)
 
-        # Write FM configs to file
-        write_fm_configs_to_file(fm_configs, output_dir, logger)
+        # TCO information - only process when we have information about the statuses of tasks/workers
+        if comparator.worker_urls:
+            tco_info = comparator.process_tco_information()
+            generate_tco_information_output(tco_info, output_dir)
 
         # Generate migration summary automatically
         logger.info("Generating migration summary...")
