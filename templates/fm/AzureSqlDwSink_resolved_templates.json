@@ -67,7 +67,7 @@
           "group": "Data Mapping",
           "order_in_group": 1,
           "display_name": "Table name format",
-          "documentation": "A format string for the destination table name, which may contain \u2018${topic}\u2019 as a placeholder for the originating topic name.\n\nFor example, ``kafka_${topic}`` for the topic \u2018orders\u2019 will map to the table name \u2018kafka_orders\u2019."
+          "documentation": "A format string for the destination table name, which may contain ‘${topic}’ as a placeholder for the originating topic name.\n\nFor example, ``kafka_${topic}`` for the topic ‘orders’ will map to the table name ‘kafka_orders’."
         },
         {
           "name": "fields.whitelist",
@@ -143,7 +143,7 @@
           "group": "SQL/DDL Support",
           "order_in_group": 3,
           "display_name": "When to quote SQL identifiers",
-          "documentation": "When to quote table names, column names, and other identifiers in SQL statements. For backward compatibility, the default is \u2018always\u2019.",
+          "documentation": "When to quote table names, column names, and other identifiers in SQL statements. For backward compatibility, the default is ‘always’.",
           "recommended_values": [
             "ALWAYS",
             "NEVER"
@@ -1166,15 +1166,16 @@
           "display_name": "header.converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
-            "org.apache.kafka.connect.converters.ShortConverter"
+            "org.apache.kafka.connect.converters.ShortConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter"
           ]
         }
       ],
@@ -1285,7 +1286,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "consumer.override.auto.offset.reset",
-          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the “earliest” offset (the default) or the “latest” offset. You can also select “none” if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
           "recommended_values": [
             "earliest",
             "latest",

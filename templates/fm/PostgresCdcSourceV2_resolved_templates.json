@@ -472,7 +472,7 @@
           "group": "How should we handle data types?",
           "order_in_group": 2,
           "display_name": "Time precision mode",
-          "documentation": "Time, date, and timestamps can be represented with different kinds of precisions: \n`adaptive` captures the time and timestamp values exactly as in the database using either millisecond, microsecond, or nanosecond precision values based on the database column\u2019s type. \n`adaptive_time_microseconds` captures the date, datetime and timestamp values exactly as in the database using either millisecond, microsecond, or nanosecond precision values based on the database column\u2019s type. An exception is `TIME` type fields, which are always captured as microseconds. \n`connect` always represents time and timestamp values by using Kafka Connect\u2019s built-in representations for `Time`, `Date`, and `Timestamp`, which use millisecond precision regardless of the database columns' precision.",
+          "documentation": "Time, date, and timestamps can be represented with different kinds of precisions: \n`adaptive` captures the time and timestamp values exactly as in the database using either millisecond, microsecond, or nanosecond precision values based on the database column’s type. \n`adaptive_time_microseconds` captures the date, datetime and timestamp values exactly as in the database using either millisecond, microsecond, or nanosecond precision values based on the database column’s type. An exception is `TIME` type fields, which are always captured as microseconds. \n`connect` always represents time and timestamp values by using Kafka Connect’s built-in representations for `Time`, `Date`, and `Timestamp`, which use millisecond precision regardless of the database columns' precision.",
           "recommended_values": [
             "adaptive",
             "adaptive_time_microseconds",
@@ -1772,15 +1772,16 @@
           "display_name": "header.converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
-            "org.apache.kafka.connect.converters.ShortConverter"
+            "org.apache.kafka.connect.converters.ShortConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter"
           ]
         }
       ],

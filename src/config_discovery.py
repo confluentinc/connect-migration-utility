@@ -161,12 +161,14 @@ class ConfigDiscovery:
         ]
 
         self.sensitive_patterns = ["password", "token", "secret", "credential"]
-        self.all_sensitive_configs = set(self.static_sensitive_configs)
+        
+        # Track file-loaded sensitive configs separately for proper handling
+        self.file_sensitive_configs = set()
 
         # Load sensitive keys from file if provided
         if self.sensitive_file:
             loaded_keys = self._load_sensitive_configs(self.sensitive_file)
-            self.all_sensitive_configs.update(loaded_keys)
+            self.file_sensitive_configs = loaded_keys
             self.logger.info(f"Loaded {len(loaded_keys)} sensitive keys from file.")
 
         # Worker config prefixes
@@ -201,9 +203,22 @@ class ConfigDiscovery:
     def _sensitive_config(self, key: str) -> bool:
         """Checks if a config key is considered sensitive."""
         key_lower = key.lower()
-        if key_lower in self.all_sensitive_configs:
+        
+        # First check for exact matches in static sensitive configs
+        if key_lower in self.static_sensitive_configs:
             return True
+            
+        # Check for exact matches in file-loaded sensitive configs
+        if key_lower in self.file_sensitive_configs:
+            return True
+            
+        # Check if any static sensitive config is contained in the key
+        if any(config in key_lower for config in self.static_sensitive_configs):
+            return True
+            
+        # Then check if any sensitive pattern is contained in the key
         return any(pattern in key_lower for pattern in self.sensitive_patterns)
+
 
     def _extract_worker_urls_from_file(self, file_path: str) -> List[str]:
         """Extracts worker URLs with full schemes from config lines."""

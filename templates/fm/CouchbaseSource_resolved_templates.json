@@ -35,7 +35,7 @@
           "group": "Source Behavior",
           "order_in_group": 1,
           "display_name": "Default Kafka Topic",
-          "documentation": "Name of the default Kafka topic to publish data to, for collections that don\u2019t have an entry in the couchbase.collection.to.topic map. This is a format string that recognizes the following placeholders: ${bucket} refers to the bucket containing the document. ${scope} refers to the scope containing the document. ${collection} refers to the collection containing the document."
+          "documentation": "Name of the default Kafka topic to publish data to, for collections that don’t have an entry in the couchbase.collection.to.topic map. This is a format string that recognizes the following placeholders: ${bucket} refers to the bucket containing the document. ${scope} refers to the scope containing the document. ${collection} refers to the collection containing the document."
         },
         {
           "name": "couchbase.collection.to.topic",
@@ -56,7 +56,7 @@
           "group": "Source Behavior",
           "order_in_group": 3,
           "display_name": "Source Handler Class",
-          "documentation": "The fully-qualified class name of the source handler to use. The source handler determines how the Couchbase document is converted into a Kafka record. To publish JSON messages identical to the Couchbase documents, use com.couchbase.connect.kafka.handler.source.RawJsonSourceHandler and set value.converter to org.apache.kafka.connect.converters.ByteArrayConverter. When using a custom source handler that filters out certain messages, consider also configuring couchbase.black.hole.topic. See that property\u2019s documentation for details.",
+          "documentation": "The fully-qualified class name of the source handler to use. The source handler determines how the Couchbase document is converted into a Kafka record. To publish JSON messages identical to the Couchbase documents, use com.couchbase.connect.kafka.handler.source.RawJsonSourceHandler and set value.converter to org.apache.kafka.connect.converters.ByteArrayConverter. When using a custom source handler that filters out certain messages, consider also configuring couchbase.black.hole.topic. See that property’s documentation for details.",
           "recommended_values": [
             "com.couchbase.connect.kafka.handler.source.DefaultSchemaSourceHandler",
             "com.couchbase.connect.kafka.handler.source.RawJsonSourceHandler",
@@ -72,7 +72,7 @@
           "group": "Source Behavior",
           "order_in_group": 4,
           "display_name": "Metadata Headers",
-          "documentation": "Comma-delimited list of Couchbase metadata headers to add to records. Recognized values: bucket - Name of the bucket the document came from. scope - Name of the scope the document came from. collection - Name of the collection the document came from. key - The Couchbase document ID. qualifiedKey - The document\u2019s scope, collection, and document ID, delimited by dots. Example: myScope.myCollection.myDocumentId cas - The document\u2019s \"compare and swap\" value. partition - The index of the Couchbase partition the document came from. partitionUuid - Identifies the history branch of the partition the document came from. seqno - The DCP sequence number of the event. rev - The revision number of the event. expiry - The epoch second when the document expires, or null if the document has no expiry (or if the event is a deletion).",
+          "documentation": "Comma-delimited list of Couchbase metadata headers to add to records. Recognized values: bucket - Name of the bucket the document came from. scope - Name of the scope the document came from. collection - Name of the collection the document came from. key - The Couchbase document ID. qualifiedKey - The document’s scope, collection, and document ID, delimited by dots. Example: myScope.myCollection.myDocumentId cas - The document’s \"compare and swap\" value. partition - The index of the Couchbase partition the document came from. partitionUuid - Identifies the history branch of the partition the document came from. seqno - The DCP sequence number of the event. rev - The revision number of the event. expiry - The epoch second when the document expires, or null if the document has no expiry (or if the event is a deletion).",
           "recommended_values": [
             "bucket",
             "scope",
@@ -1232,15 +1232,16 @@
           "display_name": "header.converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
-            "org.apache.kafka.connect.converters.ShortConverter"
+            "org.apache.kafka.connect.converters.ShortConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter"
           ]
         }
       ],
