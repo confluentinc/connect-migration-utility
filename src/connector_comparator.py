@@ -235,37 +235,6 @@ class ConnectorComparator:
                 return value.get("recommended_values", [])
         return []
 
-    def extract_subject_name_strategy(self, config_key: str, config_value: str) -> Optional[str]:
-        """
-        Extract recommended subject name strategy value from config value.
-        
-        For configs ending with 'subject.name.strategy', checks if the config value
-        contains any of the recommended values and returns the recommended value if found.
-        
-        Args:
-            config_key: The configuration key
-            config_value: The configuration value
-            
-        Returns:
-            The recommended strategy value if found in the config value, None otherwise
-        """
-        if not config_key.endswith("subject.name.strategy"):
-            return None
-            
-        # Common recommended values for subject name strategy
-        recommended_strategies = [
-            "TopicNameStrategy",
-            "RecordNameStrategy", 
-            "TopicRecordNameStrategy"
-        ]
-        
-        # Check if any recommended strategy is contained in the config value
-        for strategy in recommended_strategies:
-            if strategy in config_value:
-                return strategy
-                
-        return None
-
     def get_SM_template(self, connector_class: str, worker_url: str = None) -> Dict[str, Any]:
         """Get SM template for a connector class using the specified worker URL"""
         if not worker_url:
