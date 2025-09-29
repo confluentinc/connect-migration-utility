@@ -266,7 +266,7 @@
           "group": "Connection details",
           "order_in_group": 8,
           "display_name": "The time in seconds to flush cached data",
-          "documentation": "Number of seconds between buffer flushes, where the flush is from the Kafka\u2019s memory cache to the internal stage. The default value is 120 seconds. Minimum value allowed is 10 for snowflake.ingestion.method=SNOWPIPE, and 1 for snowflake.ingestion.method=SNOWPIPE_STREAMING. The connector uses buffer.count.records and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
+          "documentation": "Number of seconds between buffer flushes, where the flush is from the Kafka’s memory cache to the internal stage. The default value is 120 seconds. Minimum value allowed is 10 for snowflake.ingestion.method=SNOWPIPE, and 1 for snowflake.ingestion.method=SNOWPIPE_STREAMING. The connector uses buffer.count.records and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
         },
         {
           "name": "buffer.count.records",
@@ -277,7 +277,7 @@
           "group": "Connection details",
           "order_in_group": 9,
           "display_name": "The number of records to flush cached data",
-          "documentation": "Number of records between buffer flushes, where the flush is from the Kafka\u2019s memory cache to the internal stage. The default and minimum value is 10,000 records. The connector uses buffer.flush.time and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
+          "documentation": "Number of records between buffer flushes, where the flush is from the Kafka’s memory cache to the internal stage. The default and minimum value is 10,000 records. The connector uses buffer.flush.time and buffer.size.bytes=10,000,000 (10MB) as well. Whichever comes first, the connector will flush Kafka records to Snowflake."
         },
         {
           "name": "buffer.size.bytes",
@@ -299,7 +299,7 @@
           "group": "Connection details",
           "order_in_group": 11,
           "display_name": "Enable Iceberg Ingestion",
-          "documentation": "Interested in integrating with Iceberg? Take a look at Tableflow \u2014 a solution designed to simplify and streamline your Iceberg workflows, refer https://www.confluent.io/product/tableflow/.\nThis property specifies whether the connector ingests data into an Iceberg table. The connector fails if this property doesn't match the actual table type, refer https://docs.snowflake.com/en/user-guide/kafka-connector-iceberg.",
+          "documentation": "Interested in integrating with Iceberg? Take a look at Tableflow — a solution designed to simplify and streamline your Iceberg workflows, refer https://www.confluent.io/product/tableflow/.\nThis property specifies whether the connector ingests data into an Iceberg table. The connector fails if this property doesn't match the actual table type, refer https://docs.snowflake.com/en/user-guide/kafka-connector-iceberg.",
           "recommended_values": [
             "true",
             "false"
@@ -1797,15 +1797,16 @@
           "display_name": "header.converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
+            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
-            "org.apache.kafka.connect.converters.ShortConverter"
+            "org.apache.kafka.connect.converters.ShortConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter"
           ]
         }
       ],
@@ -1916,7 +1917,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "consumer.override.auto.offset.reset",
-          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the “earliest” offset (the default) or the “latest” offset. You can also select “none” if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
           "recommended_values": [
             "earliest",
             "latest",

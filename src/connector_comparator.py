@@ -1882,6 +1882,7 @@ class ConnectorComparator:
                     transforms_configs[user_config_key] = user_config_value
                     continue
 
+              
                 # Find if user config is present in Connector config def
                 matching_connector_config_def = None
                 if isinstance(connector_config_defs, (list, tuple)):
@@ -1889,6 +1890,7 @@ class ConnectorComparator:
                         if isinstance(connector_config_def, dict) and connector_config_def.get('name') == user_config_key:
                             matching_connector_config_def = connector_config_def
                             break
+                        
                 else:
                     self.logger.warning(f"Expected connector_config_defs to be a list, got {type(connector_config_defs)}")
                     continue
@@ -1911,7 +1913,17 @@ class ConnectorComparator:
 
                     try:
                         for template_config_def in template_config_defs:
-                            if isinstance(template_config_def, dict) and template_config_def.get('name') == user_config_key:
+                            original_user_config_key = user_config_key
+                            if (user_config_key.startswith('consumer.') or user_config_key.startswith('producer.')) and \
+                            not user_config_key.startswith('consumer.override.') and not user_config_key.startswith('producer.override.'):
+                                user_config_key = user_config_key.replace('consumer.', 'consumer.override.')
+                                user_config_key = user_config_key.replace('producer.', 'producer.override.')
+                            elif user_config_key.startswith('consumer.override.') or user_config_key.startswith('producer.override.'):
+                                # Remove override. from config in template_config_def.get('name')
+                                user_config_key = user_config_key.replace('consumer.override.', 'consumer.')
+                                user_config_key = user_config_key.replace('producer.override.', 'producer.')
+
+                            if isinstance(template_config_def, dict) and (template_config_def.get('name') == user_config_key or template_config_def.get('name') == original_user_config_key):
                                 config_found_in_template = True
                                 break
                     except Exception as e:
@@ -1942,7 +1954,7 @@ class ConnectorComparator:
                 derivation_method = self._get_config_derivation_method(template_config_name, template_config_def)
 
                 if derivation_method:
-                    derived_value = derivation_method(config_dict, fm_configs, template_config_defs)
+                    derived_value = derivation_method(config_dict, fm_configs, template_config_defs, template_config_name)
                     if derived_value is not None:
                         fm_configs[template_config_name] = derived_value
                         self.logger.debug(f"Derived value for {template_config_name}: {derived_value}")
@@ -1960,18 +1972,37 @@ class ConnectorComparator:
                     semantic_match_list.remove(user_config_key)
                 continue
 
+            original_user_config_key = user_config_key
+            if user_config_key.startswith('producer.override') or user_config_key.startswith('consumer.override'):
+                user_config_key = user_config_key.replace('consumer.override.', 'consumer.')
+                user_config_key = user_config_key.replace('producer.override.', 'producer.')
+            elif user_config_key.startswith('producer.') or user_config_key.startswith('consumer.'):
+                user_config_key = user_config_key.replace('producer.', 'producer.override.')
+                user_config_key = user_config_key.replace('consumer.', 'consumer.override.')
+                
+
             # Check if user config key matches any template config def name
             try:
                 for template_config_def in template_config_defs:
                     if isinstance(template_config_def, dict):
                         template_config_name = template_config_def.get("name")
+                    
                         if template_config_name == user_config_key:
                             # Direct match found - add to fm_configs
                             fm_configs[user_config_key] = user_config_value
                             self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
-                            if user_config_key in semantic_match_list:
+                            if user_config_key in semantic_match_list or original_user_config_key in semantic_match_list:
                                 semantic_match_list.remove(user_config_key)
+                                semantic_match_list.remove(original_user_config_key)
                             break
+                        if template_config_name == original_user_config_key:
+                            # Direct match found - add to fm_configs
+                            fm_configs[original_user_config_key] = user_config_value
+                            self.logger.info(f"Direct match found: {original_user_config_key} = {user_config_value}")
+                            if user_config_key in semantic_match_list or original_user_config_key in semantic_match_list:
+                                semantic_match_list.remove(user_config_key)
+                                semantic_match_list.remove(original_user_config_key)
+                            break    
             except Exception as e:
                 self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
                 self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
@@ -2112,6 +2143,15 @@ class ConnectorComparator:
             'azure.servicebus.sas.keyname': self._derive_azure_servicebus_sas_keyname,
             'azure.servicebus.sas.key': self._derive_azure_servicebus_sas_key,
             'azure.servicebus.entity.name': self._derive_azure_servicebus_entity_name,
+            
+            # Subject name strategy configs
+            'key.converter.key.subject.name.strategy': self._derive_subject_name_strategy,
+            'value.converter.value.subject.name.strategy': self._derive_subject_name_strategy,
+            'key.subject.name.strategy': self._derive_subject_name_strategy,
+            'subject.name.strategy': self._derive_subject_name_strategy,
+            'value.subject.name.strategy': self._derive_subject_name_strategy,
+            'value.converter.reference.subject.name.strategy': self._derive_reference_subject_name_strategy,
+            'key.converter.reference.subject.name.strategy': self._derive_reference_subject_name_strategy,
             # Add more mappings as needed
         }
 
@@ -2391,8 +2431,8 @@ class ConnectorComparator:
                 referenced_keys.add(referenced_key)
 
         return referenced_keys
-
-    def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.host from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2415,8 +2455,8 @@ class ConnectorComparator:
                 return parsed.get('host')
 
         return None
-
-    def _derive_connection_port(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_connection_port(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.port from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2425,7 +2465,7 @@ class ConnectorComparator:
                 parsed = self._parse_jdbc_url(jdbc_url)
                 return parsed.get('port')
         return None
-    def _derive_connection_user(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_connection_user(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.user from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2448,8 +2488,8 @@ class ConnectorComparator:
                 return parsed.get('user')
 
         return None
-
-    def _derive_connection_password(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_connection_password(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.password from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2473,7 +2513,7 @@ class ConnectorComparator:
 
         return None
 
-    def _derive_connection_database(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_connection_database(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.database from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2484,7 +2524,7 @@ class ConnectorComparator:
                 return parsed.get('db.name')
         return None
 
-    def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive db.name from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
@@ -2518,7 +2558,7 @@ class ConnectorComparator:
 
         return None
 
-    def _derive_db_connection_type(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_db_connection_type(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive db.connection.type from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2534,7 +2574,7 @@ class ConnectorComparator:
         # Default fallback
         return None
 
-    def _derive_ssl_server_cert_dn(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_ssl_server_cert_dn(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive ssl.server.cert.dn from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2550,7 +2590,7 @@ class ConnectorComparator:
         # Default fallback
         return None
 
-    def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive database.server.name from user configs (e.g., from JDBC URL)"""
         # Try to extract from JDBC URL
         if 'connection.url' in user_configs:
@@ -2566,9 +2606,8 @@ class ConnectorComparator:
         # Check for server name config
         if 'server.name' in user_configs:
             return user_configs['server.name']
-
-
-    def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive input.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
         reverse_format_mapping = {
@@ -2605,8 +2644,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'JSON'
-
-    def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive input.data.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2644,8 +2683,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'JSON'
-
-    def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive output.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2679,8 +2718,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'JSON'
-
-    def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive output.data.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2703,7 +2742,7 @@ class ConnectorComparator:
         # Try to get format from user configs (direct format key)
         format_key = user_configs.get('output.data.format') or user_configs.get('value.format')
         if format_key:
-            return format_key
+          return format_key
 
         # Try to get default from template if available
         if template_config_defs:
@@ -2715,7 +2754,7 @@ class ConnectorComparator:
         # Default fallback
         return 'JSON'
 
-    def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive output.data.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -2753,8 +2792,9 @@ class ConnectorComparator:
 
         # Default fallback
         return 'JSON'
+    
+    def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
-    def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive output.data.value.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
         reverse_format_mapping = {
@@ -2791,8 +2831,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'JSON'
-
-    def _derive_authentication_method(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_authentication_method(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive authentication.method from user configs"""
         # Check for various authentication-related configs
@@ -2826,8 +2866,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'PLAIN'
-
-    def _derive_csfle_enabled(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_csfle_enabled(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive csfle.enabled from user configs"""
         # Try to get default from template if available
@@ -2839,8 +2879,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'false'
-
-    def _derive_csfle_on_failure(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_csfle_on_failure(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive csfle.onFailure from user configs"""
         # Try to get default from template if available
@@ -2852,8 +2892,8 @@ class ConnectorComparator:
 
         # Default fallback
         return 'FAIL'
-
-    def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive ssl.mode from user configs"""
         # Check for direct ssl.mode config first
@@ -2942,8 +2982,8 @@ class ConnectorComparator:
 
         # Default to prefer if no SSL configuration is found
         return 'prefer'
-
-    def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive redis.hostname from user configs"""
         # Check for direct redis.hostname config first
@@ -2988,8 +3028,8 @@ class ConnectorComparator:
                         return host
 
         return None
-
-    def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive redis.portnumber from user configs"""
         # Check for direct redis.portnumber config first
@@ -3040,8 +3080,8 @@ class ConnectorComparator:
                 return resolved_default
         # Default Redis port
         return '6379'
-
-    def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    
+    def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
 
         """Derive redis.ssl.mode from user configs"""
         # Check for direct redis.ssl.mode config first
@@ -3106,7 +3146,7 @@ class ConnectorComparator:
         # Default to disabled if no SSL configuration is found
         return 'disabled'
 
-    def _derive_servicebus_namespace(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
+    def _derive_servicebus_namespace(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
         if 'azure.servicebus.namespace' in user_configs:
             return user_configs['azure.servicebus.namespace']
 
@@ -3118,7 +3158,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.namespace')
 
-    def _derive_azure_servicebus_sas_keyname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
+    def _derive_azure_servicebus_sas_keyname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
         if 'azure.servicebus.sas.keyname' in user_configs:
             return user_configs['azure.servicebus.sas.keyname']
 
@@ -3130,7 +3170,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.sas.keyname')
 
-    def _derive_azure_servicebus_sas_key(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
+    def _derive_azure_servicebus_sas_key(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
         if 'azure.servicebus.sas.key' in user_configs:
             return user_configs['azure.servicebus.sas.key']
 
@@ -3142,7 +3182,7 @@ class ConnectorComparator:
                 return match.group(1)
         return user_configs.get('azure.servicebus.sas.key')
 
-    def _derive_azure_servicebus_entity_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> str:
+    def _derive_azure_servicebus_entity_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
         if 'azure.servicebus.entity.name' in user_configs:
             return user_configs['azure.servicebus.entity.name']
 
@@ -3153,6 +3193,73 @@ class ConnectorComparator:
             if match:
                 return match.group(1)
         return user_configs.get('azure.servicebus.entity.name')
+
+    def _derive_subject_name_strategy(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+        """Derive subject name strategy from user configs by extracting recommended values from template config def"""
+        
+        # Get recommended values from template config definition for the specific config
+        recommended_strategies = []
+        if template_config_defs and config_name:
+            for template_config_def in template_config_defs:
+                if isinstance(template_config_def, dict) and template_config_def.get('name') == config_name:
+                    recommended_values = template_config_def.get('recommended_values', [])
+                    if recommended_values:
+                        recommended_strategies.extend(recommended_values)
+                        break
+        
+        # Fallback to common recommended values if not found in template
+        if not recommended_strategies:
+            recommended_strategies = [
+                "TopicNameStrategy",
+                "RecordNameStrategy", 
+                "TopicRecordNameStrategy"
+            ]
+        
+        # Look for the specific config in user configs
+        if config_name and config_name in user_configs:
+            config_value = user_configs[config_name]
+            # Extract config value by finding last . and get string after that
+            if '.' in config_value:
+                config_value = config_value.split('.')[-1]
+            # Check if any recommended strategy is contained in the config value
+            for strategy in recommended_strategies:
+                if strategy.lower() == config_value.lower():
+                    return strategy
+        
+        return None
+
+    def _derive_reference_subject_name_strategy(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+        """Derive reference subject name strategy from user configs by extracting recommended values from template config def"""
+        
+        # Get recommended values from template config definition for the specific config
+        recommended_strategies = []
+        if template_config_defs and config_name:
+            for template_config_def in template_config_defs:
+                if isinstance(template_config_def, dict) and template_config_def.get('name') == config_name:
+                    recommended_values = template_config_def.get('recommended_values', [])
+                    if recommended_values:
+                        recommended_strategies.extend(recommended_values)
+                        break
+        
+        # Fallback to common recommended values if not found in template
+        if not recommended_strategies:
+            recommended_strategies = [
+                "DefaultReferenceSubjectNameStrategy",
+                "QualifiedReferenceSubjectNameStrategy"
+            ]
+        
+        # Look for the specific config in user configs
+        if config_name and config_name in user_configs:
+            config_value = user_configs[config_name]
+            # Extract config value by finding last . and get string after that
+            if '.' in config_value:
+                config_value = config_value.split('.')[-1]
+            # Check if any recommended strategy is contained in the config value
+            for strategy in recommended_strategies:
+                if strategy.lower() == config_value.lower():
+                    return strategy
+        
+        return None
 
     def _apply_reverse_switch(self, switch_mapping: Dict[str, str], user_value: str) -> Optional[str]:
         """Apply reverse switch (following Java pattern)"""
