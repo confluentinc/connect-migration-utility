@@ -161,8 +161,7 @@ class ConnectorCreator:
             redacted_body['config'] = {k: ('***' if 'password' in k.lower() or 'secret' in k.lower() else v) for k, v in
                                        redacted_body['config'].items()}
         self.logger.info(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
-        return None
-        # return self.create_connector_api_call(url, name, body, headers)
+        return self.create_connector_api_call(url, name, body, headers)
 
     def create_connector_from_json_file(
         self,
