@@ -10,6 +10,7 @@ import logging
 
 from offset_manager import OffsetManager
 from connector_comparator import ConnectorComparator
+from config_discovery import ConfigDiscovery
 
 
 def setup_logging(output_dir: Path):
@@ -160,8 +161,8 @@ class ConnectorCreator:
             redacted_body['config'] = {k: ('***' if 'password' in k.lower() or 'secret' in k.lower() else v) for k, v in
                                        redacted_body['config'].items()}
         self.logger.info(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
-
-        return self.create_connector_api_call(url, name, body, headers)
+        return None
+        # return self.create_connector_api_call(url, name, body, headers)
 
     def create_connector_from_json_file(
         self,
@@ -318,40 +319,38 @@ def main():
                 logger.error(f"Failed to extract connectors from {json_file}: {str(e)}")
                 continue
 
-        # Get connector configs and offsets from workers
-        worker_connector_configs = offset_manager.get_connector_configs_offsets(worker_urls, disable_ssl_verify)
+        connector_configs_from_worker = []
+        for worker_url in worker_urls:
+            logger.info(f"Getting connector configs for worker: {worker_url}")
+            connector_configs_from_worker.extend(ConfigDiscovery.get_connector_configs_from_worker(worker_url, disable_ssl_verify, logger))
 
         for connector_name in connector_fm_configs:
             fm_entry = connector_fm_configs[connector_name]
             fm_name = fm_entry['name']
-
-            # Find matching connector from workers by name
-            matching_worker_sm_config = next((wc for wc in worker_connector_configs if wc['name'] == fm_name), None)
+            matching_worker_sm_config = next((wc for wc in connector_configs_from_worker if wc['name'] == fm_name), None)
             if not matching_worker_sm_config:
                 logger.warning(f"No matching SM connector configs found in given worker URLs to fetch offsets for FM connector '{fm_name}'")
                 continue
-            sm_worker = matching_worker_sm_config.get('worker', None)
 
-            worker_offsets = matching_worker_sm_config.get('offsets', None)
-            if not worker_offsets:
-                logger.info(f"No offsets found on workers for connector '{fm_name}'")
-            else:
-                logger.info(f"Found offsets on workers for connector '{fm_name}': {worker_offsets}")
-                fm_entry['offsets'] = worker_offsets
-
-            # Create new connector with chosen offsets
             try:
-                #stop connector
-                if migration_mode=='stop_create_latest_offset' and sm_worker is not None:
+                # stop connector
+                if migration_mode == 'stop_create_latest_offset':
                     logger.info("Stopping CP connector after validation as per migration mode")
-                    creator.stop_cp_connector(sm_worker, fm_name, disable_ssl_verify)
+                    creator.stop_cp_connector(matching_worker_sm_config.get('worker', None), fm_name, disable_ssl_verify)
 
-                #create connector
+                offsets = offset_manager.get_offsets_of_connector(matching_worker_sm_config, disable_ssl_verify)
+                if not offsets:
+                    logger.info(f"No offsets found on workers for connector '{fm_name}'")
+                else:
+                    logger.info(f"Found offsets on workers for connector '{fm_name}': {offsets}")
+                    fm_entry['offsets'] = offsets
+
+                # create connector
                 logger.info(f"Creating connector '{fm_name}' with offsets from workers")
                 created_connector = creator.create_connector_from_config(
                     environment_id=env_id,
                     kafka_cluster_id=lkc_id,
-                    kafka_auth= kafka_auth,
+                    kafka_auth=kafka_auth,
                     fm_config=fm_entry,
                     bearer_token=bearer_token
                 )
