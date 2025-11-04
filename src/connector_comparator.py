@@ -10,7 +10,7 @@ import logging
 import os
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Optional, Set, Union, Tuple
 import re
 from semantic_matcher import SemanticMatcher, Property
 import base64
@@ -369,7 +369,7 @@ class ConnectorComparator:
             self.logger.warning(f"FM transforms fallback file not found: {fallback_file}")
         return {}
 
-    def get_FM_SMT(self, plugin_type) -> set[str]:
+    def get_FM_SMT(self, plugin_type) -> Set[str]:
         # First try to get transforms via HTTP call if credentials are provided
         if self.env_id and self.lkc_id and self.bearer_token:
             try:
@@ -733,7 +733,7 @@ class ConnectorComparator:
             except ValueError:
                 print("Please enter a valid number")
 
-    def _get_templates_for_connector(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    def _get_templates_for_connector(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Get SM and FM templates for a connector class"""
         # Get worker URL from connector config if available
         worker_url = None
@@ -1578,7 +1578,7 @@ class ConnectorComparator:
         except Exception as e:
             logger.error(f"Failed to parse {file}: {e}")
 
-    def process_connectors(self) -> dict[str, Any] | None:
+    def process_connectors(self) -> Optional[Dict[str, Any]]:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
         ConnectorComparator.parse_connector_file(self.input_file, connectors_dict, self.logger)
@@ -1633,7 +1633,7 @@ class ConnectorComparator:
         else:
             return 'non_commercial_pack_connectors'
 
-    def process_tco_information(self) -> dict[str, int | dict[str, Any]] | None:
+    def process_tco_information(self) -> Optional[Dict[str, Union[int, Dict[str, Any]]]]:
         """Process all connectors and generate FM configurations"""
         connectors_dict = {}
 

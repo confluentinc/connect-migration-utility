@@ -10,7 +10,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
 from summary import generate_migration_summary, generate_tco_information_output
@@ -45,7 +45,7 @@ def setup_logging(output_dir: Path):
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
 
-def write_fm_configs_to_file(fm_configs: dict[str, Any], output_dir: Path, logger: logging.Logger):
+def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
     """Write FM configs to file in the discovered_configs structure"""
     # Directory structure
     successful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
