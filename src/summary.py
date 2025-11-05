@@ -10,7 +10,7 @@ import json
 import re
 import logging
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Union, Any
 
 from connector_comparator import ConnectorComparator
 
@@ -147,7 +147,7 @@ def summarize_output(base_dir):
 
     return summary
 
-def generate_tco_information_output(tco_info: dict[str, int | dict], output_dir: str):
+def generate_tco_information_output(tco_info: Dict[str, Union[int, Dict[str, Any]]], output_dir: str):
     """Generate TCO information output file with formatted text summary."""
     if not tco_info:
         logger.info("No TCO information provided.")

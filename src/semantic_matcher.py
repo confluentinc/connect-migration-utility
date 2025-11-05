@@ -12,7 +12,11 @@ from rapidfuzz import fuzz
 import logging
 
 logger = logging.getLogger(__name__)
+
 # Import third-party libraries, making them optional
+_sentence_transformers_available = False
+_semantic_model = None
+
 try:
     from sentence_transformers import SentenceTransformer
     from sklearn.metrics.pairwise import cosine_similarity

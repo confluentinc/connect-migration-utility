@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import requests
 from config_discovery import ConfigDiscovery
 
@@ -67,7 +67,7 @@ class OffsetManager:
                 self.logger.info(f"Connector class {connector_class} does NOT support offsets")
         return False
 
-    def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False) -> list[Any] | None:
+    def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False) -> Optional[List[Any]]:
         if not OffsetManager.get_instance(self.logger).is_offset_supported_connector(config['type'], config['config'].get('connector.class', '')):
             self.logger.info(f"Connector {config['name']} does not support offsets")
             return None

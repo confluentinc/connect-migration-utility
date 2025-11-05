@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import requests
 import base64
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 import json
 import shutil
 import logging
@@ -124,7 +124,7 @@ class ConnectorCreator:
         kafka_auth: KafkaAuth,
         fm_config: Dict[str, Any],
         bearer_token: str = None
-    ) -> Dict[str, Any] | None:
+    ) -> Optional[Dict[str, Any]]:
         name = fm_config['name']
         config = fm_config['config']
         offsets = fm_config.get('offsets', None)
