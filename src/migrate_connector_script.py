@@ -237,8 +237,6 @@ def main():
 
     parser.add_argument('--prompt-bearer-token', action='store_true',
                         help='Prompt for bearer token securely (recommended)')
-    parser.add_argument('--semantic-cache-folder', type=str,
-                        help='Cache folder for sentence transformer models (default: auto-detected from pip installation)')
 
     args = parser.parse_args()
 

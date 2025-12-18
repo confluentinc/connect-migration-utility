@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set, Union, Tuple
 import re
-from semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
 
@@ -29,10 +28,6 @@ class ConnectorComparator:
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
-        # Use local model
-        self.semantic_matcher = SemanticMatcher()
-
-
 
         # Worker URLs for fetching SM templates
         self.worker_urls = worker_urls or []
@@ -1417,52 +1412,11 @@ class ConnectorComparator:
                                 property_found = True
 
                     if not property_found:
-                        # Step 4: Try semantic matching
-                        sm_prop = {
-                            'name': sm_prop_name,
-                            'description': sm_template.get('documentation', ''),
-                            'type': sm_template.get('type', 'STRING'),
-                            'section': sm_template.get('group', 'General')
-                        }
-
-                        # Get FM properties for matching (as dictionary)
-                        fm_properties_dict = {}
-                        if 'templates' in fm_template:
-                            for template in fm_template['templates']:
-                                # Add config_defs properties
-                                if 'config_defs' in template:
-                                    for config_def in template['config_defs']:
-                                        fm_properties_dict[config_def['name']] = config_def
-
-                        # Find best match using semantic matching with threshold
-                        result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.7)
-
-                        if result and result.matched_fm_property:
-                            # result.matched_fm_property is now a dictionary, so we need to get the property name
-                            # The find_best_match method returns the property info, but we need the property name
-                            # We'll need to find the property name by matching the property info
-                            fm_prop_name = None
-                            for prop_name, prop_info in fm_properties_dict.items():
-                                if prop_info == result.matched_fm_property:
-                                    fm_prop_name = prop_name
-                                    break
-
-                            if fm_prop_name and fm_prop_name not in handled_properties:
-                                mapped_config[fm_prop_name] = sm_prop_value
-                                handled_properties.add(fm_prop_name)
-                                self.logger.info(f"Successfully mapped {sm_prop_name} to {fm_prop_name} using {result.match_type} matching")
-                            elif fm_prop_name in handled_properties:
-                                self.logger.debug(f"Skipping semantic mapping for {sm_prop_name} -> {fm_prop_name} as {fm_prop_name} is already mapped")
-                            else:
-                                error_msg = f"Could not determine property name for matched property: {sm_prop_name}"
-                                mapping_errors.append(error_msg)
-                                unmapped_configs.append(sm_prop_name)
-                                self.logger.warning(f"Failed to map property '{sm_prop_name}' - could not determine property name")
-                        else:
-                            error_msg = f"Config '{sm_prop_name}' not exposed for fully managed connector"
-                            mapping_errors.append(error_msg)
-                            unmapped_configs.append(sm_prop_name)
-                            self.logger.warning(f"Failed to map property '{sm_prop_name}'")
+                        # No matching FM property found - mark as unmapped
+                        error_msg = f"Config '{sm_prop_name}' not exposed for fully managed connector"
+                        mapping_errors.append(error_msg)
+                        unmapped_configs.append(sm_prop_name)
+                        self.logger.warning(f"Failed to map property '{sm_prop_name}'")
                 except Exception as e:
                     error_msg = f"Error mapping {sm_prop_name}: {str(e)}"
                     mapping_errors.append(error_msg)
@@ -3273,86 +3227,29 @@ class ConnectorComparator:
 
     def _do_semantic_matching(self, fm_configs: Dict[str, str], semantic_match_list: set, user_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], sm_template: Dict[str, Any]):
         """
-        Perform semantic matching for configs that are not found in the template.
+        Handle configs that could not be directly matched. Semantic matching has been removed.
 
         Args:
             fm_configs: Dictionary of FM configurations
-            semantic_match_list: Set of config names that need semantic matching
+            semantic_match_list: Set of config names that need matching
             user_configs: Dictionary of user configurations
             template_config_defs: List of template config definitions
         """
         if not semantic_match_list:
-            self.logger.info("No configs require semantic matching")
+            self.logger.info("No configs require additional matching")
             return
 
-        self.logger.info(f"Performing semantic matching for {len(semantic_match_list)} configs: {', '.join(semantic_match_list)}")
+        self.logger.info(f"Found {len(semantic_match_list)} configs that could not be directly matched: {', '.join(semantic_match_list)}")
 
-        # Log SM template information
-        self.logger.info(f"SM Template info for semantic matching:")
-        if sm_template:
-            self.logger.info(f"  - SM template type: {type(sm_template)}")
-            self.logger.info(f"  - SM template keys: {list(sm_template.keys()) if isinstance(sm_template, dict) else 'Not a dict'}")
-            if isinstance(sm_template, dict) and 'config_defs' in sm_template:
-                self.logger.info(f"  - SM config_defs count: {len(sm_template['config_defs'])}")
-            if isinstance(sm_template, dict) and 'sections' in sm_template:
-                self.logger.info(f"  - SM sections count: {len(sm_template['sections'])}")
-        else:
-            self.logger.info(f"  - SM template is None/empty")
-
-        # Get FM properties for matching (as dictionary)
-        fm_properties_dict = {}
-        for template_config_def in template_config_defs:
-            fm_properties_dict[template_config_def.get('name')] = template_config_def
-
-        self.logger.info(f"FM properties available for matching: {len(fm_properties_dict)}")
-
-        # Perform semantic matching for each config in the list
+        # Log each unmatched config
         for config_name in semantic_match_list:
             if config_name in user_configs:
                 user_value = user_configs[config_name]
-                self.logger.info(f"Processing semantic match for '{config_name}' = '{user_value}'")
-
-
-
-                # Get SM property from SM template
-                sm_prop = self._get_sm_property_from_template(config_name, sm_template)
-
-                if not sm_prop:
-                    # Fallback to generic property if not found in SM template
-                    self.logger.info(f"SM property '{config_name}' not found in template, using fallback")
-                    sm_prop = {
-                        'name': config_name,
-                        'description': f"User config: {config_name}",
-                        'type': 'STRING',
-                        'section': 'General'
-                    }
-                else:
-                    self.logger.info(f"Found SM property '{config_name}' in template: {sm_prop}")
-
-                # Find best match using semantic matching with threshold
-                result = self.semantic_matcher.find_best_match(sm_prop, fm_properties_dict, semantic_threshold=0.7)
-
-                if result and result.matched_fm_property:
-                    # Find the property name from the matched property info
-                    fm_prop_name = None
-                    for prop_name, prop_info in fm_properties_dict.items():
-                        if prop_info == result.matched_fm_property:
-                            fm_prop_name = prop_name
-                            break
-
-                    if fm_prop_name and fm_prop_name not in fm_configs:
-                        fm_configs[fm_prop_name] = user_value
-                        self.logger.info(f"Semantic match: {config_name} -> {fm_prop_name} (score: {result.similarity_score:.3f})")
-                    elif fm_prop_name in fm_configs:
-                        self.logger.debug(f"Skipping semantic mapping for {config_name} -> {fm_prop_name} as {fm_prop_name} is already mapped")
-                    else:
-                        self.logger.warning(f"Could not determine property name for matched property: {config_name}")
-                else:
-                    self.logger.warning(f"No semantic match found for config: {config_name}")
+                self.logger.warning(f"Config '{config_name}' = '{user_value}' could not be matched to FM property")
             else:
-                self.logger.warning(f"Config {config_name} not found in user configs for semantic matching")
+                self.logger.warning(f"Config {config_name} not found in user configs")
 
-        self.logger.info(f"Semantic matching completed for {len(semantic_match_list)} configs")
+        self.logger.info(f"Unmatched configs processing completed for {len(semantic_match_list)} configs")
 
     def _check_required_configs(self, fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], errors: List[str]):
         """
@@ -3492,37 +3389,6 @@ class ConnectorComparator:
 
         self.logger.debug(f"SM property '{config_name}' not found in template")
         return None
-
-    def _load_semantic_matcher_from_path(self):
-        """Load semantic matcher class from the specified path"""
-        if not self.semantic_matcher_path:
-            return
-
-        try:
-            semantic_matcher_file = Path(self.semantic_matcher_path)
-            if not semantic_matcher_file.exists():
-                self.logger.warning(f"Semantic matcher file not found: {self.semantic_matcher_path}")
-                return
-
-            self.logger.info(f"Loading semantic matcher from: {self.semantic_matcher_path}")
-
-            # Import the custom semantic matcher module
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("custom_semantic_matcher", semantic_matcher_file)
-            custom_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(custom_module)
-
-            # Get the SemanticMatcher class from the custom module
-            if hasattr(custom_module, 'SemanticMatcher'):
-                CustomSemanticMatcher = custom_module.SemanticMatcher
-                self.semantic_matcher = CustomSemanticMatcher()
-                self.logger.info(f"Successfully loaded custom semantic matcher from {self.semantic_matcher_path}")
-            else:
-                self.logger.error(f"SemanticMatcher class not found in {self.semantic_matcher_path}")
-
-        except Exception as e:
-            self.logger.error(f"Error loading semantic matcher from {self.semantic_matcher_path}: {e}")
-            # Continue with default semantic matcher
 
     def _is_placeholder(self, value: str) -> bool:
         """Check if a value is a placeholder like ${xxxx}"""
