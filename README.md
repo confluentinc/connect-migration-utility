@@ -51,6 +51,21 @@ Run the following command to check the the migration feasibilty using the worker
 python src/discovery_script.py --worker-urls "http://worker1:8083,http://worker2:8083" --output-dir output/
 ```
 
+##### Basic Authentication
+
+If your Connect worker REST API requires basic authentication, provide the username and password:
+
+```bash
+python src/discovery_script.py \
+  --worker-urls "http://worker1:8083,http://worker2:8083" \
+  --output-dir output/ \
+  --worker-username "myuser" \
+  --worker-password "mypassword"
+```
+
+> [!NOTE]
+> Both `--worker-username` and `--worker-password` must be provided together. If only one is provided, basic authentication will be disabled.
+
 ##### SSL certificate verification
 
 While using the worker URL, the utility makes HTTP(s) requests to fetch configurations. By default, SSL certificate verification is **enabled** for security. However, you can disable it if you're working with self-signed certificates or internal services. Refer to the command below:
@@ -200,6 +215,19 @@ python src/discovery_script.py --config-file connectors.json --output-dir output
 >   --bearer-token <api-token>
 > ```
 > 
+> If your Connect worker requires basic authentication:
+> 
+> ```bash
+> python src/discovery_script.py \
+>   --config-file connectors.json \
+>   --output-dir output/ \
+>   --environment-id <environment-id> \
+>   --cluster-id <lkc-id> \
+>   --bearer-token <api-token> \
+>   --worker-username <worker-username> \
+>   --worker-password <worker-password>
+> ```
+> 
 > If you want to use a secure bearer token:
 > 
 > ```bash
@@ -324,6 +352,8 @@ The table below shows the command line options valid for the python translation 
 | `--config-dir` | Path of directory with multiple json connector configuration files | No* |
 | `--worker-urls` | Comma-separated list of worker URLs | No* |
 | `--worker-urls-file` | Path to file containing worker URLs | No* |
+| `--worker-username` | Username for basic authentication with Connect worker REST API | No |
+| `--worker-password` | Password for basic authentication with Connect worker REST API | No |
 | `--output-dir` | Output directory for all files (default: output) | No |
 | `--env-id` | Confluent Cloud environment ID | No |
 | `--lkc-id` | Confluent Cloud LKC cluster ID | No |
@@ -364,6 +394,9 @@ To create a connector with no downtime, run the command below to create a fully-
 ```bash
 python src/migrate_connector_script.py --worker-urls "<WORKER_URL>" --cluster-id "<CLUSTER_ID>" --environment-id "<ENVIRONMENT_ID>" --migration-mode "create_latest_offset" --bearer-token "<BEARER_TOKEN>" --fm-config-dir "<INPUT_FM_CONFIGS_DIR>" --kafka-api-key "<KAFKA-API-KEY>" --kafka-api-secret "<KAFKA-API-SECRET>" --migration-output-dir "<CREATE_CONNECTOR_OUTPUT_DIRECTORY>"
 ```
+
+If your Connect worker requires basic authentication, add `--worker-username` and `--worker-password` parameters.
+
 > The python script fetches the latest offset without stopping the connector and creates a fully-managed connector on Confluent Cloud using the fetched offset. This option may cause data duplication as the self-managed connector is still running.
 
 
@@ -384,6 +417,8 @@ The table below shows the command line options valid for the python migration sc
 |--------|-------------|----------|
 | `--fm-config-dir` | Path of directory with multiple fully-managed connector configuration files | Yes |
 | `--worker-urls` | Comma-separated list of worker URLs | No *(1)* |
+| `--worker-username` | Username for basic authentication with Connect worker REST API | No |
+| `--worker-password` | Password for basic authentication with Connect worker REST API | No |
 | `--migration-output-dir` | Output directory for migration output files (default: migration_output) | No |
 | `--environment-id` | Confluent Cloud environment ID | Yes |
 | `--cluster-id` | Confluent Cloud LKC cluster ID | Yes |
