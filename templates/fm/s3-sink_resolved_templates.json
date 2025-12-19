@@ -1,7 +1,7 @@
 {
   "templates": [
     {
-      "template_id": "s3-sink",
+      "template_id": "S3_SINK",
       "connector_type": "SINK",
       "connector.class": "io.confluent.connect.s3.S3SinkConnector",
       "connector_documentation_url": "https://docs.confluent.io/cloud/current/connectors/cc-s3-sink.html",
