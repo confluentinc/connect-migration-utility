@@ -67,7 +67,7 @@ class OffsetManager:
                 self.logger.info(f"Connector class {connector_class} does NOT support offsets")
         return False
 
-    def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False) -> Optional[List[Any]]:
+    def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False, auth = None) -> Optional[List[Any]]:
         if not OffsetManager.get_instance(self.logger).is_offset_supported_connector(config['type'], config['config'].get('connector.class', '')):
             self.logger.info(f"Connector {config['name']} does not support offsets")
             return None
@@ -76,7 +76,7 @@ class OffsetManager:
         offsets_url = f"{config['worker']}/connectors/{config['name']}/offsets"
         self.logger.info(f"Fetching offsets for connector '{config['name']}' from: {offsets_url}")
         try:
-            offsets = ConfigDiscovery.get_json_from_url(offsets_url, disable_ssl_verify, self.logger)
+            offsets = ConfigDiscovery.get_json_from_url(offsets_url, disable_ssl_verify, self.logger, auth=auth)
             if not offsets or not offsets.get('offsets'):
                 self.logger.error(f"Invalid response for connector '{config['name']}' offsets call at {offsets_url}")
                 return None
@@ -85,17 +85,17 @@ class OffsetManager:
             self.logger.error(f"Error getting offsets for connector '{config['name']}' from {offsets_url}: {str(e)}")
             return None
 
-    def get_connector_configs_offsets(self, worker_urls: List[str], disable_ssl_verify: bool = False) -> List[Dict[str, Any]]:
+    def get_connector_configs_offsets(self, worker_urls: List[str], disable_ssl_verify: bool = False, auth = None) -> List[Dict[str, Any]]:
         """Get connector configurations from all workers"""
         self.logger.info(f"Getting connector configs and offsets for workers: {worker_urls}")
         configs_with_offsets = []
         for worker_url in worker_urls:
             self.logger.info(f"Getting connector configs for worker: {worker_url}")
-            configs_with_offsets.extend(ConfigDiscovery.get_connector_configs_from_worker(worker_url, disable_ssl_verify, self.logger))
+            configs_with_offsets.extend(ConfigDiscovery.get_connector_configs_from_worker(worker_url, disable_ssl_verify, self.logger, auth=auth))
 
         # Get offsets for each connector
         for config in configs_with_offsets:
-            offsets = self.get_offsets_of_connector(config, disable_ssl_verify)
+            offsets = self.get_offsets_of_connector(config, disable_ssl_verify, auth=auth)
             if offsets:
                 config['offsets'] = offsets
                 self.logger.info(f"Connector {config['name']} offsets: {offsets}")

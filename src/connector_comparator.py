@@ -15,6 +15,7 @@ import re
 from semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
+from requests.auth import HTTPBasicAuth
 
 from config_discovery import ConfigDiscovery
 
@@ -25,7 +26,8 @@ class ConnectorComparator:
     UNSUCCESSFUL_CONFIGS_SUBDIR: Path = Path("unsuccessful_configs_with_errors")
 
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
-                 env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False):
+                 env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False,
+                 worker_username: str = None, worker_password: str = None):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
@@ -42,6 +44,16 @@ class ConnectorComparator:
         self.lkc_id = lkc_id
         self.bearer_token = bearer_token
         self.disable_ssl_verify = disable_ssl_verify
+        
+        # Basic auth for Connect worker API
+        self.worker_username = worker_username
+        self.worker_password = worker_password
+        self.worker_auth = None
+        if self.worker_username and self.worker_password:
+            self.worker_auth = HTTPBasicAuth(self.worker_username, self.worker_password)
+            self.logger.info("Basic authentication enabled for Connect worker API")
+        elif self.worker_username or self.worker_password:
+            self.logger.warning("Basic auth username or password provided but not both - authentication disabled")
 
         # Log SSL verification status
         if self.disable_ssl_verify:
@@ -257,7 +269,7 @@ class ConnectorComparator:
 
             self.logger.info(f"Fetching SM template for {connector_class} from {url}")
             self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-            response = requests.put(url, json=data, headers=headers, verify=not self.disable_ssl_verify)
+            response = requests.put(url, json=data, headers=headers, verify=not self.disable_ssl_verify, auth=self.worker_auth)
             response.raise_for_status()
 
             template_data = response.json()
@@ -1638,8 +1650,8 @@ class ConnectorComparator:
         connectors_dict = {}
 
         for worker_url in self.worker_urls:
-            connector_statuses = ConfigDiscovery.get_connector_statuses_from_worker(worker_url, self.disable_ssl_verify, self.logger)
-            connector_info_list = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify,self.logger)
+            connector_statuses = ConfigDiscovery.get_connector_statuses_from_worker(worker_url, self.disable_ssl_verify, self.logger, auth=self.worker_auth)
+            connector_info_list = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify, self.logger, auth=self.worker_auth)
             connector_info_dict = {item['name']: item for item in connector_info_list if 'name' in item}
 
             for connector_name, connector_status in connector_statuses.items():

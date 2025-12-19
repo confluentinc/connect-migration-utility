@@ -8,6 +8,7 @@ This product includes software developed at The Apache Software Foundation.
 import json
 import logging
 import requests
+from requests.auth import HTTPBasicAuth
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Set
 
@@ -23,7 +24,9 @@ class ConfigDiscovery:
         output_dir: Path = Path('output'),
         sensitive_file: Optional[str] = None,
         worker_config_file: Optional[str] = None,
-        disable_ssl_verify: bool = False
+        disable_ssl_verify: bool = False,
+        worker_username: Optional[str] = None,
+        worker_password: Optional[str] = None
     ):
         self.logger = logging.getLogger(__name__)
         self.redact = redact
@@ -31,6 +34,16 @@ class ConfigDiscovery:
         self.sensitive_file = sensitive_file
         self.worker_config_file = worker_config_file
         self.disable_ssl_verify = disable_ssl_verify
+        self.worker_username = worker_username
+        self.worker_password = worker_password
+
+        # Create basic auth object if credentials provided
+        self.worker_auth = None
+        if self.worker_username and self.worker_password:
+            self.worker_auth = HTTPBasicAuth(self.worker_username, self.worker_password)
+            self.logger.info("Basic authentication enabled for Connect worker API")
+        elif self.worker_username or self.worker_password:
+            self.logger.warning("Basic auth username or password provided but not both - authentication disabled")
 
         # Log SSL verification status
         if self.disable_ssl_verify:
@@ -241,7 +254,7 @@ class ConfigDiscovery:
         """Checks if a Kafka Connect worker is alive by pinging /connectors."""
         test_url = f"{full_url}/connectors"
         try:
-            response = requests.get(test_url, timeout=3, verify=not self.disable_ssl_verify)
+            response = requests.get(test_url, timeout=3, verify=not self.disable_ssl_verify, auth=self.worker_auth)
             if response.status_code == 200:
                 return True
             else:
@@ -295,13 +308,13 @@ class ConfigDiscovery:
         return new_configs
 
     @staticmethod
-    def get_json_from_url(url: str, disable_ssl_verify: bool = False, logger=None) -> Optional[Dict[str, Any]]:
+    def get_json_from_url(url: str, disable_ssl_verify: bool = False, logger=None, auth=None) -> Optional[Dict[str, Any]]:
         if logger is None:
             logger = logging.getLogger("config_discovery_default")
 
         """Makes an HTTP GET request and returns JSON data."""
         try:
-            response = requests.get(url, timeout=5, verify=not disable_ssl_verify)
+            response = requests.get(url, timeout=5, verify=not disable_ssl_verify, auth=auth)
             response.raise_for_status()
             logger.info(f"Response from {url}: {response.json()}")
             return response.json()
@@ -329,7 +342,7 @@ class ConfigDiscovery:
         return redact_dict(config)
 
     @staticmethod
-    def get_connector_configs_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None) -> List[Dict[str, Any]]:
+    def get_connector_configs_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None, auth = None) -> List[Dict[str, Any]]:
         """Get connector configurations from a worker using expanded info endpoint"""
         if logger is None:
             logger = logging.getLogger("config_discovery_default")
@@ -338,7 +351,7 @@ class ConfigDiscovery:
             expanded_url = f"{worker_url}/connectors?expand=info"
             logger.info(f"Fetching connector info from: {expanded_url}")
 
-            connectors_data = ConfigDiscovery.get_json_from_url(expanded_url, disable_ssl_verify, logger)
+            connectors_data = ConfigDiscovery.get_json_from_url(expanded_url, disable_ssl_verify, logger, auth=auth)
             if not connectors_data:
                 logger.error(f"No data received from {expanded_url}")
                 return []
@@ -370,7 +383,7 @@ class ConfigDiscovery:
             return []
 
     @staticmethod
-    def get_connector_statuses_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None) -> Dict[str, Any]:
+    def get_connector_statuses_from_worker(worker_url: str, disable_ssl_verify: bool = False, logger = None, auth = None) -> Dict[str, Any]:
         """Get connector statuses from a worker using status endpoint"""
         if logger is None:
             logger = logging.getLogger("config_discovery_default")
@@ -379,7 +392,7 @@ class ConfigDiscovery:
             expand_status_url = f"{worker_url}/connectors?expand=status"
             logger.info(f"Fetching connector statuses info from: {expand_status_url}")
 
-            connectors_data = ConfigDiscovery.get_json_from_url(expand_status_url, disable_ssl_verify, logger)
+            connectors_data = ConfigDiscovery.get_json_from_url(expand_status_url, disable_ssl_verify, logger, auth=auth)
             if not connectors_data:
                 logger.error(f"No data received from {expand_status_url}")
                 return {}
@@ -412,7 +425,7 @@ class ConfigDiscovery:
 
         for worker_url in self.worker_urls:
             self.logger.info(f"=== Processing worker: {worker_url} ===")
-            configs = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify, self.logger)
+            configs = ConfigDiscovery.get_connector_configs_from_worker(worker_url, self.disable_ssl_verify, self.logger, auth=self.worker_auth)
 
             # Convert list to dict format for consistency
             for config in configs:

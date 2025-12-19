@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 import sys
 import requests
+from requests.auth import HTTPBasicAuth
 import base64
 from typing import Dict, Any, List, Optional, Tuple, Union
 import json
@@ -80,11 +81,11 @@ class ConnectorCreator:
         """
         return base64.b64encode(bearer_token.encode('utf-8')).decode('utf-8')
 
-    def stop_cp_connector(self, worker_url: str, connector_name: str, disable_ssl_verify: bool = False) -> None:
-        """Makes an HTTP GET request and returns JSON data."""
+    def stop_cp_connector(self, worker_url: str, connector_name: str, disable_ssl_verify: bool = False, auth = None) -> None:
+        """Makes an HTTP PUT request to stop a connector."""
         url = f"{worker_url}/connectors/{connector_name}/stop"
         try:
-            response = requests.put(url, timeout=5, verify=not disable_ssl_verify)
+            response = requests.put(url, timeout=5, verify=not disable_ssl_verify, auth=auth)
             if response.status_code == 202:
                 self.logger.info(f"Response from {url}: status 202 Accepted")
                 self.logger.info(f"Connector: {connector_name}, stop initiated successfully.")
@@ -230,6 +231,8 @@ def main():
     parser.add_argument('--environment-id', type=str, required=True, help='Confluent Cloud environment ID')
     parser.add_argument('--cluster-id', type=str, required=True, help='Confluent Cloud LKC cluster ID')
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs to fetch latest offsets from')
+    parser.add_argument('--worker-username', type=str, help='Username for basic authentication with Connect worker REST API')
+    parser.add_argument('--worker-password', type=str, help='Password for basic authentication with Connect worker REST API')
     parser.add_argument('--migration-mode', type=str, choices=['stop_create_latest_offset', 'create', 'create_latest_offset'], required=True)
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
 
@@ -276,6 +279,16 @@ def main():
     disable_ssl_verify = getattr(args, 'disable_ssl_verify', False)
     migration_mode = args.migration_mode
 
+    # Setup basic auth for Connect worker API if credentials provided
+    worker_username = getattr(args, 'worker_username', None)
+    worker_password = getattr(args, 'worker_password', None)
+    worker_auth = None
+    if worker_username and worker_password:
+        worker_auth = HTTPBasicAuth(worker_username, worker_password)
+        logger.info("Basic authentication enabled for Connect worker API")
+    elif worker_username or worker_password:
+        logger.warning("Basic auth username or password provided but not both - authentication disabled")
+
     creator = ConnectorCreator(environment)
 
     logger.info("Starting connector creation process")
@@ -321,7 +334,7 @@ def main():
         connector_configs_from_worker = []
         for worker_url in worker_urls:
             logger.info(f"Getting connector configs for worker: {worker_url}")
-            connector_configs_from_worker.extend(ConfigDiscovery.get_connector_configs_from_worker(worker_url, disable_ssl_verify, logger))
+            connector_configs_from_worker.extend(ConfigDiscovery.get_connector_configs_from_worker(worker_url, disable_ssl_verify, logger, auth=worker_auth))
 
         for connector_name in connector_fm_configs:
             fm_entry = connector_fm_configs[connector_name]
@@ -335,9 +348,9 @@ def main():
                 # stop connector
                 if migration_mode == 'stop_create_latest_offset':
                     logger.info("Stopping CP connector after validation as per migration mode")
-                    creator.stop_cp_connector(matching_worker_sm_config.get('worker', None), fm_name, disable_ssl_verify)
+                    creator.stop_cp_connector(matching_worker_sm_config.get('worker', None), fm_name, disable_ssl_verify, auth=worker_auth)
 
-                offsets = offset_manager.get_offsets_of_connector(matching_worker_sm_config, disable_ssl_verify)
+                offsets = offset_manager.get_offsets_of_connector(matching_worker_sm_config, disable_ssl_verify, auth=worker_auth)
                 if not offsets:
                     logger.info(f"No offsets found on workers for connector '{fm_name}'")
                 else:
