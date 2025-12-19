@@ -99,6 +99,8 @@ def main():
     parser = argparse.ArgumentParser(description="Connector Migration Tool")
     parser.add_argument('--worker-urls', type=str, help='Comma-separated list of worker URLs')
     parser.add_argument('--worker-urls-file', type=str, help='Path to file containing worker URLs')
+    parser.add_argument('--worker-username', type=str, help='Username for basic authentication with Connect worker REST API')
+    parser.add_argument('--worker-password', type=str, help='Password for basic authentication with Connect worker REST API')
     parser.add_argument('--config-file', type=str, help='Path to JSON file containing connector configurations')
     parser.add_argument('--config-dir', type=str, help='Path to directory containing connector config JSON files')
     parser.add_argument('--redact', action='store_true', help='Redact sensitive configurations')
@@ -144,7 +146,9 @@ def main():
                 output_dir=output_dir,
                 sensitive_file=getattr(args, 'sensitive_file', None),
                 worker_config_file=getattr(args, 'worker_config_file', None),
-                disable_ssl_verify=getattr(args, 'disable_ssl_verify', None)
+                disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
+                worker_username=getattr(args, 'worker_username', None),
+                worker_password=getattr(args, 'worker_password', None)
             )
 
         # Step 1: Get Connector Configs (either from discovery, file, or directory)
@@ -201,7 +205,9 @@ def main():
             env_id=getattr(args, 'environment_id', None),
             lkc_id=getattr(args, 'cluster_id', None),
             bearer_token=bearer_token,
-            disable_ssl_verify=getattr(args, 'disable_ssl_verify', None)
+            disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
+            worker_username=getattr(args, 'worker_username', None),
+            worker_password=getattr(args, 'worker_password', None)
         )
         fm_configs = comparator.process_connectors()
         if fm_configs:
