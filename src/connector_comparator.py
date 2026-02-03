@@ -27,12 +27,30 @@ class ConnectorComparator:
 
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
                  env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False,
-                 worker_username: str = None, worker_password: str = None):
+                 worker_username: str = None, worker_password: str = None, debezium_version: str = 'v2'):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
         # Use local model
         self.semantic_matcher = SemanticMatcher()
+        
+        # Debezium version for CDC template selection (default: v2)
+        self.debezium_version = debezium_version.lower()
+        if self.debezium_version not in ['v1', 'v2']:
+            self.logger.warning(f"Invalid debezium_version '{debezium_version}', defaulting to 'v2'")
+            self.debezium_version = 'v2'
+        self.logger.info(f"Using Debezium version: {self.debezium_version}")
+        
+        # Mapping from v1 to v2 Debezium connector classes
+        self.debezium_v1_to_v2_mapping = {
+            'io.debezium.connector.mysql.MySqlConnector': 'io.debezium.connector.v2.mysql.MySqlConnectorV2',
+            'io.debezium.connector.postgresql.PostgresConnector': 'io.debezium.connector.v2.postgresql.PostgresConnectorV2',
+            'io.debezium.connector.sqlserver.SqlServerConnector': 'io.debezium.connector.v2.sqlserver.SqlServerConnectorV2',
+            'io.debezium.connector.mariadb.MariaDbConnector': 'io.debezium.connector.v2.mariadb.MariaDbConnector'
+        }
+        
+        # Reverse mapping from v2 to v1
+        self.debezium_v2_to_v1_mapping = {v: k for k, v in self.debezium_v1_to_v2_mapping.items()}
 
 
 
@@ -548,7 +566,16 @@ class ConnectorComparator:
         template_info = []
 
         # For JDBC connectors, handle special cases (like Snowflake) in _auto_select_jdbc_template
+        # For Debezium connectors, map v1 to v2 if debezium_version=v2
         target_connector_class = connector_class
+        if self.debezium_version == 'v2' and connector_class in self.debezium_v1_to_v2_mapping:
+            v2_connector_class = self.debezium_v1_to_v2_mapping[connector_class]
+            self.logger.info(f"Migrating from v1 to v2: {connector_class} -> {v2_connector_class}")
+            target_connector_class = v2_connector_class
+        elif self.debezium_version == 'v1' and connector_class in self.debezium_v2_to_v1_mapping:
+            v1_connector_class = self.debezium_v2_to_v1_mapping[connector_class]
+            self.logger.info(f"Migrating from v2 to v1: {connector_class} -> {v1_connector_class}")
+            target_connector_class = v1_connector_class
         # Search through all JSON files in the FM template directory
         for template_file in self.fm_template_dir.glob('*.json'):
             try:
@@ -592,15 +619,65 @@ class ConnectorComparator:
                 continue
 
         if not matching_templates:
-            self.logger.warning(f"No FM templates found for connector.class: {connector_class}")
-            return None
+            # If we migrated to v2/v1 but didn't find a template, try the original connector class
+            if target_connector_class != connector_class:
+                self.logger.warning(f"No FM templates found for migrated connector.class: {target_connector_class}, trying original: {connector_class}")
+                # Reset and try with original connector class
+                matching_templates = []
+                template_info = []
+                target_connector_class = connector_class
+                # Search again with original connector class
+                for template_file in self.fm_template_dir.glob('*.json'):
+                    try:
+                        with open(template_file, 'r') as f:
+                            template_data = json.load(f)
+                        found_connector_class = None
+                        if template_data.get('connector.class') == target_connector_class:
+                            found_connector_class = template_data.get('connector.class')
+                        elif 'templates' in template_data:
+                            for template in template_data['templates']:
+                                if template.get('connector.class') == target_connector_class:
+                                    found_connector_class = template.get('connector.class')
+                                    break
+                        if found_connector_class:
+                            template_path = str(template_file)
+                            template_id = 'Unknown'
+                            if template_data.get('template_id'):
+                                template_id = template_data.get('template_id')
+                            elif 'templates' in template_data and len(template_data['templates']) > 0:
+                                template_id = template_data['templates'][0].get('template_id', 'Unknown')
+                            matching_templates.append(template_path)
+                            template_info.append({
+                                'path': template_path,
+                                'template_id': template_id,
+                                'filename': template_file.name
+                            })
+                    except Exception as e:
+                        self.logger.warning(f"Error reading template {template_file}: {str(e)}")
+                        continue
+            
+            if not matching_templates:
+                self.logger.warning(f"No FM templates found for connector.class: {connector_class}")
+                return None
 
         if len(matching_templates) == 1:
             # Only one template found, use it
             self.logger.info(f"Using single FM template: {matching_templates[0]}")
             return matching_templates[0]
         else:
-            # Multiple templates found - for JDBC connectors, auto-select based on connection URL
+            # Multiple templates found - filter CDC templates by version first
+            filtered_templates = self._filter_cdc_templates_by_version(connector_class, template_info)
+            
+            if len(filtered_templates) == 1:
+                # Only one template after filtering, use it
+                self.logger.info(f"Using filtered CDC template (debezium_version={self.debezium_version}): {filtered_templates[0]['path']}")
+                return filtered_templates[0]['path']
+            elif len(filtered_templates) < len(template_info):
+                # Some templates were filtered out, continue with filtered list
+                template_info = filtered_templates
+                self.logger.info(f"Filtered to {len(filtered_templates)} CDC templates based on debezium_version={self.debezium_version}")
+            
+            # For JDBC connectors, auto-select based on connection URL
             if connector_class in ['io.confluent.connect.jdbc.JdbcSourceConnector', 'io.confluent.connect.jdbc.JdbcSinkConnector'] and config:
                 return self._auto_select_jdbc_template(connector_class, template_info, config, connector_name)
             else:
@@ -721,6 +798,69 @@ class ConnectorComparator:
         # If still no match, fall back to user selection
         self.logger.warning(f"Could not auto-select JDBC template for {connector_display} with database type {db_type}")
         return self._get_user_template_selection(connector_class, template_info, connector_name)
+
+    def _filter_cdc_templates_by_version(self, connector_class: str, template_info: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Filter CDC templates based on debezium_version parameter"""
+        # Check if this is a Debezium CDC connector
+        is_debezium_connector = (
+            'debezium' in connector_class.lower() or
+            connector_class.startswith('io.debezium.connector')
+        )
+        
+        if not is_debezium_connector:
+            # Not a Debezium connector, return all templates unchanged
+            return template_info
+        
+        # Check if we have both v1 and v2 templates
+        v2_templates = []
+        v1_templates = []
+        
+        for template in template_info:
+            template_id = template.get('template_id', '').lower()
+            filename = template.get('filename', '').lower()
+            
+            # Check if this is a v2 template (has V2 in template_id or filename)
+            is_v2 = 'v2' in template_id or 'v2' in filename
+            
+            # Also check the actual template file for connector.class
+            try:
+                with open(template['path'], 'r') as f:
+                    template_data = json.load(f)
+                    connector_class_in_template = None
+                    if template_data.get('connector.class'):
+                        connector_class_in_template = template_data.get('connector.class')
+                    elif 'templates' in template_data and len(template_data['templates']) > 0:
+                        connector_class_in_template = template_data['templates'][0].get('connector.class')
+                    
+                    if connector_class_in_template:
+                        if '.v2.' in connector_class_in_template or 'ConnectorV2' in connector_class_in_template:
+                            is_v2 = True
+                        elif '.v2.' not in connector_class_in_template and 'ConnectorV2' not in connector_class_in_template:
+                            # Explicitly v1 if it doesn't have v2 indicators
+                            is_v2 = False
+            except Exception as e:
+                self.logger.debug(f"Could not read template file {template['path']}: {e}")
+            
+            if is_v2:
+                v2_templates.append(template)
+            else:
+                v1_templates.append(template)
+        
+        # Filter based on debezium_version
+        if self.debezium_version == 'v2':
+            if v2_templates:
+                self.logger.info(f"Filtering to {len(v2_templates)} v2 CDC templates (debezium_version=v2)")
+                return v2_templates
+            else:
+                self.logger.info(f"No v2 templates found, using {len(v1_templates)} v1 templates")
+                return v1_templates
+        else:  # v1
+            if v1_templates:
+                self.logger.info(f"Filtering to {len(v1_templates)} v1 CDC templates (debezium_version=v1)")
+                return v1_templates
+            else:
+                self.logger.info(f"No v1 templates found, using {len(v2_templates)} v2 templates")
+                return v2_templates
 
     def _get_user_template_selection(self, connector_class: str, template_info: List[Dict[str, str]], connector_name: str = None) -> Optional[str]:
         """Ask user to select a template when multiple options are available"""
@@ -868,26 +1008,27 @@ class ConnectorComparator:
         # Detect Oracle complex format by presence of '@(DESCRIPTION='
         # "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=<span>{connection.host})(PORT=</span>{connection.port}))(CONNECT_DATA=(<span>{db.connection.type}=</span>{db.name}))(SECURITY=(SSL_SERVER_CERT_DN="${ssl.server.cert.dn}")))"
         if '@(DESCRIPTION=' in original_url:
-            self.logger.debug("Detected Oracle complex format with DESCRIPTION block (uppercase keywords only).")
-            # Extract HOST
-            host_match = re.search(r'\(HOST=([^\)]+)\)', original_url)
+            self.logger.debug("Detected Oracle complex format with DESCRIPTION block.")
+            # Extract HOST (case-insensitive to handle Host, HOST, host, etc.)
+            host_match = re.search(r'\(HOST=([^\)]+)\)', original_url, re.IGNORECASE)
             if host_match:
                 connection_info['host'] = host_match.group(1)
                 self.logger.debug(f"[ORACLE] Extracted host: {connection_info['host']}")
-            # Extract PORT
-            port_match = re.search(r'\(PORT=([^\)]+)\)', original_url)
+            # Extract PORT (case-insensitive to handle Port, PORT, port, etc.)
+            port_match = re.search(r'\(PORT=([^\)]+)\)', original_url, re.IGNORECASE)
             if port_match:
                 connection_info['port'] = port_match.group(1)
                 self.logger.debug(f"[ORACLE] Extracted port: {connection_info['port']}")
             # Extract db.connection.type and db.name (fix group assignments)
-            dbtype_dbname_match = re.search(r'\(CONNECT_DATA=\(([^=\)]+)=([^\)]+)\)\)', original_url)
+            # Handle both SERVICE_NAME and SID, case-insensitive
+            dbtype_dbname_match = re.search(r'\(CONNECT_DATA=\(([^=\)]+)=([^\)]+)\)\)', original_url, re.IGNORECASE)
             if dbtype_dbname_match:
                 connection_info['db.connection.type'] = dbtype_dbname_match.group(1)
                 connection_info['db.name'] = dbtype_dbname_match.group(2)
                 self.logger.debug(f"[ORACLE] Extracted db.connection.type: {connection_info['db.connection.type']}")
                 self.logger.debug(f"[ORACLE] Extracted db.name: {connection_info['db.name']}")
-            # Extract ssl.server.cert.dn
-            ssl_cert_dn_match = re.search(r'SSL_SERVER_CERT_DN=\\?"?([^\)\"]+)\\?"?\)', original_url)
+            # Extract ssl.server.cert.dn (case-insensitive to handle ssl_server_cert_dn, SSL_SERVER_CERT_DN, etc.)
+            ssl_cert_dn_match = re.search(r'SSL_SERVER_CERT_DN=\\?"?([^\)\"]+)\\?"?\)', original_url, re.IGNORECASE)
             if ssl_cert_dn_match:
                 connection_info['ssl.server.cert.dn'] = ssl_cert_dn_match.group(1)
                 self.logger.debug(f"[ORACLE] Extracted ssl.server.cert.dn: {connection_info['ssl.server.cert.dn']}")
@@ -2086,8 +2227,10 @@ class ConnectorComparator:
         return connector_config_defs
 
     def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract template config definitions from FM template (following Java pattern)"""
+        """Extract template config definitions from FM template (following Java pattern)
+        When multiple templates define the same config, uses the first definition encountered."""
         template_config_defs = []
+        seen_config_names = set()  # Track config names we've already seen
 
         if 'templates' in fm_template:
             if not isinstance(fm_template['templates'], (list, tuple)):
@@ -2104,7 +2247,19 @@ class ConnectorComparator:
                     self.logger.debug(f"Template {i} has config_defs: {type(template['config_defs'])}")
                     # Ensure config_defs is a list/iterable, not a boolean or other type
                     if isinstance(template['config_defs'], (list, tuple)):
-                        template_config_defs.extend(template['config_defs'])
+                        for config_def in template['config_defs']:
+                            if not isinstance(config_def, dict) or 'name' not in config_def:
+                                continue
+                            
+                            config_name = config_def['name']
+                            
+                            # Only add if we haven't seen this config name before (use first definition)
+                            if config_name not in seen_config_names:
+                                template_config_defs.append(config_def)
+                                seen_config_names.add(config_name)
+                                self.logger.debug(f"Added config '{config_name}' from template {i} (first definition)")
+                            else:
+                                self.logger.debug(f"Skipping duplicate config '{config_name}' from template {i} (using first definition)")
                     else:
                         self.logger.warning(f"Expected config_defs to be a list, got {type(template['config_defs'])}: {template['config_defs']}")
                         # Skip this template's config_defs
@@ -2112,6 +2267,7 @@ class ConnectorComparator:
         else:
             self.logger.warning("No 'templates' key found in fm_template")
 
+        self.logger.debug(f"Extracted {len(template_config_defs)} unique config definitions (using first definition for duplicates)")
         return template_config_defs
 
     def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
