@@ -56,6 +56,78 @@
           ]
         },
         {
+          "name": "document.content.format",
+          "type": "STRING",
+          "required": false,
+          "default_value": "json_string",
+          "importance": "HIGH",
+          "group": "Schema Validation",
+          "order_in_group": 1,
+          "display_name": "Document content format",
+          "documentation": "Sets the document content format. 'json_string' mode (default) outputs records as JSON strings in a 'document' field. 'schema' mode infers Kafka Connect schemas from DynamoDB records and outputs structured data with individual fields. Note that 'schema' mode requires appropriate converters (AVRO, JSON_SR, etc.) for full functionality.",
+          "recommended_values": [
+            "json_string",
+            "schema"
+          ]
+        },
+        {
+          "name": "document.schema.source",
+          "type": "STRING",
+          "required": false,
+          "default_value": "user_provided",
+          "importance": "MEDIUM",
+          "group": "Schema Validation",
+          "order_in_group": 2,
+          "display_name": "Document schema source",
+          "documentation": "Specifies the source of the document schema. This configuration is only used when 'document.content.format' is set to 'schema'. 'user_provided' (default) - records are validated against the schema specified in 'schema.user.schema' configuration. 'auto_infer' - the connector infers the schema from incoming records and registers it in Schema Registry. \nWARNING: Using 'auto_infer' for tables with evolving or variable schemas is not recommended. Schema evolution may result in multiple schema versions being registered in Schema Registry, which can exceed registry limits or lead to operational issues. In addition, the connector may fail to register new schemas if they are not backward compatible with previously registered versions. As a workaround, you may set the Schema Compatibility mode to NONE in Confluent Cloud; however, carefully assess the impact of incompatible schema versions on downstream consumers before making this change.",
+          "recommended_values": [
+            "user_provided",
+            "auto_infer"
+          ]
+        },
+        {
+          "name": "document.schema.value",
+          "type": "STRING",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Schema Validation",
+          "order_in_group": 3,
+          "display_name": "Document Schema Value",
+          "documentation": "Specifies an Avro schema definition for the document field of the SourceRecord. Required when 'document.schema.source' is set to 'user_provided'. Example: {\"type\":\"record\",\"name\":\"User\",\"fields\":[{\"name\":\"id\",\"type\":[\"null\",\"string\"]},{\"name\":\"name\",\"type\":[\"null\",\"string\"]}]}."
+        },
+        {
+          "name": "document.schema.validation",
+          "type": "STRING",
+          "required": false,
+          "default_value": "strict",
+          "importance": "MEDIUM",
+          "group": "Schema Validation",
+          "order_in_group": 4,
+          "display_name": "Document Schema Validation Mode",
+          "documentation": "Schema validation mode. 'strict' = fail if extra fields, missing mandatory fields, or type mismatches are detected. 'lenient' = drop extra fields and continue processing, but still fail on missing mandatory fields and type mismatches (data integrity issues).",
+          "recommended_values": [
+            "strict",
+            "lenient"
+          ]
+        },
+        {
+          "name": "decimal.handling.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "double",
+          "importance": "MEDIUM",
+          "group": "Schema Validation",
+          "order_in_group": 5,
+          "display_name": "Decimal Handling Mode",
+          "documentation": "Controls how DynamoDB Number types are mapped to Kafka Connect schemas during auto-inference. Options: 'double' (always FLOAT64 - RECOMMENDED), 'long' (always INT64), 'string' (always STRING), 'auto' (infers INT32/INT64/FLOAT64 based on value). Only applicable when 'document.content.format=schema' and 'document.schema.source=auto_infer'. Default is 'double' for schema consistency and backward compatibility. WARNING: Using 'auto' mode can cause backward incompatible schemas when the range of numeric values varies widely between messages, as the same field may be inferred as different types (e.g., INT32 vs INT64 vs FLOAT64), leading to Schema Registry registration failures.",
+          "recommended_values": [
+            "double",
+            "long",
+            "string",
+            "auto"
+          ]
+        },
+        {
           "name": "dynamodb.table.sync.mode",
           "type": "STRING",
           "default_value": "SNAPSHOT_CDC",
@@ -268,6 +340,21 @@
           "name": "dynamodb.service.endpoint"
         },
         {
+          "name": "document.content.format"
+        },
+        {
+          "name": "document.schema.source"
+        },
+        {
+          "name": "document.schema.value"
+        },
+        {
+          "name": "document.schema.validation"
+        },
+        {
+          "name": "decimal.handling.mode"
+        },
+        {
           "name": "dynamodb.table.sync.mode"
         },
         {
@@ -321,6 +408,10 @@
         {
           "name": "connector.endpoint",
           "value": "${dynamodb.service.endpoint}"
+        },
+        {
+          "name": "connector.consolidated.egress.whitelist",
+          "value": "${dynamodb.service.endpoint},dynamodbstreams.amazonaws.com,dynamodbstreams.*.amazonaws.com,resource-groups.*.amazonaws.com"
         },
         {
           "name": "producer.override.security.protocol",
@@ -433,16 +524,18 @@
           "name": "kafka.auth.mode",
           "type": "STRING",
           "required": false,
-          "default_value": "KAFKA_API_KEY",
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
           "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
-          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
-          "recommended_values": [
-            "SERVICE_ACCOUNT",
-            "KAFKA_API_KEY"
-          ]
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
         },
         {
           "name": "kafka.api.key",
@@ -810,7 +903,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "default_value": "none",
-          "display_name": "errors.tolerance",
+          "display_name": "Errors Tolerance",
           "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
           "recommended_values": [
             "none",
@@ -823,7 +916,7 @@
           "required": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "producer.override.linger.ms",
+          "display_name": "Producer Override Linger Ms",
           "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
@@ -957,9 +1050,6 @@
               "arguments": {
                 "config": "provider.integration.visible",
                 "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
               }
             }
           ]
@@ -977,13 +1067,7 @@
       ],
       "connector_configs": [
         {
-          "name": "authentication.method",
-          "switch": {
-            "authentication.method": {
-              "IAM Roles": "IAM Roles",
-              "Access Keys": "Access Keys"
-            }
-          }
+          "name": "authentication.method"
         },
         {
           "name": "provider.integration.id"
@@ -1043,7 +1127,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "value.converter.ignore.default.for.nullables",
+          "display_name": "Value Converter Ignore Default For Nullables",
           "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
@@ -1053,7 +1137,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names"
+          "display_name": "Value Converter Scrub Invalid Names"
         }
       ],
       "connector_configs": [
@@ -1095,6 +1179,23 @@
       "abstract": true,
       "config_defs": [
         {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
+        },
+        {
           "name": "auto.restart.on.user.error",
           "type": "BOOLEAN",
           "required": false,
@@ -1112,7 +1213,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support"
+          "display_name": "Value Converter Enhanced Avro Schema Support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1121,7 +1222,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data"
+          "display_name": "Value Converter Connect Meta Data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1130,7 +1231,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support"
+          "display_name": "Value Converter Enhanced Protobuf Schema Support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1139,7 +1240,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions"
+          "display_name": "Value Converter Generate Index For Unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1148,7 +1249,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums"
+          "display_name": "Value Converter Int For Enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1157,7 +1258,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables"
+          "display_name": "Value Converter Optional For Nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1166,7 +1267,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls"
+          "display_name": "Value Converter Generate Struct For Nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1175,7 +1276,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables"
+          "display_name": "Value Converter Wrapper For Nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1184,7 +1285,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives"
+          "display_name": "Value Converter Wrapper For Raw Primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1193,7 +1294,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties"
+          "display_name": "Value Converter Object Additional Properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1202,7 +1303,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired"
+          "display_name": "Value Converter Use Optional For Nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1216,7 +1317,7 @@
           "alias": "json.output.decimal.format",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.decimal.format",
+          "display_name": "Value Converter Decimal Format",
           "default_value": "BASE64"
         },
         {
@@ -1226,7 +1327,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas"
+          "display_name": "Value Converter Auto Register Schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -1235,7 +1336,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version"
+          "display_name": "Value Converter Use Latest Version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -1244,7 +1345,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict"
+          "display_name": "Value Converter Latest Compatibility Strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -1260,7 +1361,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy"
+          "display_name": "Key Converter Key Subject Name Strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -1276,7 +1377,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy"
+          "display_name": "Value Converter Value Subject Name Strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -1290,7 +1391,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy"
+          "display_name": "Value Converter Reference Subject Name Strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -1299,7 +1400,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys"
+          "display_name": "Value Converter Allow Optional Map Keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -1309,7 +1410,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions"
+          "display_name": "Value Converter Flatten Singleton Unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -1318,7 +1419,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2"
+          "display_name": "Value Converter Optional For Proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -1327,7 +1428,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions"
+          "display_name": "Value Converter Flatten Unions"
         },
         {
           "name": "header.converter",
@@ -1335,19 +1436,38 @@
           "required": false,
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "header.converter",
+          "display_name": "Header Converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
-            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter"
+            "org.apache.kafka.connect.converters.ByteArrayConverter"
+          ]
+        },
+        {
+          "name": "connector.egress.whitelist",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Egress allowlist",
+          "display_name": "Egress allowlist",
+          "documentation": "List a comma-separated list of FQDNs, IPs, or CIDR ranges for secure, restricted network egress.",
+          "docs_hidden": true,
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "connector.egress.whitelist.config.visible",
+                "values": "true"
+              }
+            }
           ]
         }
       ],
@@ -1444,6 +1564,9 @@
         },
         {
           "name": "value.converter.use.apache.http.client"
+        },
+        {
+          "name": "connector.egress.whitelist"
         }
       ]
     },

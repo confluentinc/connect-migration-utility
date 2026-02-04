@@ -116,6 +116,7 @@ def main():
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
     parser.add_argument('--semantic-cache-folder', type=str, help='Cache folder for sentence transformer models (default: auto-detected from pip installation)')
+    parser.add_argument('--debezium-version', type=str, default='v2', choices=['v1', 'v2'], help='Debezium version for CDC template selection (default: v2)')
     parser.add_argument('--terraform', action='store_true', help='Generate Terraform files for successful connector configurations')
 
 
@@ -209,7 +210,8 @@ def main():
             bearer_token=bearer_token,
             disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
             worker_username=getattr(args, 'worker_username', None),
-            worker_password=getattr(args, 'worker_password', None)
+            worker_password=getattr(args, 'worker_password', None),
+            debezium_version=getattr(args, 'debezium_version', 'v2')
         )
         fm_configs = comparator.process_connectors()
         if fm_configs:
