@@ -3,6 +3,13 @@ Apache Connect Migration Utility
 Copyright 2024-2025 The Apache Software Foundation
 
 This product includes software developed at The Apache Software Foundation.
+
+This module has been refactored. Related modules:
+- database_utils.py: JDBC and MongoDB connection string parsing
+- derivation_methods.py: Config value derivation methods (mixin)
+- template_manager.py: Template loading and management
+- transform_processor.py: SMT/transform processing
+- config_translator.py: Confluent Cloud /translate API integration
 """
 
 import json
@@ -18,9 +25,24 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from config_discovery import ConfigDiscovery
+from config_translator import ConfigTranslator
+from database_utils import DatabaseUtils
+from derivation_methods import DerivationMethodsMixin
+from template_manager import TemplateManager
+from transform_processor import TransformProcessor
 
 
-class ConnectorComparator:
+class ConnectorComparator(DerivationMethodsMixin):
+    """
+    Main connector comparator class for SM to FM config transformation.
+    
+    Inherits from DerivationMethodsMixin which provides all _derive_* methods.
+    Uses helper classes for modular functionality:
+    - DatabaseUtils: JDBC/MongoDB URL parsing
+    - TemplateManager: Template loading and lookup
+    - TransformProcessor: SMT classification
+    - ConfigTranslator: Confluent Cloud /translate API
+    """
     DISCOVERED_CONFIGS_DIR: Path = Path("discovered_configs")
     SUCCESSFUL_CONFIGS_SUBDIR: Path = Path("successful_configs")
     UNSUCCESSFUL_CONFIGS_SUBDIR: Path = Path("unsuccessful_configs_with_errors")
@@ -69,7 +91,30 @@ class ConnectorComparator:
         else:
             self.logger.info("No Confluent Cloud credentials provided - will use fallback FM transforms only")
 
-
+        # Initialize ConfigTranslator for translate API when env_id and lkc_id are provided
+        self.config_translator = None
+        if env_id and lkc_id and bearer_token:
+            try:
+                # Parse bearer_token as api_key:api_secret
+                if ':' in bearer_token:
+                    api_key, api_secret = bearer_token.split(':', 1)
+                else:
+                    # Assume it's just the key, secret might be empty or handled differently
+                    api_key = bearer_token
+                    api_secret = ""
+                
+                self.config_translator = ConfigTranslator(
+                    environment_id=env_id,
+                    cluster_id=lkc_id,
+                    api_key=api_key,
+                    api_secret=api_secret,
+                    disable_ssl_verify=disable_ssl_verify,
+                    logger=self.logger
+                )
+                self.logger.info("ConfigTranslator initialized - will use /translate API for FM config generation")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize ConfigTranslator: {e}. Will use fallback logic.")
+                self.config_translator = None
 
         # Load template files - hardcoded FM template directory
         self.fm_template_dir = Path("templates/fm")
@@ -1614,19 +1659,60 @@ class ConnectorComparator:
                     self.logger.error(f"Connector at index {i} missing required fields 'name' or 'config'")
                     continue
 
-                # Transform SM to FM using the new method
-                result = self.transformSMToFm(connector['name'], connector['config'])
+                connector_name = connector['name']
+                connector_config = connector['config']
 
-                # Create FM config object in the expected format
-                fm_config = {
-                    'name': connector['name'],
-                    'sm_config': connector['config'],
-                    'config': result['fm_configs'],
-                    'mapping_errors': result['errors'],
-                    'mapping_warnings': result['warnings'],
-                }
+                # Use translate API if env_id and lkc_id are present, otherwise use existing logic
+                if self.config_translator:
+                    # Use the /translate API to get FM config
+                    self.logger.info(f"Using /translate API for connector: {connector_name}")
+                    translation_result = self.config_translator.translate_config(
+                        connector_name=connector_name,
+                        connector_config=connector_config
+                    )
 
-                fm_configs[connector['name']] = fm_config
+                    if translation_result.success:
+                        # Translation succeeded - use translated config
+                        fm_config = {
+                            'name': connector_name,
+                            'sm_config': connector_config,
+                            'config': translation_result.config,
+                            'mapping_errors': [],
+                            'mapping_warnings': [
+                                f"{w.field}: {w.message}" for w in translation_result.warnings
+                            ],
+                            'translation_source': 'translate_api'
+                        }
+                        self.logger.info(f"✅ Successfully translated connector '{connector_name}' using /translate API")
+                    else:
+                        # Translation failed - fall back to existing logic
+                        self.logger.warning(
+                            f"Translation API failed for '{connector_name}': {translation_result.error}. "
+                            "Falling back to template-based transformation."
+                        )
+                        result = self.transformSMToFm(connector_name, connector_config)
+                        fm_config = {
+                            'name': connector_name,
+                            'sm_config': connector_config,
+                            'config': result['fm_configs'],
+                            'mapping_errors': result['errors'],
+                            'mapping_warnings': result['warnings'],
+                            'translation_source': 'fallback_template',
+                            'translate_api_error': translation_result.error
+                        }
+                else:
+                    # No translate API credentials - use existing template-based logic
+                    result = self.transformSMToFm(connector_name, connector_config)
+                    fm_config = {
+                        'name': connector_name,
+                        'sm_config': connector_config,
+                        'config': result['fm_configs'],
+                        'mapping_errors': result['errors'],
+                        'mapping_warnings': result['warnings'],
+                        'translation_source': 'template'
+                    }
+
+                fm_configs[connector_name] = fm_config
 
             except Exception as e:
                 connector_name = connector.get('name', f'connector_{i}') if isinstance(connector, dict) else f'connector_{i}'
