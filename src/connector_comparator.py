@@ -18,6 +18,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from config_discovery import ConfigDiscovery
+from debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
 
 
 class ConnectorComparator:
@@ -40,6 +41,9 @@ class ConnectorComparator:
             self.logger.warning(f"Invalid debezium_version '{debezium_version}', defaulting to 'v2'")
             self.debezium_version = 'v2'
         self.logger.info(f"Using Debezium version: {self.debezium_version}")
+        
+        # Initialize the Debezium v1 to v2 translator
+        self.debezium_translator = DebeziumV1ToV2Translator(logger=self.logger)
         
         # Mapping from v1 to v2 Debezium connector classes
         self.debezium_v1_to_v2_mapping = {
@@ -1918,6 +1922,9 @@ class ConnectorComparator:
             result['errors'].append("Missing required 'connector.class' configuration")
             return result
 
+        # Store original connector class to detect if v1 to v2 translation is needed after SM to FM
+        original_connector_class = config_dict.get('connector.class', '')
+
         # Get template ID (connector class)
         template_id = config_dict.get('connector.class')
 
@@ -2186,6 +2193,22 @@ class ConnectorComparator:
             self.logger.info(f"Final connector.class value: {fm_configs['connector.class']}")
         else:
             self.logger.warning("connector.class not found in final fm_configs")
+
+        # Step: Translate Debezium v1 FM configs to v2 FM configs
+        # This happens AFTER SM to FM translation is complete
+        # Translation happens when: customer provided v1 config (debezium_version == 'v1')
+        if self.debezium_version == 'v1' and self.debezium_translator.is_debezium_v1(original_connector_class):
+            self.logger.info(f"Customer provided Debezium v1 config, translating FM configs to v2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.debezium_translator.translate_v1_to_v2(
+                original_connector_class, fm_configs
+            )
+            # Add v1 to v2 translation warnings
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[v1→v2 Translation] {warning}")
+            # Add v1 to v2 translation errors
+            for error in v1_to_v2_errors:
+                errors.append(f"[v1→v2 Translation] {error}")
+            self.logger.info(f"V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
 
         # Return the result in the required format
         result = {
@@ -3757,6 +3780,3 @@ class ConnectorComparator:
                 return resolved_default
 
         return None
-
-
-    
