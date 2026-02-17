@@ -71,32 +71,6 @@
           ]
         },
         {
-          "name": "table.whitelist",
-          "type": "LIST",
-          "required": true,
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 2,
-          "display_name": "Table names",
-          "documentation": "List of tables to include in copying. Use a comma-separated list to specify multiple tables (for example: \"User, Address, Email\").",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "incrementing.column.name",
-          "type": "STRING",
-          "required": false,
-          "default_value": "",
-          "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 4,
-          "display_name": "Incrementing column name",
-          "documentation": "The name of the strictly incrementing column to use to detect new rows. Any empty value indicates the column should be autodetected by looking for an auto-incrementing column. This column may not be nullable."
-        },
-        {
           "name": "table.types",
           "type": "LIST",
           "required": true,
@@ -222,15 +196,6 @@
           "value": false
         },
         {
-          "name": "incrementing.column.name",
-          "switch": {
-            "incrementing.column.name": {
-              "": null,
-              "DEFAULT": "${incrementing.column.name}"
-            }
-          }
-        },
-        {
           "name": "connection.url",
           "value": "jdbc:db2://${connection.host}:${connection.port}/${db.name}"
         },
@@ -241,7 +206,10 @@
           "name": "connection.password"
         },
         {
-          "name": "table.whitelist"
+          "name": "table.include.list"
+        },
+        {
+          "name": "table.exclude.list"
         },
         {
           "name": "schema.pattern"
@@ -317,6 +285,12 @@
         {
           "name": "connector.endpoint",
           "value": "${connection.host}"
+        },
+        {
+          "name": "timestamp.columns.mapping"
+        },
+        {
+          "name": "incrementing.column.mapping"
         }
       ]
     },
@@ -367,16 +341,18 @@
           "name": "kafka.auth.mode",
           "type": "STRING",
           "required": false,
-          "default_value": "KAFKA_API_KEY",
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
           "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
-          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
-          "recommended_values": [
-            "SERVICE_ACCOUNT",
-            "KAFKA_API_KEY"
-          ]
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
         },
         {
           "name": "kafka.api.key",
@@ -726,7 +702,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 2,
+          "order_in_group": 4,
           "display_name": "Quote SQL Identifiers",
           "default_value": "ALWAYS",
           "documentation": "When to quote table names, column names, and other identifiers in SQL statements. For backward compatibility, the default value is ALWAYS.",
@@ -741,7 +717,7 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 3,
+          "order_in_group": 5,
           "display_name": "Transaction Isolation Level",
           "default_value": "DEFAULT",
           "documentation": "Isolation level determines how transaction integrity is visible to other users and systems. `DEFAULT`: This is the default isolation level configured at the Database Server. `READ_UNCOMMITTED`: This is the lowest isolation level. At this level, one transaction may see dirty reads (that is, not-yet-committed changes made by other transactions). `READ_COMMITTED`: This level guarantees that any data read is already committed at the moment it is read. `REPEATABLE_READ`: In addition to the guarantees of the `READ_COMMITTED` level, this option also guarantees that any data read cannot change, if the transaction reads the same data again. However, phantom reads are possible. `SERIALIZABLE`: This is the highest isolation level. In addition to everything `REPEATABLE_READ` guarantees, it also eliminates phantom reads.",
@@ -759,9 +735,75 @@
           "required": false,
           "importance": "MEDIUM",
           "group": "Mode",
-          "order_in_group": 4,
+          "order_in_group": 6,
           "display_name": "Initial timestamp",
           "documentation": "The epoch timestamp used for initial queries that use timestamp criteria. The value -1 sets the initial timestamp to the current time. If not specified, the connector retrieves all data. Once the connector has managed to successfully record a source offset, this property has no effect even if changed to a different value later on."
+        },
+        {
+          "name": "date.calendar.system",
+          "type": "STRING",
+          "required": false,
+          "default_value": "LEGACY",
+          "importance": "MEDIUM",
+          "group": "Mode",
+          "order_in_group": 10,
+          "display_name": "Date Calendar System",
+          "documentation": "The time elapsed from epoch populated in the end table topic for DATE or TIMESTAMP type columns can have two different values based upon the Calendar used to interpret it. If LEGACY is used, it will use the hybrid Gregorian/Julian calendar which was the default in the older java date time APIs. However, if 'PROLEPTIC_GREGORIAN' is used, then it will use the proleptic gregorian calendar which extends the Gregorian rules backward indefinitely and does not apply the 1582 cutover. This matches the behavior of modern Java date/time APIs (java.time). This is defaulted to LEGACY for backward compatibility. Changing this configuration on an existing connector might lead to a drift in the kafka topic record values.",
+          "recommended_values": [
+            "LEGACY",
+            "PROLEPTIC_GREGORIAN"
+          ]
+        },
+        {
+          "name": "incrementing.column.mapping",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Mode",
+          "order_in_group": 3,
+          "display_name": "Table to incrementing column mappings",
+          "documentation": "A comma-separated list of table regex to incrementing column mappings. Expected format is ``regex1:col1,regex2:col2``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``.*\\.customers.*:id,.*\\.orders.*:order_id``."
+        },
+        {
+          "name": "timestamp.columns.mapping",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Mode",
+          "order_in_group": 2,
+          "display_name": "Table to timestamp columns mappings",
+          "documentation": "A comma-separated list of table regex to timestamp columns mappings. On specifying multiple timestamp columns, COALESCE SQL function would be used to find out the effective timestamp for a row. Expected format is ``regex1:[col1|col2],regex2:[col3]``. Regexes would be matched against the fully-qualified table names. Identifier names are case sensitive. Every table included for capture should match exactly one of the provided mappings. An example for a valid input would be ``.*\\.customers.*:[updated_at|modified_at],.*\\.orders.*:[changed_at]``."
+        },
+        {
+          "name": "table.include.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 3,
+          "display_name": "Table include list",
+          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be copied. Use a comma-separated list to specify multiple regular expressions. Table names are case-sensitive. For example, ``table.include.list: schema1.customer.*,schema2.order.*``. If specified, ``table.whitelist`` cannot be set."
+        },
+        {
+          "name": "table.exclude.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 4,
+          "display_name": "Table exclude list",
+          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of tables to be excluded from copying. Use a comma-separated list to specify multiple regular expressions. Table names are case-sensitive. For example, ``table.exclude.list: schema1.customer.*,schema2.order.*``. If specified, ``table.whitelist`` cannot not be set."
+        },
+        {
+          "name": "query",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "MEDIUM",
+          "group": "Database details",
+          "order_in_group": 5,
+          "display_name": "Query Config",
+          "documentation": "If specified, the connector uses this custom SQL query to read source records, which allows for operations like joining tables or selecting subsets of data. Providing a query instructs the connector to read only the result set instead of performing a full table copy. This configuration supports different query modes with the incremental query properly constructed by appending a WHERE clause (For more information, `Incremental Query Modes - <https://docs.confluent.io/kafka-connectors/jdbc/current/source-connector/overview.html#incremental-query-modes>`). Note that only SELECT statements are supported. Always adhere to security best practices, like enforcing strict authorization via `<https://docs.confluent.io/cloud/current/connectors/managed-connector-rbac.html#managed-connector-rbac>`, applying appropriate :ref: `network access controls - <https://docs.confluent.io/cloud/current/security/access-control/ip-filtering/manage-ip-filters.html>` for control plane APIs, and following the principle of least privilege when provisioning identities or credentials for any third-party systems."
         }
       ],
       "connector_configs": [
@@ -772,6 +814,9 @@
           }
         },
         {
+          "name": "date.calendar.system"
+        },
+        {
           "name": "quote.sql.identifiers"
         },
         {
@@ -779,6 +824,26 @@
         },
         {
           "name": "timestamp.initial"
+        },
+        {
+          "name": "incrementing.column.mapping"
+        },
+        {
+          "name": "query.masked",
+          "value": "${query}"
+        },
+        {
+          "name": "query.retry.attempts",
+          "value": "10"
+        },
+        {
+          "name": "timestamp.columns.mapping"
+        },
+        {
+          "name": "table.include.list"
+        },
+        {
+          "name": "table.exclude.list"
         }
       ]
     },
@@ -791,10 +856,10 @@
           "type": "LIST",
           "required": false,
           "importance": "MEDIUM",
-          "group": "Database details",
-          "order_in_group": 3,
-          "display_name": "Timestamp column name",
-          "documentation": "Comma separated list of one or more timestamp columns to detect new or modified rows using the COALESCE SQL function. Rows whose first non-null timestamp value is greater than the largest previous timestamp value seen will be discovered with each poll. At least one column should not be nullable."
+          "group": "Mode",
+          "order_in_group": 4,
+          "display_name": "Timestamp column name (Deprecated)",
+          "documentation": "(Deprecated legacy configuration. Use timestamp.columns.mapping for new implementations.) Comma separated list of one or more timestamp columns to detect new or modified rows using the COALESCE SQL function. Rows whose first non-null timestamp value is greater than the largest previous timestamp value seen will be discovered with each poll. At least one column should not be nullable."
         }
       ],
       "connector_configs": [
@@ -865,7 +930,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "default_value": "none",
-          "display_name": "errors.tolerance",
+          "display_name": "Errors Tolerance",
           "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
           "recommended_values": [
             "none",
@@ -878,7 +943,7 @@
           "required": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "producer.override.linger.ms",
+          "display_name": "Producer Override Linger Ms",
           "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
@@ -1025,7 +1090,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "alias": "schemas.enable",
-          "display_name": "value.converter.schemas.enable",
+          "display_name": "Value Converter Schemas Enable",
           "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
@@ -1036,7 +1101,7 @@
           "alias": "replace.null.with.default",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "value.converter.replace.null.with.default",
+          "display_name": "Value Converter Replace Null With Default",
           "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
@@ -1047,7 +1112,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "value.converter.ignore.default.for.nullables",
+          "display_name": "Value Converter Ignore Default For Nullables",
           "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
@@ -1057,7 +1122,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names"
+          "display_name": "Value Converter Scrub Invalid Names"
         }
       ],
       "connector_configs": [
@@ -1120,9 +1185,79 @@
       ]
     },
     {
+      "template_id": "ssl-mode",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "ssl.mode",
+          "type": "STRING",
+          "required": true,
+          "default_value": "prefer",
+          "importance": "HIGH",
+          "group": "How should we connect to your database?",
+          "order_in_group": 6,
+          "display_name": "SSL mode",
+          "documentation": "What SSL mode should we use to connect to your database. `prefer` allows for the connection to not be encrypted and `require` allows for the connection to be encrypted but does not do certificate validation on the server. `verify-ca` and `verify-full` require a file containing SSL CA certificate to be provided. The server's certificate will be verified to be signed by one of these authorities.`verify-ca` will verify that the server certificate is issued by a trusted CA. `verify-full` will verify that the server certificate is issued by a trusted CA and that the server hostname matches that in the certificate. Client authentication is not performed.",
+          "recommended_values": [
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full"
+          ]
+        }
+      ],
+      "connector_configs": []
+    },
+    {
+      "template_id": "ssl-truststore-file-and-password",
+      "abstract": true,
+      "config_defs": [
+        {
+          "name": "ssl.truststorefile",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "How should we connect to your database?",
+          "order_in_group": 7,
+          "display_name": "Trust store",
+          "documentation": "The binary trust store file that contains the server's CA certificate. Only required if you use verify-ca or verify-full ssl mode. The connector supports files in JKS format. For REST API usage, you must base64-encode the binary trust store file and prefix it with ``data:text/plain;base64,``. For example, first, encode the file ``base64_truststore=<span>(cat /path/to/truststore.jks | base64)`` and then use ``data:text/plain;base64,</span>base64_truststore`` as the value."
+        },
+        {
+          "name": "ssl.truststorepassword",
+          "type": "PASSWORD",
+          "required": false,
+          "default_value": "",
+          "importance": "LOW",
+          "group": "How should we connect to your database?",
+          "order_in_group": 8,
+          "display_name": "Trust store password",
+          "documentation": "The trust store password containing server CA certificate. Only required if using `verify-ca` or `verify-full` ssl mode."
+        }
+      ],
+      "connector_configs": []
+    },
+    {
       "template_id": "super",
       "abstract": true,
       "config_defs": [
+        {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
+        },
         {
           "name": "auto.restart.on.user.error",
           "type": "BOOLEAN",
@@ -1141,7 +1276,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support"
+          "display_name": "Value Converter Enhanced Avro Schema Support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1150,7 +1285,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data"
+          "display_name": "Value Converter Connect Meta Data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1159,7 +1294,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support"
+          "display_name": "Value Converter Enhanced Protobuf Schema Support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1168,7 +1303,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions"
+          "display_name": "Value Converter Generate Index For Unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1177,7 +1312,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums"
+          "display_name": "Value Converter Int For Enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1186,7 +1321,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables"
+          "display_name": "Value Converter Optional For Nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1195,7 +1330,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls"
+          "display_name": "Value Converter Generate Struct For Nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1204,7 +1339,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables"
+          "display_name": "Value Converter Wrapper For Nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1213,7 +1348,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives"
+          "display_name": "Value Converter Wrapper For Raw Primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1222,7 +1357,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties"
+          "display_name": "Value Converter Object Additional Properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1231,7 +1366,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired"
+          "display_name": "Value Converter Use Optional For Nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1245,7 +1380,7 @@
           "alias": "json.output.decimal.format",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.decimal.format",
+          "display_name": "Value Converter Decimal Format",
           "default_value": "BASE64"
         },
         {
@@ -1255,7 +1390,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas"
+          "display_name": "Value Converter Auto Register Schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -1264,7 +1399,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version"
+          "display_name": "Value Converter Use Latest Version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -1273,7 +1408,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict"
+          "display_name": "Value Converter Latest Compatibility Strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -1289,7 +1424,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy"
+          "display_name": "Key Converter Key Subject Name Strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -1305,7 +1440,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy"
+          "display_name": "Value Converter Value Subject Name Strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -1319,7 +1454,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy"
+          "display_name": "Value Converter Reference Subject Name Strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -1328,7 +1463,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys"
+          "display_name": "Value Converter Allow Optional Map Keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -1338,7 +1473,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions"
+          "display_name": "Value Converter Flatten Singleton Unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -1347,7 +1482,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2"
+          "display_name": "Value Converter Optional For Proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -1356,7 +1491,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions"
+          "display_name": "Value Converter Flatten Unions"
         },
         {
           "name": "header.converter",
@@ -1364,19 +1499,38 @@
           "required": false,
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "header.converter",
+          "display_name": "Header Converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
-            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter"
+            "org.apache.kafka.connect.converters.ByteArrayConverter"
+          ]
+        },
+        {
+          "name": "connector.egress.whitelist",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Egress allowlist",
+          "display_name": "Egress allowlist",
+          "documentation": "List a comma-separated list of FQDNs, IPs, or CIDR ranges for secure, restricted network egress.",
+          "docs_hidden": true,
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "connector.egress.whitelist.config.visible",
+                "values": "true"
+              }
+            }
           ]
         }
       ],
@@ -1473,6 +1627,9 @@
         },
         {
           "name": "value.converter.use.apache.http.client"
+        },
+        {
+          "name": "connector.egress.whitelist"
         }
       ]
     },
