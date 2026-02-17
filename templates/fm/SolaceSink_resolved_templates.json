@@ -74,7 +74,7 @@
           "group": "Connection details",
           "order_in_group": 1,
           "display_name": "Compression Level",
-          "documentation": "ZLIB compression level for messages written to Solace. Valid values for the compression level are -1 through 9. -1 means use the JNDI connection’s compression level. 0 means use no compression. 1 through 9 enables data compression (where 1 offers the least amount of compression and fastest data throughput, and 9 offers the most compression and slowest data throughput)",
+          "documentation": "ZLIB compression level for messages written to Solace. Valid values for the compression level are -1 through 9. -1 means use the JNDI connection\u2019s compression level. 0 means use no compression. 1 through 9 enables data compression (where 1 offers the least amount of compression and fastest data throughput, and 9 offers the most compression and slowest data throughput)",
           "recommender": {
             "name": "compression.level"
           }
@@ -888,7 +888,7 @@
         {
           "name": "topics",
           "type": "LIST",
-          "required": true,
+          "required": false,
           "importance": "HIGH",
           "group": "Which topics do you want to get data from?",
           "order_in_group": 1,
@@ -1393,7 +1393,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "display_name": "consumer.override.auto.offset.reset",
-          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the “earliest” offset (the default) or the “latest” offset. You can also select “none” if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
+          "documentation": "Defines the behavior of the consumer when there is no committed position (which occurs when the group is first initialized) or when an offset is out of range. You can choose either to reset the position to the \u201cearliest\u201d offset (the default) or the \u201clatest\u201d offset. You can also select \u201cnone\u201d if you would rather set the initial offset yourself and you are willing to handle out of range errors manually. More details: https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#auto-offset-reset",
           "recommended_values": [
             "earliest",
             "latest",
