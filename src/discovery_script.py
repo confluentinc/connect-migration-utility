@@ -14,6 +14,7 @@ from typing import Any, Dict, Union
 from config_discovery import ConfigDiscovery
 from connector_comparator import ConnectorComparator
 from summary import generate_migration_summary, generate_tco_information_output
+from terraform_generator import TerraformGenerator
 import json
 
 
@@ -115,6 +116,8 @@ def main():
     parser.add_argument('--prompt-bearer-token', action='store_true', help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--disable-ssl-verify', action='store_true', help='Disable SSL certificate verification for HTTPS requests')
     parser.add_argument('--semantic-cache-folder', type=str, help='Cache folder for sentence transformer models (default: auto-detected from pip installation)')
+    parser.add_argument('--debezium-version', type=str, default='v2', choices=['v1', 'v2'], help='Debezium version for CDC template selection (default: v2)')
+    parser.add_argument('--terraform', action='store_true', help='Generate Terraform files for successful connector configurations')
 
 
     args = parser.parse_args()
@@ -207,7 +210,8 @@ def main():
             bearer_token=bearer_token,
             disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
             worker_username=getattr(args, 'worker_username', None),
-            worker_password=getattr(args, 'worker_password', None)
+            worker_password=getattr(args, 'worker_password', None),
+            debezium_version=getattr(args, 'debezium_version', 'v2')
         )
         fm_configs = comparator.process_connectors()
         if fm_configs:
@@ -229,6 +233,29 @@ def main():
         except Exception as e:
             logger.warning(f"Failed to generate migration summary: {e}")
             logger.info("Continuing without summary generation...")
+
+        # Generate Terraform files only if --terraform flag is provided
+        if getattr(args, 'terraform', False):
+            env_id = getattr(args, 'environment_id', None)
+            cluster_id = getattr(args, 'cluster_id', None)
+            logger.info("Generating Terraform files...")
+            if not env_id or not cluster_id:
+                logger.info("Note: environment_id and/or cluster_id not provided. Using 'TO_BE_FILLED' placeholders in generated Terraform files.")
+            try:
+                successful_configs_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
+                terraform_generator = TerraformGenerator(
+                    output_dir=output_dir,
+                    environment_id=env_id,
+                    kafka_cluster_id=cluster_id,
+                    logger=logger
+                )
+                terraform_dir = terraform_generator.generate_from_successful_configs(successful_configs_dir)
+                logger.info(f"Terraform files generated successfully in {terraform_dir}")
+            except Exception as e:
+                logger.warning(f"Failed to generate Terraform files: {e}")
+                logger.info("Continuing without Terraform generation...")
+        else:
+            logger.info("Skipping Terraform generation (use --terraform flag to generate)")
 
     except Exception as e:
         logger.error(f"Migration failed: {str(e)}", exc_info=True)

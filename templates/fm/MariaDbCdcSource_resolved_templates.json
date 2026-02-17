@@ -35,11 +35,53 @@
           "group": "How should we connect to your database?",
           "order_in_group": 5,
           "display_name": "SSL mode",
-          "documentation": "Whether to use an encrypted connection to the MariaDB server. Possible settings are: `disable`, `trust`.  \n`disable` does not use SSL/TLS \n`trust` uses SSL/TLS for encryption. It does not perform certificate or hostname verification.",
+          "documentation": "Whether to use an encrypted connection to the MariaDB server. Possible settings are ``disable``, ``trust``, ``verify-ca``, and ``verify-full``. \n``disable``: Does not use SSL/TLS. \n``trust``: Uses SSL/TLS for encryption. It does not perform certificate or hostname verification. \n``verify-ca``: Uses SSL/TLS for encryption and performs certificate verification, but does not perform hostname verification. \n``verify-full``: Uses SSL/TLS for encryption, certificate verification, and hostname verification.",
           "recommended_values": [
             "disable",
-            "trust"
+            "trust",
+            "verify-ca",
+            "verify-full"
           ]
+        },
+        {
+          "name": "database.ssl.keystore",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "How should we connect to your database?",
+          "order_in_group": 6,
+          "display_name": "SSL Keystore",
+          "documentation": "Path to the SSL keystore file for MariaDB connection. This property is only required when you enable SSL certificate verification (``verify-ca`` or ``verify-full`` modes)"
+        },
+        {
+          "name": "database.ssl.keystore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "How should we connect to your database?",
+          "order_in_group": 7,
+          "display_name": "SSL Keystore Password",
+          "documentation": "Password for the SSL keystore file for MariaDB connection. This property is only required when you enable SSL certificate verification (``verify-ca`` or ``verify-full`` modes)"
+        },
+        {
+          "name": "database.ssl.truststore",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "How should we connect to your database?",
+          "order_in_group": 8,
+          "display_name": "SSL Truststore",
+          "documentation": "Path to the SSL truststore file for MariaDB connection. This property is only required when you enable SSL certificate verification (``verify-ca`` or ``verify-full`` modes)"
+        },
+        {
+          "name": "database.ssl.truststore.password",
+          "type": "PASSWORD",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "How should we connect to your database?",
+          "order_in_group": 9,
+          "display_name": "SSL Truststore Password",
+          "documentation": "Password for the SSL truststore file for MariaDB connection. This property is only required when you enable SSL certificate verification (``verify-ca`` or ``verify-full`` modes)"
         },
         {
           "name": "output.data.format",
@@ -269,7 +311,7 @@
           "name": "schema.history.internal.kafka.recovery.poll.interval.ms",
           "type": "INT",
           "required": false,
-          "default_value": 1000,
+          "default_value": 100,
           "importance": "LOW",
           "group": "Schema Config",
           "order_in_group": 6,
@@ -359,6 +401,68 @@
           ]
         },
         {
+          "name": "snapshot.include.collection.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Snapshot mode include data collection",
+          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names (<databaseName>.<tableName>) of the tables to include in a snapshot. If not explicitly set, the connector defaults to snapshotting all tables listed in table.include.list. The specified items must be named in the connector’s table.include.list property. This property takes effect only if the connector’s snapshot.mode property is set to a value other than never.",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "column.exclude.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "MEDIUM",
+          "group": "Connector config",
+          "order_in_group": 6,
+          "display_name": "Columns excluded",
+          "documentation": "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns to exclude from change event record values. Fully-qualified names for columns are of the form `databaseName.tableName.columnName`. \nTo match the name of a column, Debezium applies the regular expression that you specify as an anchored regular expression. That is, the specified expression is matched against the entire name string of the column; it does not match substrings that might be present in a column name. Do not set ``column.include.list`` if you set this property.",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "column.include.list",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Include Columns",
+          "documentation": "A comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `databaseName.tableName.columnName`. Do not set ``column.exclude.list`` if you set this property.",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "message.key.columns",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Columns primary key mapping",
+          "documentation": "A semicolon-separated list of expressions that match fully-qualified tables and column(s) to be used as message key. Each expression must match the pattern '<fully-qualified_tableName>:<keyColumn>,<keyColumn>', where the fully qualified table name could be defined as <databaseName>.<tableName> and the key columns are a comma-separated list of columns representing the custom key. For any table without an explicit key configuration the table's primary key column(s) will be used as message key. The config can include entries for multiple tables. Use a semicolon to separate table entries in the list. Example: inventory.customers:pk1,pk2;(.*).purchaseorders:pk3,pk4"
+        },
+        {
+          "name": "skip.messages.without.change",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Enable skipping messages without change",
+          "documentation": "Enable to skip publishing messages when there is no change in included columns. This would essentially filter messages to be sent when there is no change in columns included as per ``column.include.list`` or ``column.exclude.list``. Set the value to true to prevent the connector from capturing records when no changes are present in the included columns."
+        },
+        {
           "name": "inconsistent.schema.handling.mode",
           "type": "STRING",
           "required": false,
@@ -403,6 +507,16 @@
           ],
           "display_name": "Use non-graceful disconnect",
           "documentation": "A Boolean value that specifies whether the binary log client's keepalive thread sets the SO_LINGER socket option to 0 to immediately close stale TCP connections.\nSet the value to true if the connector experiences deadlocks in SSLSocketImpl.close."
+        },
+        {
+          "name": "read.only",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Read only",
+          "documentation": "Controls whether the connector writes watermarks to the signal data collection to track incremental snapshot progress. Set the value to ``true`` to enable the connector to use an incremental snapshot watermarking strategy that does not require writing to the signal data collection (useful for read-only database connections)."
         }
       ],
       "connector_configs": [
@@ -537,6 +651,12 @@
           "value": "100000"
         },
         {
+          "name": "column.include.list"
+        },
+        {
+          "name": "column.exclude.list"
+        },
+        {
           "name": "database.server.id",
           "value": "{{.numericClusterId}}"
         },
@@ -544,10 +664,25 @@
           "name": "database.ssl.mode"
         },
         {
+          "name": "database.ssl.keystore"
+        },
+        {
+          "name": "database.ssl.keystore.password"
+        },
+        {
+          "name": "database.ssl.truststore"
+        },
+        {
+          "name": "database.ssl.truststore.password"
+        },
+        {
           "name": "database.include.list"
         },
         {
           "name": "database.exclude.list"
+        },
+        {
+          "name": "message.key.columns"
         },
         {
           "name": "schema.history.internal.skip.unparseable.ddl"
@@ -575,6 +710,9 @@
           "name": "signal.data.collection"
         },
         {
+          "name": "skip.messages.without.change"
+        },
+        {
           "name": "include.schema.changes"
         },
         {
@@ -588,6 +726,9 @@
         },
         {
           "name": "table.ignore.builtin"
+        },
+        {
+          "name": "snapshot.include.collection.list"
         },
         {
           "name": "snapshot.mode"
@@ -734,6 +875,16 @@
           "display_name": "Snapshot mode"
         },
         {
+          "name": "incremental.snapshot.chunk.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "1024",
+          "importance": "MEDIUM",
+          "group": "Additional Configs",
+          "display_name": "Incremental snapshot chunk size",
+          "documentation": "The maximum number of rows that the connector fetches and reads into memory during an incremental snapshot chunk. Increasing the chunk size improves efficiency by running fewer, larger snapshot queries. However, larger chunk sizes also require more memory to buffer the snapshot data. Adjust the chunk size to a value that provides the best performance in your environment."
+        },
+        {
           "name": "table.include.list",
           "type": "LIST",
           "required": false,
@@ -757,21 +908,6 @@
           "order_in_group": 5,
           "display_name": "Tables excluded",
           "documentation": "An optional, comma-separated list of regular expressions that match fully-qualified table identifiers for tables whose changes you do not want to capture. Each identifier is of the form `schemaName.tableName`. When this property is set, the connector captures changes from every table that you do not specify. \nTo match the name of a table, Debezium applies the regular expression that you specify as an anchored regular expression. That is, the specified expression is matched against the entire identifier for the table; it does not match substrings that might be present in a table name. \nIf you include this property in the configuration, do not set the ``table.include.list`` property.",
-          "sanitizers": [
-            {
-              "name": "trim.list"
-            }
-          ]
-        },
-        {
-          "name": "column.exclude.list",
-          "type": "LIST",
-          "required": false,
-          "importance": "MEDIUM",
-          "group": "Connector config",
-          "order_in_group": 6,
-          "display_name": "Columns excluded",
-          "documentation": "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns to exclude from change event record values. Fully-qualified names for columns are of the form `schemaName.tableName.columnName`. \nTo match the name of a column, Debezium applies the regular expression that you specify as an anchored regular expression. That is, the specified expression is matched against the entire name string of the column; it does not match substrings that might be present in a column name.",
           "sanitizers": [
             {
               "name": "trim.list"
@@ -838,6 +974,169 @@
           "documentation": "Controls how frequently the connector sends heartbeat messages to a Kafka topic. The behavior of default value 0 is that the connector does not send heartbeat messages. Heartbeat messages are useful for monitoring whether the connector is receiving change events from the database. Heartbeat messages might help decrease the number of change events that need to be re-sent when a connector restarts. To send heartbeat messages, set this property to a positive integer, which indicates the number of milliseconds between heartbeat messages."
         },
         {
+          "name": "column.propagate.source.type",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Propagate source types by columns",
+          "documentation": "A comma-separated list of regular expressions matching fully-qualified names of columns that adds the column’s original type and original length as parameters to the corresponding field schemas in the emitted change records. When this property is set, the connector adds the following fields to the schema of event records with prefix ``__debezium.source.column``. These parameters propagate a column’s original type name and length (for variable-width types), respectively. Include '.*' to match all column types.'",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
+          ]
+        },
+        {
+          "name": "snapshot.lock.timeout.ms",
+          "type": "LONG",
+          "required": false,
+          "default_value": "10000",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Snapshot lock timeout (ms)",
+          "documentation": "The maximum number of millis to wait for table locks at the beginning of a snapshot. If locks cannot be acquired in this time frame, the snapshot will be aborted. Defaults to 10 seconds."
+        },
+        {
+          "name": "max.batch.size",
+          "type": "INT",
+          "required": false,
+          "default_value": "2048",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Change event batch size",
+          "documentation": "Maximum size of each batch of events that the connector processes. Defaults to 2048 with the allowed range is from 1 to 5000."
+        },
+        {
+          "name": "poll.interval.ms",
+          "type": "LONG",
+          "required": false,
+          "default_value": "500",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Poll interval (ms)",
+          "documentation": "Time to wait for new change events to appear after receiving no events, given in milliseconds. Defaults to 500 ms."
+        },
+        {
+          "name": "snapshot.delay.ms",
+          "type": "LONG",
+          "required": false,
+          "default_value": "0",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Snapshot delay (milliseconds)",
+          "documentation": "An interval in milliseconds that the connector should wait before performing a snapshot when the connector starts. Defaults to 0 ms."
+        },
+        {
+          "name": "streaming.delay.ms",
+          "type": "LONG",
+          "required": false,
+          "default_value": "60000",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Streaming delay (milliseconds)",
+          "documentation": "A delay period after the snapshot is completed and the streaming begins, given in milliseconds. This delay helps prevent re-snapshotting in case the connector fails during the transition to streaming. Defaults to 60000 ms."
+        },
+        {
+          "name": "skipped.operations",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "default_value": "t",
+          "display_name": "Skipped Operations",
+          "documentation": "The comma-separated list of operations to skip during streaming, defined as: 'c' for inserts/create; 'u' for updates; 'd' for deletes, 't' for truncates, and 'none' to indicate nothing skipped. By default, only truncate operations will be skipped.",
+          "recommended_values": [
+            "c",
+            "u",
+            "d",
+            "t",
+            "none"
+          ]
+        },
+        {
+          "name": "provide.transaction.metadata",
+          "type": "BOOLEAN",
+          "required": false,
+          "default_value": "false",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Store transaction metadata information in a dedicated topic",
+          "documentation": "Determines whether the connector generates events with transaction boundaries and enriches change event envelopes with transaction metadata."
+        },
+        {
+          "name": "notification.enabled.channels",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Enabled notification channels names",
+          "documentation": "List of notification channels names that are enabled. The following channels are available: ``log`` and ``sink``. When ``sink`` is enabled, the connector sends notifications to a topic specified by the ``notification.sink.topic.name`` property.",
+          "recommended_values": [
+            "log",
+            "sink"
+          ]
+        },
+        {
+          "name": "notification.sink.topic.name",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Notification topic name",
+          "documentation": "The name of the topic for the notifications. This is required in case ``sink`` is in the list of enabled channels."
+        },
+        {
+          "name": "binary.handling.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "bytes",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Binary handling mode",
+          "documentation": "Specify how binary (blob, binary, etc.) columns should be represented in change events, including: 'bytes' represents binary data as byte array (default); 'base64' represents binary data as base64-encoded string; 'base64-url-safe' represents binary data as base64-url-safe-encoded string; 'hex' represents binary data as hex-encoded (base16) string",
+          "recommended_values": [
+            "bytes",
+            "base64",
+            "base64-url-safe",
+            "hex"
+          ]
+        },
+        {
+          "name": "topic.heartbeat.prefix",
+          "type": "STRING",
+          "required": false,
+          "default_value": "__debezium-heartbeat-{{.logicalClusterId}}",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Prefix name of heartbeat topic",
+          "documentation": "Specifies the prefix of the heartbeat topic to which the connector sends heartbeat messages. The topic name has this pattern: ``<topic.heartbeat.prefix>.<topic.prefix>``. Defaults to ``__debezium-heartbeat-{{.logicalClusterId}}``."
+        },
+        {
+          "name": "topic.transaction",
+          "type": "STRING",
+          "required": false,
+          "default_value": "{{.logicalClusterId}}.transaction",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Transaction topic name",
+          "documentation": "Controls the name of the topic to which the connector sends transaction metadata messages. The final transaction topic name has this pattern: ``<topic.prefix>.<topic.transaction>``. Defaults to ``{{.logicalClusterId}}.transaction``."
+        },
+        {
+          "name": "incremental.snapshot.watermarking.strategy",
+          "type": "STRING",
+          "required": false,
+          "default_value": "INSERT_INSERT",
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Incremental snapshot watermarking strategy",
+          "documentation": "Specify the strategy used for watermarking during an incremental snapshot: 'INSERT_INSERT' both open and close signal is written into signal data collection (default); 'INSERT_DELETE' only open signal is written on signal data collection, the close will delete the relative open signal.",
+          "recommended_values": [
+            "INSERT_INSERT",
+            "INSERT_DELETE"
+          ]
+        },
+        {
           "name": "key.converter.reference.subject.name.strategy",
           "type": "STRING",
           "importance": "HIGH",
@@ -852,6 +1151,29 @@
           ],
           "dependents": [
             "output.key.format"
+          ]
+        },
+        {
+          "name": "signal.kafka.topic",
+          "type": "STRING",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Signal topic name",
+          "documentation": "The name of the Kafka topic that the connector monitors for ad hoc signals. Note that you can currently send signal messages to this topic via the Confluent CLI."
+        },
+        {
+          "name": "signal.enabled.channels",
+          "type": "LIST",
+          "required": false,
+          "importance": "LOW",
+          "group": "Additional Configs",
+          "display_name": "Enabled channels names",
+          "documentation": "A comma-separated list of channel names that are enabled for the connector. If not set, the connector enables only the ``source`` channel by default. Supported values are: \n``source`` (default): Signals are read from a signaling table in the source database. \n``kafka``: Signals are consumed from a Kafka topic.",
+          "sanitizers": [
+            {
+              "name": "trim.list"
+            }
           ]
         },
         {
@@ -910,21 +1232,13 @@
           "name": "table.exclude.list"
         },
         {
-          "name": "column.exclude.list"
-        },
-        {
           "name": "snapshot.mode"
         },
         {
+          "name": "incremental.snapshot.chunk.size"
+        },
+        {
           "name": "tombstones.on.delete"
-        },
-        {
-          "name": "poll.interval.ms",
-          "value": "500"
-        },
-        {
-          "name": "max.batch.size",
-          "value": "2048"
         },
         {
           "name": "event.processing.failure.handling.mode"
@@ -997,6 +1311,56 @@
           "name": "heartbeat.interval.ms"
         },
         {
+          "name": "provide.transaction.metadata"
+        },
+        {
+          "name": "column.propagate.source.type"
+        },
+        {
+          "name": "snapshot.lock.timeout.ms"
+        },
+        {
+          "name": "max.batch.size"
+        },
+        {
+          "name": "poll.interval.ms"
+        },
+        {
+          "name": "snapshot.delay.ms"
+        },
+        {
+          "name": "streaming.delay.ms"
+        },
+        {
+          "name": "skipped.operations"
+        },
+        {
+          "name": "notification.enabled.channels"
+        },
+        {
+          "name": "notification.sink.topic.name"
+        },
+        {
+          "name": "binary.handling.mode"
+        },
+        {
+          "name": "incremental.snapshot.watermarking.strategy"
+        },
+        {
+          "name": "signal.enabled.channels"
+        },
+        {
+          "name": "signal.kafka.topic"
+        },
+        {
+          "name": "signal.consumer.security.protocol",
+          "value": "SASL_SSL"
+        },
+        {
+          "name": "signal.consumer.sasl.mechanism",
+          "value": "PLAIN"
+        },
+        {
           "name": "decimal.handling.mode"
         },
         {
@@ -1011,8 +1375,10 @@
           "value": "connector={{.logicalClusterId}},version=v2"
         },
         {
-          "name": "topic.heartbeat.prefix",
-          "value": "__debezium-heartbeat-{{.logicalClusterId}}"
+          "name": "topic.transaction"
+        },
+        {
+          "name": "topic.heartbeat.prefix"
         },
         {
           "name": "errors.max.retries",
@@ -1025,6 +1391,14 @@
         {
           "name": "connector.thread.name.pattern",
           "value": "${connector.name}-${task.id}-${debezium}-${connector.class.simple}-${topic.prefix}-${functionality}"
+        },
+        {
+          "name": "guardrail.collections.max",
+          "value": "100"
+        },
+        {
+          "name": "guardrail.collections.limit.action",
+          "value": "warn"
         }
       ]
     },
@@ -1075,16 +1449,18 @@
           "name": "kafka.auth.mode",
           "type": "STRING",
           "required": false,
-          "default_value": "KAFKA_API_KEY",
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
           "importance": "HIGH",
           "group": "Kafka Cluster credentials",
           "order_in_group": 1,
           "display_name": "Kafka Cluster Authentication mode",
-          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode.",
-          "recommended_values": [
-            "SERVICE_ACCOUNT",
-            "KAFKA_API_KEY"
-          ]
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
         },
         {
           "name": "kafka.api.key",
@@ -1452,7 +1828,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "default_value": "none",
-          "display_name": "errors.tolerance",
+          "display_name": "Errors Tolerance",
           "documentation": "Use this property if you would like to configure the connector's error handling behavior. WARNING: This property should be used with CAUTION for SOURCE CONNECTORS as it may lead to dataloss. If you set this property to 'all', the connector will not fail on errant records, but will instead log them (and send to DLQ for Sink Connectors) and continue processing. If you set this property to 'none', the connector task will fail on errant records.",
           "recommended_values": [
             "none",
@@ -1465,7 +1841,7 @@
           "required": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "producer.override.linger.ms",
+          "display_name": "Producer Override Linger Ms",
           "documentation": "The producer groups together any records that arrive in between request transmissions into a single batched request. More details can be found in the documentation: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#linger-ms."
         }
       ],
@@ -1584,7 +1960,7 @@
           "importance": "LOW",
           "group": "Additional Configs",
           "alias": "schemas.enable",
-          "display_name": "value.converter.schemas.enable",
+          "display_name": "Value Converter Schemas Enable",
           "documentation": "Include schemas within each of the serialized values. Input messages must contain `schema` and `payload` fields and may not contain additional fields. For plain JSON data, set this to `false`. Applicable for JSON Converter."
         },
         {
@@ -1595,7 +1971,7 @@
           "alias": "replace.null.with.default",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "value.converter.replace.null.with.default",
+          "display_name": "Value Converter Replace Null With Default",
           "documentation": "Whether to replace fields that have a default value and that are null to the default value. When set to true, the default value is used, otherwise null is used. Applicable for JSON Converter."
         },
         {
@@ -1606,7 +1982,7 @@
           "default_value": "false",
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "value.converter.ignore.default.for.nullables",
+          "display_name": "Value Converter Ignore Default For Nullables",
           "documentation": "When set to true, this property ensures that the corresponding record in Kafka is NULL, instead of showing the default column value. Applicable for AVRO,PROTOBUF and JSON_SR Converters."
         },
         {
@@ -1616,7 +1992,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.scrub.invalid.names"
+          "display_name": "Value Converter Scrub Invalid Names"
         }
       ],
       "connector_configs": [
@@ -1778,9 +2154,6 @@
               "arguments": {
                 "config": "csfle.configs.visible",
                 "values": "false"
-              },
-              "metadata": {
-                "visibility": "false"
               }
             }
           ]
@@ -1873,6 +2246,23 @@
       "abstract": true,
       "config_defs": [
         {
+          "name": "kafka.auth.mode",
+          "type": "STRING",
+          "required": false,
+          "default_value": "${connect.regional.connector}",
+          "default_value_provider": {
+            "name": "kafka.auth.mode.provider"
+          },
+          "importance": "HIGH",
+          "group": "Kafka Cluster credentials",
+          "order_in_group": 1,
+          "display_name": "Kafka Cluster Authentication mode",
+          "documentation": "Kafka Authentication mode. It can be one of KAFKA_API_KEY or SERVICE_ACCOUNT. It defaults to KAFKA_API_KEY mode, whenever possible.",
+          "recommender": {
+            "name": "kafka.auth.mode"
+          }
+        },
+        {
           "name": "auto.restart.on.user.error",
           "type": "BOOLEAN",
           "required": false,
@@ -1890,7 +2280,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.avro.schema.support"
+          "display_name": "Value Converter Enhanced Avro Schema Support"
         },
         {
           "name": "value.converter.connect.meta.data",
@@ -1899,7 +2289,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.connect.meta.data"
+          "display_name": "Value Converter Connect Meta Data"
         },
         {
           "name": "value.converter.enhanced.protobuf.schema.support",
@@ -1908,7 +2298,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.enhanced.protobuf.schema.support"
+          "display_name": "Value Converter Enhanced Protobuf Schema Support"
         },
         {
           "name": "value.converter.generate.index.for.unions",
@@ -1917,7 +2307,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.index.for.unions"
+          "display_name": "Value Converter Generate Index For Unions"
         },
         {
           "name": "value.converter.int.for.enums",
@@ -1926,7 +2316,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.int.for.enums"
+          "display_name": "Value Converter Int For Enums"
         },
         {
           "name": "value.converter.optional.for.nullables",
@@ -1935,7 +2325,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.nullables"
+          "display_name": "Value Converter Optional For Nullables"
         },
         {
           "name": "value.converter.generate.struct.for.nulls",
@@ -1944,7 +2334,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.generate.struct.for.nulls"
+          "display_name": "Value Converter Generate Struct For Nulls"
         },
         {
           "name": "value.converter.wrapper.for.nullables",
@@ -1953,7 +2343,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.nullables"
+          "display_name": "Value Converter Wrapper For Nullables"
         },
         {
           "name": "value.converter.wrapper.for.raw.primitives",
@@ -1962,7 +2352,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.wrapper.for.raw.primitives"
+          "display_name": "Value Converter Wrapper For Raw Primitives"
         },
         {
           "name": "value.converter.object.additional.properties",
@@ -1971,7 +2361,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.object.additional.properties"
+          "display_name": "Value Converter Object Additional Properties"
         },
         {
           "name": "value.converter.use.optional.for.nonrequired",
@@ -1980,7 +2370,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.optional.for.nonrequired"
+          "display_name": "Value Converter Use Optional For Nonrequired"
         },
         {
           "name": "value.converter.decimal.format",
@@ -1994,7 +2384,7 @@
           "alias": "json.output.decimal.format",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.decimal.format",
+          "display_name": "Value Converter Decimal Format",
           "default_value": "BASE64"
         },
         {
@@ -2004,7 +2394,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.auto.register.schemas"
+          "display_name": "Value Converter Auto Register Schemas"
         },
         {
           "name": "value.converter.use.latest.version",
@@ -2013,7 +2403,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.use.latest.version"
+          "display_name": "Value Converter Use Latest Version"
         },
         {
           "name": "value.converter.latest.compatibility.strict",
@@ -2022,7 +2412,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.latest.compatibility.strict"
+          "display_name": "Value Converter Latest Compatibility Strict"
         },
         {
           "name": "key.converter.key.subject.name.strategy",
@@ -2038,7 +2428,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "key.converter.key.subject.name.strategy"
+          "display_name": "Key Converter Key Subject Name Strategy"
         },
         {
           "name": "value.converter.value.subject.name.strategy",
@@ -2054,7 +2444,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.value.subject.name.strategy"
+          "display_name": "Value Converter Value Subject Name Strategy"
         },
         {
           "name": "value.converter.reference.subject.name.strategy",
@@ -2068,7 +2458,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.reference.subject.name.strategy"
+          "display_name": "Value Converter Reference Subject Name Strategy"
         },
         {
           "name": "value.converter.allow.optional.map.keys",
@@ -2077,7 +2467,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.allow.optional.map.keys"
+          "display_name": "Value Converter Allow Optional Map Keys"
         },
         {
           "name": "value.converter.flatten.singleton.unions",
@@ -2087,7 +2477,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.singleton.unions"
+          "display_name": "Value Converter Flatten Singleton Unions"
         },
         {
           "name": "value.converter.optional.for.proto2",
@@ -2096,7 +2486,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.optional.for.proto2"
+          "display_name": "Value Converter Optional For Proto2"
         },
         {
           "name": "value.converter.flatten.unions",
@@ -2105,7 +2495,7 @@
           "group": "Additional Configs",
           "required": false,
           "importance": "LOW",
-          "display_name": "value.converter.flatten.unions"
+          "display_name": "Value Converter Flatten Unions"
         },
         {
           "name": "header.converter",
@@ -2113,19 +2503,38 @@
           "required": false,
           "importance": "LOW",
           "group": "Additional Configs",
-          "display_name": "header.converter",
+          "display_name": "Header Converter",
           "documentation": "The converter class for the headers. This is used to serialize and deserialize the headers of the messages.",
           "recommended_values": [
+            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+            "org.apache.kafka.connect.storage.StringConverter",
+            "org.apache.kafka.connect.json.JsonConverter",
             "org.apache.kafka.connect.converters.BooleanConverter",
-            "org.apache.kafka.connect.converters.ByteArrayConverter",
             "org.apache.kafka.connect.converters.DoubleConverter",
             "org.apache.kafka.connect.converters.FloatConverter",
             "org.apache.kafka.connect.converters.IntegerConverter",
             "org.apache.kafka.connect.converters.LongConverter",
             "org.apache.kafka.connect.converters.ShortConverter",
-            "org.apache.kafka.connect.json.JsonConverter",
-            "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-            "org.apache.kafka.connect.storage.StringConverter"
+            "org.apache.kafka.connect.converters.ByteArrayConverter"
+          ]
+        },
+        {
+          "name": "connector.egress.whitelist",
+          "type": "STRING",
+          "required": false,
+          "importance": "HIGH",
+          "group": "Egress allowlist",
+          "display_name": "Egress allowlist",
+          "documentation": "List a comma-separated list of FQDNs, IPs, or CIDR ranges for secure, restricted network egress.",
+          "docs_hidden": true,
+          "conditional_metadata_provider": [
+            {
+              "name": "metadata.conditional.visible",
+              "arguments": {
+                "config": "connector.egress.whitelist.config.visible",
+                "values": "true"
+              }
+            }
           ]
         }
       ],
@@ -2222,6 +2631,9 @@
         },
         {
           "name": "value.converter.use.apache.http.client"
+        },
+        {
+          "name": "connector.egress.whitelist"
         }
       ]
     },
