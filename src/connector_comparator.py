@@ -18,6 +18,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from config_discovery import ConfigDiscovery
+from http_v1_to_v2_transformer import HttpV1ToV2Transformer
+from bigquery_v1_to_v2_transformer import BigQueryV1ToV2Transformer
 from debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
 
 
@@ -44,6 +46,12 @@ class ConnectorComparator:
         
         # Initialize the Debezium v1 to v2 translator
         self.debezium_translator = DebeziumV1ToV2Translator(logger=self.logger)
+        
+        # Initialize the HTTP v1 to v2 transformer
+        self.http_transformer = HttpV1ToV2Transformer(logger=self.logger)
+        
+        # Initialize the BigQuery v1 to v2 transformer
+        self.bigquery_transformer = BigQueryV1ToV2Transformer(logger=self.logger)
         
         # Mapping from v1 to v2 Debezium connector classes
         self.debezium_v1_to_v2_mapping = {
@@ -1759,8 +1767,12 @@ class ConnectorComparator:
                     self.logger.error(f"Connector at index {i} missing required fields 'name' or 'config'")
                     continue
 
+                original_sm_config = connector['config']
+                original_name = connector['name']
+
                 # Transform SM to FM using the new method
-                result = self.transformSMToFm(connector['name'], connector['config'])
+                # Note: HTTP, BigQuery, and Debezium V1 to V2 transformations are handled inside transformSMToFm
+                result = self.transformSMToFm(connector['name'], original_sm_config)
 
                 # Create FM config object in the expected format
                 fm_config = {
@@ -2209,6 +2221,34 @@ class ConnectorComparator:
             for error in v1_to_v2_errors:
                 errors.append(f"[v1→v2 Translation] {error}")
             self.logger.info(f"V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+
+        # Step: Translate HTTP v1 FM configs to v2 FM configs
+        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
+        # Auto-detect HTTP V1 connector and transform to V2
+        if self.http_transformer.is_http_v1(original_connector_class):
+            self.logger.info(f"Detected HTTP V1 config, translating FM configs to V2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.http_transformer.translate_v1_to_v2(fm_configs)
+            # Add v1 to v2 translation warnings
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[HTTP v1→v2 Translation] {warning}")
+            # Add v1 to v2 translation errors
+            for error in v1_to_v2_errors:
+                errors.append(f"[HTTP v1→v2 Translation] {error}")
+            self.logger.info(f"HTTP V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+
+        # Step: Translate BigQuery v1 FM configs to v2 FM configs
+        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
+        # Auto-detect BigQuery V1 connector and transform to V2
+        if self.bigquery_transformer.is_bigquery_v1(original_connector_class):
+            self.logger.info(f"Detected BigQuery V1 config, translating FM configs to V2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.bigquery_transformer.translate_v1_to_v2(fm_configs)
+            # Add v1 to v2 translation warnings
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[BigQuery v1→v2 Translation] {warning}")
+            # Add v1 to v2 translation errors
+            for error in v1_to_v2_errors:
+                errors.append(f"[BigQuery v1→v2 Translation] {error}")
+            self.logger.info(f"BigQuery V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
 
         # Return the result in the required format
         result = {
