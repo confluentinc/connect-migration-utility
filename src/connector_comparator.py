@@ -18,7 +18,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from config_discovery import ConfigDiscovery
-from http_v1_to_v2_transformer import is_http_v1_connector, transform_v1_to_v2
+from http_v1_to_v2_transformer import HttpV1ToV2Transformer
+from bigquery_v1_to_v2_transformer import BigQueryV1ToV2Transformer
 from debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
 
 
@@ -45,6 +46,12 @@ class ConnectorComparator:
         
         # Initialize the Debezium v1 to v2 translator
         self.debezium_translator = DebeziumV1ToV2Translator(logger=self.logger)
+        
+        # Initialize the HTTP v1 to v2 transformer
+        self.http_transformer = HttpV1ToV2Transformer(logger=self.logger)
+        
+        # Initialize the BigQuery v1 to v2 transformer
+        self.bigquery_transformer = BigQueryV1ToV2Transformer(logger=self.logger)
         
         # Mapping from v1 to v2 Debezium connector classes
         self.debezium_v1_to_v2_mapping = {
@@ -1760,46 +1767,12 @@ class ConnectorComparator:
                     self.logger.error(f"Connector at index {i} missing required fields 'name' or 'config'")
                     continue
 
-                # Check if original SM config is HTTP V1 (before SM to FM transformation)
                 original_sm_config = connector['config']
-                is_http_v1 = is_http_v1_connector(original_sm_config)
                 original_name = connector['name']
 
                 # Transform SM to FM using the new method
+                # Note: HTTP, BigQuery, and Debezium V1 to V2 transformations are handled inside transformSMToFm
                 result = self.transformSMToFm(connector['name'], original_sm_config)
-
-                # Only apply V2 transformation if SM to FM was successful (no errors and config was translated)
-                if is_http_v1 and not result.get('errors') and result.get('fm_configs'):
-                    self.logger.info(f"Detected HTTP V1 connector '{original_name}' with successful translation. Transforming FM config to HTTP V2...")
-                    try:
-                        fm_config_dict = result['fm_configs']
-                        if isinstance(fm_config_dict, dict):
-                            # transform_v1_to_v2 needs http.api.url from the original V1 config
-                            # Check if FM config has it, otherwise get it from original SM config
-                            if "http.api.url" not in fm_config_dict:
-                                if "http.api.url" in original_sm_config:
-                                    # Add http.api.url to FM config for transformation
-                                    fm_config_dict["http.api.url"] = original_sm_config["http.api.url"]
-                                else:
-                                    # http.api.url is missing from both configs - cannot transform
-                                    error_msg = "Missing 'http.api.url' in both FM config and original SM config. Cannot transform to V2."
-                                    result['errors'].append(error_msg)
-                                    raise Exception(error_msg)
-                            
-                            # Transform the FM config from V1 to V2
-                            v2_config = transform_v1_to_v2(fm_config_dict)
-                            # Replace FM config with V2 config
-                            result['fm_configs'] = v2_config
-                            self.logger.info(f"Successfully transformed HTTP V1 FM connector '{original_name}' to HTTP V2")
-                        else:
-                            self.logger.warning(f"FM config is not a dictionary for '{original_name}', skipping V2 transformation")
-                    except Exception as e:
-                        error_msg = f"Failed to transform HTTP V1 FM connector '{original_name}' to V2: {str(e)}"
-                        result['errors'].append(error_msg)
-                        self.logger.warning(error_msg)
-                        self.logger.info(f"Proceeding with original V1 FM configuration for '{original_name}'")
-                elif is_http_v1:
-                    self.logger.info(f"HTTP V1 connector '{original_name}' was not successfully translated, skipping V2 transformation")
 
                 # Create FM config object in the expected format
                 fm_config = {
@@ -2248,6 +2221,34 @@ class ConnectorComparator:
             for error in v1_to_v2_errors:
                 errors.append(f"[v1→v2 Translation] {error}")
             self.logger.info(f"V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+
+        # Step: Translate HTTP v1 FM configs to v2 FM configs
+        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
+        # Auto-detect HTTP V1 connector and transform to V2
+        if self.http_transformer.is_http_v1(original_connector_class):
+            self.logger.info(f"Detected HTTP V1 config, translating FM configs to V2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.http_transformer.translate_v1_to_v2(fm_configs)
+            # Add v1 to v2 translation warnings
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[HTTP v1→v2 Translation] {warning}")
+            # Add v1 to v2 translation errors
+            for error in v1_to_v2_errors:
+                errors.append(f"[HTTP v1→v2 Translation] {error}")
+            self.logger.info(f"HTTP V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+
+        # Step: Translate BigQuery v1 FM configs to v2 FM configs
+        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
+        # Auto-detect BigQuery V1 connector and transform to V2
+        if self.bigquery_transformer.is_bigquery_v1(original_connector_class):
+            self.logger.info(f"Detected BigQuery V1 config, translating FM configs to V2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.bigquery_transformer.translate_v1_to_v2(fm_configs)
+            # Add v1 to v2 translation warnings
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[BigQuery v1→v2 Translation] {warning}")
+            # Add v1 to v2 translation errors
+            for error in v1_to_v2_errors:
+                errors.append(f"[BigQuery v1→v2 Translation] {error}")
+            self.logger.info(f"BigQuery V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
 
         # Return the result in the required format
         result = {
