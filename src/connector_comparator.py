@@ -247,6 +247,255 @@ class ConnectorComparator:
             "io.confluent.connect.zendesk.ZendeskSourceConnector": {}
         }
 
+    def _get_plugin_name_for_connector(self, connector_class: str, config_dict: Dict[str, Any] = None) -> Optional[str]:
+        """
+        Get the FM plugin name (template_id) for a connector class.
+        
+        For JDBC connectors, uses the existing database type detection logic.
+        For other connectors, extracts template_id from the FM template file.
+        
+        Args:
+            connector_class: The connector.class value (e.g., 'io.debezium.connector.mysql.MySqlConnector')
+            config_dict: Optional connector configuration (needed for JDBC connectors to detect database type)
+            
+        Returns:
+            The FM plugin name (template_id) or None if not found
+        """
+        # Special handling for JDBC connectors - determine plugin based on database type
+        if connector_class in ['io.confluent.connect.jdbc.JdbcSourceConnector', 'io.confluent.connect.jdbc.JdbcSinkConnector']:
+            return self._get_jdbc_plugin_name(connector_class, config_dict)
+        
+        # For all other connectors, extract template_id from FM template
+        return self._get_plugin_name_from_template(connector_class)
+    
+    def _get_jdbc_plugin_name(self, connector_class: str, config_dict: Dict[str, Any] = None) -> Optional[str]:
+        """
+        Determine the FM plugin name for JDBC connectors based on database type.
+        
+        Args:
+            connector_class: The JDBC connector class
+            config_dict: Connector configuration containing connection.url
+            
+        Returns:
+            The FM plugin name (e.g., 'MySqlSource', 'PostgresSink') or None
+        """
+        if not config_dict:
+            self.logger.warning("Cannot determine JDBC plugin name - no config provided")
+            return None
+        
+        # Get database type from connection URL
+        db_type = self._get_database_type(config_dict)
+        if not db_type:
+            self.logger.warning("Cannot determine JDBC plugin name - could not detect database type from connection URL")
+            return None
+        
+        self.logger.info(f"Detected database type for JDBC connector: {db_type}")
+        
+        # Map database types to plugin names
+        is_source = connector_class == 'io.confluent.connect.jdbc.JdbcSourceConnector'
+        
+        db_to_plugin_mapping = {
+            'mysql': ('MySqlSource', 'MySqlSink'),
+            'postgresql': ('PostgresSource', 'PostgresSink'),
+            'oracle': ('OracleDatabaseSource', 'OracleDatabaseSink'),
+            'sqlserver': ('MicrosoftSqlServerSource', 'MicrosoftSqlServerSink'),
+            'snowflake': ('SnowflakeSource', 'SnowflakeSink'),
+        }
+        
+        if db_type in db_to_plugin_mapping:
+            source_plugin, sink_plugin = db_to_plugin_mapping[db_type]
+            plugin_name = source_plugin if is_source else sink_plugin
+            self.logger.info(f"Determined JDBC plugin name: {plugin_name}")
+            return plugin_name
+        
+        self.logger.warning(f"No plugin mapping found for database type: {db_type}")
+        return None
+    
+    def _get_plugin_name_from_template(self, connector_class: str) -> Optional[str]:
+        """
+        Extract the plugin name (template_id) from an FM template file.
+        
+        Args:
+            connector_class: The connector.class to find
+            
+        Returns:
+            The template_id (plugin name) or None if not found
+        """
+        if not self.fm_template_dir or not self.fm_template_dir.exists():
+            self.logger.warning(f"FM template directory does not exist: {self.fm_template_dir}")
+            return None
+        
+        # Handle Debezium v1 to v2 mapping if needed
+        target_connector_class = connector_class
+        if self.debezium_version == 'v2' and connector_class in self.debezium_v1_to_v2_mapping:
+            target_connector_class = self.debezium_v1_to_v2_mapping[connector_class]
+            self.logger.debug(f"Using v2 connector class for template lookup: {target_connector_class}")
+        elif self.debezium_version == 'v1' and connector_class in self.debezium_v2_to_v1_mapping:
+            target_connector_class = self.debezium_v2_to_v1_mapping[connector_class]
+            self.logger.debug(f"Using v1 connector class for template lookup: {target_connector_class}")
+        
+        # Search through FM templates
+        for template_file in self.fm_template_dir.glob('*.json'):
+            try:
+                with open(template_file, 'r') as f:
+                    template_data = json.load(f)
+                
+                # Check if this template matches the connector class
+                found_match = False
+                
+                # Check direct connector.class
+                if template_data.get('connector.class') == target_connector_class:
+                    found_match = True
+                # Check nested templates structure
+                elif 'templates' in template_data:
+                    for template in template_data['templates']:
+                        if template.get('connector.class') == target_connector_class:
+                            found_match = True
+                            break
+                
+                if found_match:
+                    # Extract template_id
+                    template_id = None
+                    if template_data.get('template_id'):
+                        template_id = template_data.get('template_id')
+                    elif 'templates' in template_data and len(template_data['templates']) > 0:
+                        template_id = template_data['templates'][0].get('template_id')
+                    
+                    if template_id:
+                        self.logger.info(f"Found plugin name '{template_id}' for connector class '{connector_class}'")
+                        return template_id
+                    else:
+                        self.logger.warning(f"Template found for {connector_class} but no template_id present")
+                        
+            except Exception as e:
+                self.logger.debug(f"Error reading template {template_file}: {str(e)}")
+                continue
+        
+        self.logger.warning(f"No FM template found for connector class: {connector_class}")
+        return None
+
+    def _apply_debezium_v1_to_v2_if_needed(
+        self, 
+        original_connector_class: str, 
+        fm_configs: Dict[str, Any], 
+        warnings: List[str], 
+        errors: List[str]
+    ) -> Tuple[Dict[str, Any], List[str], List[str]]:
+        """
+        Apply Debezium v1 to v2 translation if needed.
+        
+        This is a common post-translation step that should be applied after
+        either API translation or SM-to-FM template translation.
+        
+        Args:
+            original_connector_class: The original connector.class from the input config
+            fm_configs: The translated FM configurations
+            warnings: List of warnings to append to
+            errors: List of errors to append to
+            
+        Returns:
+            Tuple of (fm_configs, warnings, errors) with any v1→v2 translations applied
+        """
+        if self.debezium_version == 'v1' and self.debezium_translator.is_debezium_v1(original_connector_class):
+            self.logger.info(f"Customer provided Debezium v1 config, translating FM configs to v2 format")
+            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.debezium_translator.translate_v1_to_v2(
+                original_connector_class, fm_configs
+            )
+            for warning in v1_to_v2_warnings:
+                warnings.append(f"[v1→v2 Translation] {warning}")
+            for error in v1_to_v2_errors:
+                errors.append(f"[v1→v2 Translation] {error}")
+            self.logger.info(f"V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+        
+        return fm_configs, warnings, errors
+
+    def _translate_connector_config_via_api(self, connector_name: str, config_dict: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Translate connector config using the Confluent Cloud /translate API endpoint.
+        
+        This method calls the API:
+        PUT https://api.confluent.cloud/connect/v1/environments/{env_id}/clusters/{cluster_id}/connector-plugins/{plugin_name}/config/translate
+        
+        Args:
+            connector_name: Name of the connector
+            config_dict: Dictionary of connector configuration
+            
+        Returns:
+            Dictionary with 'config' and 'warnings' on success, None on failure
+        """
+        if not self.env_id or not self.lkc_id or not self.bearer_token:
+            self.logger.debug("Skipping /translate API call - missing env_id, lkc_id, or bearer_token")
+            return None
+        
+        connector_class = config_dict.get('connector.class')
+        if not connector_class:
+            self.logger.warning("Cannot call /translate API - no connector.class in config")
+            return None
+        
+        # Get plugin name from FM template (or JDBC-specific logic)
+        plugin_name = self._get_plugin_name_for_connector(connector_class, config_dict)
+        if not plugin_name:
+            self.logger.warning(f"Cannot call /translate API - could not determine plugin name for connector class: {connector_class}")
+            return None
+        
+        url = f"https://api.confluent.cloud/connect/v1/environments/{self.env_id}/clusters/{self.lkc_id}/connector-plugins/{plugin_name}/config/translate"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
+        }
+        
+        try:
+            self.logger.info(f"Calling /translate API for connector '{connector_name}' with plugin '{plugin_name}'")
+            self.logger.debug(f"Translate URL: {url}")
+            
+            response = requests.put(
+                url, 
+                json=config_dict, 
+                headers=headers, 
+                verify=not self.disable_ssl_verify
+            )
+            
+            if response.status_code != 200:
+                self.logger.warning(f"/translate API failed with status {response.status_code}: {response.text}")
+                return None
+            
+            result = response.json()
+            self.logger.info(f"Successfully translated connector '{connector_name}' via /translate API")
+            
+            # Parse warnings from response
+            warnings = []
+            if 'warnings' in result and result['warnings']:
+                for warning in result['warnings']:
+                    field = warning.get('field', 'unknown')
+                    message = warning.get('message', '')
+                    warnings.append(f"[Translate API] {field}: {message}")
+                self.logger.info(f"Translation returned {len(warnings)} warnings")
+            
+            # Parse errors from response
+            errors = []
+            if 'errors' in result and result['errors']:
+                for error in result['errors']:
+                    field = error.get('field', 'unknown')
+                    message = error.get('message', '')
+                    errors.append(f"[Translate API] {field}: {message}")
+                self.logger.info(f"Translation returned {len(errors)} errors")
+            
+            return {
+                'config': result.get('config', {}),
+                'warnings': warnings,
+                'errors': errors
+            }
+            
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(f"/translate API request failed: {str(e)}")
+            return None
+        except json.JSONDecodeError as e:
+            self.logger.warning(f"/translate API returned invalid JSON: {str(e)}")
+            return None
+        except Exception as e:
+            self.logger.warning(f"/translate API call failed with unexpected error: {str(e)}")
+            return None
 
     def encode_to_base64(self, input_string):
         # Convert the input string to bytes
@@ -1925,6 +2174,55 @@ class ConnectorComparator:
         # Store original connector class to detect if v1 to v2 translation is needed after SM to FM
         original_connector_class = config_dict.get('connector.class', '')
 
+        # Flag to track if translation was done via API
+        translation_done_via_api = False
+        
+        # STEP 0: Try /translate API when env_id and lkc_id are available
+        # This is the preferred method as it uses Confluent Cloud's translation service
+        # Falls back to existing SM-to-FM template-based translation on failure or exception
+        if self.env_id and self.lkc_id and self.bearer_token:
+            self.logger.info(f"Attempting /translate API for connector '{connector_name}'")
+            try:
+                translate_result = self._translate_connector_config_via_api(connector_name, config_dict)
+                
+                if translate_result is not None:
+                    # API translation succeeded - use the result
+                    self.logger.info(f"Successfully translated connector '{connector_name}' via /translate API")
+                    
+                    fm_configs = translate_result.get('config', {})
+                    warnings = translate_result.get('warnings', [])
+                    errors = translate_result.get('errors', [])
+                    
+                    # Ensure name is set
+                    if 'name' not in fm_configs:
+                        fm_configs['name'] = connector_name
+                    
+                    translation_done_via_api = True
+                else:
+                    # API translation returned None - fall back to SM-to-FM translation
+                    self.logger.info(f"/translate API returned no result for connector '{connector_name}', falling back to SM-to-FM translation")
+            except Exception as e:
+                # Any exception from translate API - fall back to SM-to-FM translation
+                self.logger.warning(f"/translate API exception for connector '{connector_name}': {str(e)}, falling back to SM-to-FM translation")
+        else:
+            self.logger.debug(f"Skipping /translate API for connector '{connector_name}' - credentials not provided")
+        
+        # If API translation succeeded, apply post-translation steps and return
+        if translation_done_via_api:
+            # Apply Debezium v1 to v2 translation if needed (common post-translation step)
+            fm_configs, warnings, errors = self._apply_debezium_v1_to_v2_if_needed(
+                original_connector_class, fm_configs, warnings, errors
+            )
+            
+            # Return the result
+            result['fm_configs'] = fm_configs
+            result['warnings'] = warnings
+            result['errors'] = errors
+            result['name'] = connector_name
+            
+            return result
+
+        # FALLBACK: Use existing SM-to-FM template-based translation
         # Get template ID (connector class)
         template_id = config_dict.get('connector.class')
 
@@ -2194,21 +2492,10 @@ class ConnectorComparator:
         else:
             self.logger.warning("connector.class not found in final fm_configs")
 
-        # Step: Translate Debezium v1 FM configs to v2 FM configs
-        # This happens AFTER SM to FM translation is complete
-        # Translation happens when: customer provided v1 config (debezium_version == 'v1')
-        if self.debezium_version == 'v1' and self.debezium_translator.is_debezium_v1(original_connector_class):
-            self.logger.info(f"Customer provided Debezium v1 config, translating FM configs to v2 format")
-            fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.debezium_translator.translate_v1_to_v2(
-                original_connector_class, fm_configs
-            )
-            # Add v1 to v2 translation warnings
-            for warning in v1_to_v2_warnings:
-                warnings.append(f"[v1→v2 Translation] {warning}")
-            # Add v1 to v2 translation errors
-            for error in v1_to_v2_errors:
-                errors.append(f"[v1→v2 Translation] {error}")
-            self.logger.info(f"V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+        # Step: Apply Debezium v1 to v2 translation if needed (common post-translation step)
+        fm_configs, warnings, errors = self._apply_debezium_v1_to_v2_if_needed(
+            original_connector_class, fm_configs, warnings, errors
+        )
 
         # Return the result in the required format
         result = {
