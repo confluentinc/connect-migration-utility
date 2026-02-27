@@ -57,7 +57,7 @@ class BigQueryV1ToV2Transformer:
     }
     
     # Required configurations that must be present in V1 config
-    REQUIRED_CONFIGS = [
+    V1_REQUIRED_CONFIGS = [
         "project",
         "datasets", 
         "topics",
@@ -134,7 +134,7 @@ class BigQueryV1ToV2Transformer:
     
     # Configs not supported in V2 Storage Write API connector
     # Based on: https://github.com/confluentinc/confluent-connector-migration-tool
-    UNSUPPORTED_CONFIGS = {
+    V2_UNSUPPORTED_CONFIGS = {
         "allow.schema.unionization": "Schema unionization is not supported in V2 connector. This functionality is now part of the auto.update.schemas property, which handles schema evolution for both primitive and complex types (structs and arrays).",
         "all.bq.fields.nullable": "All BigQuery fields nullable setting is not supported in V2 connector. This controlled whether all fields were made nullable.",
         "convert.double.special.values": "Double special values conversion is not supported in V2 connector. This handled +Infinity, -Infinity, and NaN conversions.",
@@ -227,7 +227,7 @@ class BigQueryV1ToV2Transformer:
         processed_keys = set()
         
         # 1. Validate required configs - add errors if missing
-        for required_key in self.REQUIRED_CONFIGS:
+        for required_key in self.V1_REQUIRED_CONFIGS:
             if required_key not in config or not config[required_key]:
                 errors.append(f"Missing required configuration: '{required_key}'")
         
@@ -237,7 +237,7 @@ class BigQueryV1ToV2Transformer:
             processed_keys.add('connector.class')
         
         # 3. Check for unsupported configs and add warnings
-        for unsupported_key, message in self.UNSUPPORTED_CONFIGS.items():
+        for unsupported_key, message in self.V2_UNSUPPORTED_CONFIGS.items():
             if unsupported_key in config:
                 warnings.append(f"UNSUPPORTED: '{unsupported_key}' - {message}")
                 processed_keys.add(unsupported_key)
@@ -305,7 +305,7 @@ class BigQueryV1ToV2Transformer:
         # 14. Copy any remaining unprocessed configs (excluding unsupported ones)
         for key, value in config.items():
             if key not in processed_keys and key not in translated:
-                if key not in self.UNSUPPORTED_CONFIGS:
+                if key not in self.V2_UNSUPPORTED_CONFIGS:
                     translated[key] = value
         
         self.logger.info(f"Translated {len(processed_keys)} BigQuery V1 configs to V2 format")
@@ -364,7 +364,7 @@ def check_unsupported_configs(v1_config: Dict[str, Any]) -> list:
     """
     transformer = _get_transformer()
     found_unsupported = []
-    for config_key in transformer.UNSUPPORTED_CONFIGS.keys():
+    for config_key in transformer.V2_UNSUPPORTED_CONFIGS.keys():
         if config_key in v1_config:
             found_unsupported.append(config_key)
     return found_unsupported

@@ -141,7 +141,7 @@ class HttpV1ToV2Transformer:
     }
     
     # Configs that are deprecated or not supported in V2
-    DEPRECATED_CONFIGS = [
+    V2_UNSUPPORTED_CONFIGS = [
         "confluent.topic.bootstrap.servers",
         "confluent.topic.sasl.jaas.config",
         "confluent.topic.sasl.mechanism",
@@ -344,7 +344,7 @@ class HttpV1ToV2Transformer:
             warnings.append("tasks.max set to default value of 1")
         
         # 8. Handle deprecated configs
-        for deprecated_key in self.DEPRECATED_CONFIGS:
+        for deprecated_key in self.V2_UNSUPPORTED_CONFIGS:
             if deprecated_key in config:
                 processed_keys.add(deprecated_key)
                 warnings.append(f"DEPRECATED: '{deprecated_key}' is not used in V2 and has been removed")
@@ -359,7 +359,7 @@ class HttpV1ToV2Transformer:
         for key, value in config.items():
             if key not in processed_keys and key not in translated:
                 # Don't copy if it's a known deprecated config
-                if key not in self.DEPRECATED_CONFIGS:
+                if key not in self.V2_UNSUPPORTED_CONFIGS:
                     translated[key] = value
                     warnings.append(f"Copied unrecognized config '{key}' as-is (please verify compatibility)")
         
