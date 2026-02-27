@@ -100,6 +100,8 @@ class HttpV1ToV2Transformer:
     }
     
     # Configs that should be copied as-is (common across V1 and V2)
+    # Configs that should be copied as-is (common across V1 and V2)
+    # Note: 'name' and 'tasks.max' are handled separately in steps 6 and 7
     COMMON_CONFIGS = [
         "input.data.format",
         "kafka.api.key",
@@ -108,9 +110,7 @@ class HttpV1ToV2Transformer:
         "kafka.service.account.id",
         "max.poll.interval.ms",
         "max.poll.records",
-        "name",
         "schema.context.name",
-        "tasks.max",
         "topics",  # Keep at root level as well as api1.topics
         "errors.tolerance",
         "errors.deadletterqueue.topic.name",
@@ -330,10 +330,9 @@ class HttpV1ToV2Transformer:
                 translated[common_key] = config[common_key]
                 processed_keys.add(common_key)
         
-        # 6. Handle name (append _v2 suffix)
+        # 6. Handle name
         if 'name' in config:
-            original_name = config['name']
-            translated['name'] = original_name 
+            translated['name'] = config['name']
             processed_keys.add('name')
         
         # 7. Handle tasks.max
@@ -341,7 +340,7 @@ class HttpV1ToV2Transformer:
             translated['tasks.max'] = config['tasks.max']
             processed_keys.add('tasks.max')
         else:
-            translated['tasks.max'] = 1
+            translated['tasks.max'] = "1"
             warnings.append("tasks.max set to default value of 1")
         
         # 8. Handle deprecated configs
@@ -349,15 +348,14 @@ class HttpV1ToV2Transformer:
             if deprecated_key in config:
                 processed_keys.add(deprecated_key)
                 warnings.append(f"DEPRECATED: '{deprecated_key}' is not used in V2 and has been removed")
-    
         
-        # 10. Handle transforms (SMTs)
+        # 9. Handle transforms (SMTs)
         transform_keys = [k for k in config.keys() if k.startswith('transforms')]
         for transform_key in transform_keys:
             translated[transform_key] = config[transform_key]
             processed_keys.add(transform_key)
         
-        # 11. Copy any remaining unprocessed configs
+        # 10. Copy any remaining unprocessed configs
         for key, value in config.items():
             if key not in processed_keys and key not in translated:
                 # Don't copy if it's a known deprecated config
@@ -365,7 +363,7 @@ class HttpV1ToV2Transformer:
                     translated[key] = value
                     warnings.append(f"Copied unrecognized config '{key}' as-is (please verify compatibility)")
         
-        # 12. Add behavior change notes
+        # 11. Add behavior change notes
         if 'behavior.on.error' not in config:
             warnings.append("BEHAVIOR CHANGE: Default behavior.on.error in V2 is 'FAIL' (V1 default was 'ignore'). Explicitly set if needed.")
         

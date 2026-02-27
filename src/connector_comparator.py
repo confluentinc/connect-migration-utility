@@ -2017,7 +2017,6 @@ class ConnectorComparator:
                     continue
 
                 original_sm_config = connector['config']
-                original_name = connector['name']
 
                 # Transform SM to FM using the new method
                 # Note: HTTP, BigQuery, and Debezium V1 to V2 transformations are handled inside transformSMToFm

@@ -268,7 +268,7 @@ class BigQueryV1ToV2Transformer:
             translated['tasks.max'] = config['tasks.max']
             processed_keys.add('tasks.max')
         else:
-            translated['tasks.max'] = 1
+            translated['tasks.max'] = "1"
         
         # 9. Apply V2 defaults for missing configurations
         for default_key, default_value in self.V2_DEFAULTS.items():
