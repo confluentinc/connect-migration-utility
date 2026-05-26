@@ -12,7 +12,7 @@ import logging
 from collections import defaultdict
 from typing import Dict, Union, Any
 
-from connector_comparator import ConnectorComparator
+from translation.sm_to_fm_translator import ConnectorComparator
 
 
 def count_files(path):

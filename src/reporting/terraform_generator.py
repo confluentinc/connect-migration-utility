@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-from connector_comparator import ConnectorComparator
+from translation.sm_to_fm_translator import ConnectorComparator
 
 
 class TerraformGenerator:
