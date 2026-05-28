@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional
 from connect_migrate.mapper.properties.derivations.base import DerivationGroup
 
 
+_MONGO_URI_KEYS = ("connection.uri", "mongodb.connection.string", "connection.string")
+
+
 class ConnectionFieldDeriver(DerivationGroup):
     DERIVATIONS: Dict[str, str] = {
         'connection.url': '_derive_snowflake_connection_url',
@@ -17,6 +20,13 @@ class ConnectionFieldDeriver(DerivationGroup):
         'db.connection.type': '_derive_db_connection_type',
         'ssl.server.cert.dn': '_derive_ssl_server_cert_dn',
     }
+
+    def _mongo_field(self, user_configs: Dict[str, str], field: str) -> Optional[str]:
+        """Return ``parsed[field]`` from the first present MongoDB URI config."""
+        for key in _MONGO_URI_KEYS:
+            if key in user_configs:
+                return self.jdbc_url_parser.parse_mongodb_url(user_configs[key]).get(field)
+        return None
 
     def _derive_snowflake_connection_url(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
         """Derive ``connection.url`` from SM config. Snowflake-specific: strips the
@@ -38,161 +48,62 @@ class ConnectionFieldDeriver(DerivationGroup):
         return None
 
     def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive connection.host from user configs (e.g., from JDBC URL or MongoDB connection string)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('host')
-
-        # Try to extract from MongoDB connection string
-        if 'connection.uri' in user_configs:
-            mongo_uri = user_configs['connection.uri']
-            parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-            return parsed.get('host')
-
-        # Check for MongoDB-specific connection string configs
-        for config_key in ['mongodb.connection.string', 'connection.string']:
-            if config_key in user_configs:
-                mongo_uri = user_configs[config_key]
-                parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-                return parsed.get('host')
-
-        return None
+        """Derive connection.host from a JDBC URL or MongoDB connection string."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('host')
+        return self._mongo_field(user_configs, 'host')
 
     def _derive_connection_port(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive connection.port from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('port')
+        """Derive connection.port from a JDBC URL."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('port')
         return None
 
     def _derive_connection_user(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive connection.user from user configs (e.g., from JDBC URL or MongoDB connection string)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('user')
-
-        # Try to extract from MongoDB connection string
-        if 'connection.uri' in user_configs:
-            mongo_uri = user_configs['connection.uri']
-            parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-            return parsed.get('user')
-
-        # Check for MongoDB-specific connection string configs
-        for config_key in ['mongodb.connection.string', 'connection.string']:
-            if config_key in user_configs:
-                mongo_uri = user_configs[config_key]
-                parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-                return parsed.get('user')
-
-        return None
+        """Derive connection.user from a JDBC URL or MongoDB connection string."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('user')
+        return self._mongo_field(user_configs, 'user')
 
     def _derive_connection_password(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive connection.password from user configs (e.g., from JDBC URL or MongoDB connection string)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('password')
-
-        # Try to extract from MongoDB connection string
-        if 'connection.uri' in user_configs:
-            mongo_uri = user_configs['connection.uri']
-            parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-            return parsed.get('password')
-
-        # Check for MongoDB-specific connection string configs
-        for config_key in ['mongodb.connection.string', 'connection.string']:
-            if config_key in user_configs:
-                mongo_uri = user_configs[config_key]
-                parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-                return parsed.get('password')
-
-        return None
+        """Derive connection.password from a JDBC URL or MongoDB connection string."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('password')
+        return self._mongo_field(user_configs, 'password')
 
     def _derive_connection_database(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive connection.database from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db.name', not 'database'
-                return parsed.get('db.name')
+        """Derive connection.database from a JDBC URL (parse returns 'db.name')."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('db.name')
         return None
 
     def _derive_db_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
+        """Derive db.name from JDBC, MongoDB URI, or a direct ``db.name``/``database`` config."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('db.name')
 
-        """Derive db.name from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                # The _parse_jdbc_url method returns 'db.name', not 'database'
-                return parsed.get('db.name')
+        mongo_db = self._mongo_field(user_configs, 'database')
+        if mongo_db is not None or any(k in user_configs for k in _MONGO_URI_KEYS):
+            return mongo_db
 
-        # Try to extract from MongoDB connection string
-        if 'connection.uri' in user_configs:
-            mongo_uri = user_configs['connection.uri']
-            parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-            return parsed.get('database')
-
-        # Check for MongoDB-specific connection string configs
-        for config_key in ['mongodb.connection.string', 'connection.string']:
-            if config_key in user_configs:
-                mongo_uri = user_configs[config_key]
-                parsed = self.jdbc_url_parser.parse_mongodb_url(mongo_uri)
-                return parsed.get('database')
-
-        # Check for direct db.name config
-        if 'db.name' in user_configs:
-            return user_configs['db.name']
-
-        # Check for database config
-        if 'database' in user_configs:
-            return user_configs['database']
-
-        return None
+        return user_configs.get('db.name') or user_configs.get('database')
 
     def _derive_db_connection_type(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive db.connection.type from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('db.connection.type')
-
-        # Check for direct db.connection.type config
-        if 'db.connection.type' in user_configs:
-            return user_configs['db.connection.type']
-
-        # Default fallback
-        return None
+        """Derive db.connection.type from a JDBC URL or a direct config."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('db.connection.type')
+        return user_configs.get('db.connection.type')
 
     def _derive_ssl_server_cert_dn(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
-        """Derive ssl.server.cert.dn from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('ssl.server.cert.dn')
-
-        # Check for direct ssl.server.cert.dn config
-        if 'ssl.server.cert.dn' in user_configs:
-            return user_configs['ssl.server.cert.dn']
-
-        # Default fallback
-        return None
-
+        """Derive ssl.server.cert.dn from a JDBC URL (Oracle) or a direct config."""
+        jdbc_url = user_configs.get('connection.url')
+        if jdbc_url and jdbc_url.startswith('jdbc:'):
+            return self.jdbc_url_parser.parse_jdbc_url(jdbc_url).get('ssl.server.cert.dn')
+        return user_configs.get('ssl.server.cert.dn')

@@ -355,16 +355,13 @@ class ConnectorMapper:
 
         if fm_template_path:
             try:
-                with open(fm_template_path, 'r') as f:
-                    self.fm_templates[fm_template_path] = json.load(f)
+                self.fm_templates[fm_template_path] = read_json(fm_template_path)
                 self.logger.info(f"Loaded FM template by connector.class: {fm_template_path}")
-                self.logger.info(f"Template file path: {fm_template_path}")
-                # Log the template_id from the loaded template
                 loaded_template = self.fm_templates[fm_template_path]
                 if 'templates' in loaded_template and len(loaded_template['templates']) > 0:
                     template_id = loaded_template['templates'][0].get('template_id', 'NO_TEMPLATE_ID')
                     self.logger.info(f"Template ID from loaded template: {template_id}")
-            except Exception as e:
+            except (OSError, json.JSONDecodeError) as e:
                 self.logger.error(f"Error loading FM template {fm_template_path}: {str(e)}")
                 fm_template_path = None
         else:
@@ -839,7 +836,22 @@ class ConnectorMapper:
         transforms_configs: Dict[str, str],
         semantic_match_list: set,
     ) -> None:
-        """Map each user config into ``fm_configs`` via connector/template config-defs."""
+        """Map each user config into ``fm_configs`` via connector/template config-defs.
+
+        Builds two indexes once (O(n)) instead of doing two nested scans per user
+        config (O(user_configs × config_defs)).
+        """
+        connector_def_by_name: Dict[str, Dict[str, Any]] = {
+            cd['name']: cd
+            for cd in connector_config_defs
+            if isinstance(cd, dict) and 'name' in cd
+        }
+        template_names: set = {
+            cd['name']
+            for cd in template_config_defs
+            if isinstance(cd, dict) and 'name' in cd
+        }
+
         user_config_key = None
         try:
             for user_config_key, user_config_value in config_dict.items():
@@ -849,12 +861,7 @@ class ConnectorMapper:
                     transforms_configs[user_config_key] = user_config_value
                     continue
 
-                matching_connector_config_def = None
-                for connector_config_def in connector_config_defs:
-                    if isinstance(connector_config_def, dict) and connector_config_def.get('name') == user_config_key:
-                        matching_connector_config_def = connector_config_def
-                        break
-
+                matching_connector_config_def = connector_def_by_name.get(user_config_key)
                 if matching_connector_config_def is not None:
                     self._config_def_processor.process_user_config(
                         matching_connector_config_def,
@@ -866,44 +873,40 @@ class ConnectorMapper:
                         config_dict,
                         semantic_match_list,
                     )
-                else:
-                    config_found_in_template = False
-                    try:
-                        for template_config_def in template_config_defs:
-                            original_user_config_key = user_config_key
-                            if (user_config_key.startswith('consumer.') or user_config_key.startswith('producer.')) and \
-                                    not user_config_key.startswith('consumer.override.') and not user_config_key.startswith('producer.override.'):
-                                user_config_key = user_config_key.replace('consumer.', 'consumer.override.')
-                                user_config_key = user_config_key.replace('producer.', 'producer.override.')
-                            elif user_config_key.startswith('consumer.override.') or user_config_key.startswith('producer.override.'):
-                                user_config_key = user_config_key.replace('consumer.override.', 'consumer.')
-                                user_config_key = user_config_key.replace('producer.override.', 'producer.')
+                    continue
 
-                            if isinstance(template_config_def, dict) and (
-                                template_config_def.get('name') == user_config_key
-                                or template_config_def.get('name') == original_user_config_key
-                            ):
-                                config_found_in_template = True
-                                break
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error iterating over template_config_defs for {user_config_key}: {str(e)}"
-                        )
-                        self.logger.error(
-                            f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}"
-                        )
-                        config_found_in_template = False
+                normalized = self._normalize_consumer_producer_override(user_config_key)
+                if user_config_key in template_names or (
+                    normalized is not None and normalized in template_names
+                ):
+                    continue
 
-                    if not config_found_in_template:
-                        warning_msg = (
-                            f"Unused connector config '{user_config_key}'. Given value will be ignored. "
-                            f"Default value will be used if any."
-                        )
-                        warnings.append(warning_msg)
-                        self.logger.warning(warning_msg)
+                warning_msg = (
+                    f"Unused connector config '{user_config_key}'. Given value will be ignored. "
+                    f"Default value will be used if any."
+                )
+                warnings.append(warning_msg)
+                self.logger.warning(warning_msg)
         except Exception as e:
             self.logger.error(f"Error processing user configs: {str(e)}")
             errors.append(f"Error processing user configs {user_config_key}: {str(e)}")
+
+    @staticmethod
+    def _normalize_consumer_producer_override(key: str) -> Optional[str]:
+        """Return the consumer/producer override-form (or non-override-form) of ``key``.
+
+        ``consumer.x`` <-> ``consumer.override.x`` and similarly for producer. Returns
+        ``None`` if ``key`` doesn't carry a consumer/producer prefix at all.
+        """
+        if key.startswith('consumer.override.'):
+            return 'consumer.' + key[len('consumer.override.'):]
+        if key.startswith('producer.override.'):
+            return 'producer.' + key[len('producer.override.'):]
+        if key.startswith('consumer.'):
+            return 'consumer.override.' + key[len('consumer.'):]
+        if key.startswith('producer.'):
+            return 'producer.override.' + key[len('producer.'):]
+        return None
 
     def _stage_apply_template_derivations(
         self,

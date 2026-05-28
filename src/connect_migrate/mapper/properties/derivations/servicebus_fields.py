@@ -1,63 +1,46 @@
 """Derive FM Azure ServiceBus connector fields (namespace, SAS keys, entity name)."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Pattern
 
 from connect_migrate.mapper.properties.derivations.base import DerivationGroup
 
 
+# Maps FM field name -> regex to extract that field from
+# ``azure.servicebus.connection.string`` when the user doesn't supply the
+# FM field directly.
+_CONN_STRING_PATTERNS: Dict[str, Pattern[str]] = {
+    'azure.servicebus.namespace': re.compile(
+        r'Endpoint=sb://([^.]+)\.servicebus\.windows\.net/'
+    ),
+    'azure.servicebus.sas.keyname': re.compile(r'SharedAccessKeyName=([^;]+)'),
+    'azure.servicebus.sas.key': re.compile(r'SharedAccessKey=([^;]+)'),
+    'azure.servicebus.entity.name': re.compile(r'EntityPath=([^;]+)'),
+}
+
+
 class ServiceBusFieldDeriver(DerivationGroup):
     DERIVATIONS: Dict[str, str] = {
-        'azure.servicebus.namespace': '_derive_servicebus_namespace',
-        'azure.servicebus.sas.keyname': '_derive_azure_servicebus_sas_keyname',
-        'azure.servicebus.sas.key': '_derive_azure_servicebus_sas_key',
-        'azure.servicebus.entity.name': '_derive_azure_servicebus_entity_name',
+        field: '_derive_from_connection_string' for field in _CONN_STRING_PATTERNS
     }
 
-    def _derive_servicebus_namespace(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
-        if 'azure.servicebus.namespace' in user_configs:
-            return user_configs['azure.servicebus.namespace']
+    def _derive_from_connection_string(
+        self,
+        user_configs: Dict[str, str],
+        fm_configs: Dict[str, str],
+        template_config_defs: Optional[List[Dict[str, Any]]] = None,
+        config_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """Return ``user_configs[config_name]`` if set; otherwise extract via
+        the regex registered for ``config_name`` against the connection string.
+        """
+        if config_name and config_name in user_configs:
+            return user_configs[config_name]
 
-        # Try to extract from connection string if present
         conn_str = user_configs.get('azure.servicebus.connection.string')
-        if conn_str:
-            match = re.search(r'Endpoint=sb://([^.]+)\.servicebus\.windows\.net/', conn_str)
+        if conn_str and config_name in _CONN_STRING_PATTERNS:
+            match = _CONN_STRING_PATTERNS[config_name].search(conn_str)
             if match:
                 return match.group(1)
-        return user_configs.get('azure.servicebus.namespace')
 
-    def _derive_azure_servicebus_sas_keyname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
-        if 'azure.servicebus.sas.keyname' in user_configs:
-            return user_configs['azure.servicebus.sas.keyname']
-
-        # Try to extract from connection string if present
-        conn_str = user_configs.get('azure.servicebus.connection.string')
-        if conn_str:
-            match = re.search(r'SharedAccessKeyName=([^;]+)', conn_str)
-            if match:
-                return match.group(1)
-        return user_configs.get('azure.servicebus.sas.keyname')
-
-    def _derive_azure_servicebus_sas_key(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
-        if 'azure.servicebus.sas.key' in user_configs:
-            return user_configs['azure.servicebus.sas.key']
-
-        # Try to extract from connection string if present
-        conn_str = user_configs.get('azure.servicebus.connection.string')
-        if conn_str:
-            match = re.search(r'SharedAccessKey=([^;]+)', conn_str)
-            if match:
-                return match.group(1)
-        return user_configs.get('azure.servicebus.sas.key')
-
-    def _derive_azure_servicebus_entity_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> str:
-        if 'azure.servicebus.entity.name' in user_configs:
-            return user_configs['azure.servicebus.entity.name']
-
-        # Try to extract from connection string if present
-        conn_str = user_configs.get('azure.servicebus.connection.string')
-        if conn_str:
-            match = re.search(r'EntityPath=([^;]+)', conn_str)
-            if match:
-                return match.group(1)
-        return user_configs.get('azure.servicebus.entity.name')
+        return None

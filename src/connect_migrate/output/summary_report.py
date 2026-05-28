@@ -5,46 +5,49 @@ Copyright 2024-2025 The Apache Software Foundation
 This product includes software developed at The Apache Software Foundation.
 """
 
+import logging
 import os
 import re
-import logging
 from collections import defaultdict
-from typing import Dict, Union, Any
+from typing import Any, Dict, Iterator, Tuple, Union
 
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
-from connect_migrate.utils.json_files import read_json
+from connect_migrate.utils.json_files import iter_json_files, read_json
+
+
+logger = logging.getLogger(__name__)
 
 
 def count_files(path):
     if not os.path.exists(path):
         return 0
-    # Only count JSON files (same logic as get_connector_type_counts)
-    json_files = [f for f in os.listdir(path) if f.endswith('.json')]
-    return len(json_files)
+    return sum(1 for _ in iter_json_files(path))
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+
+def _iter_connector_data(config_path) -> Iterator[Tuple[str, Any]]:
+    """Yield ``(file_path, parsed_json)`` for every connector JSON under ``config_path``.
+
+    Files that fail to read or parse are logged at warning and skipped, so the caller
+    can stay focused on shape-handling.
+    """
+    for entry in iter_json_files(config_path):
+        try:
+            yield str(entry), read_json(entry)
+        except (OSError, ValueError) as e:
+            logger.warning(f"Failed to read {entry}: {e}")
+
 
 def get_connector_type_counts(config_path):
-    counts = defaultdict(int)
-    if not os.path.exists(config_path):
-        return counts
-    for fname in os.listdir(config_path):
-        fpath = os.path.join(config_path, fname)
-        if not fname.endswith(".json"):
-            continue
-        try:
-            data = read_json(fpath)
-            if "config" in data:
-                connector_class = data["config"].get("connector.class")
-            elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
-                connector_class = data["sm_config"][0].get("connector.class")
-            else:
-                connector_class = None
-            if connector_class:
-                counts[connector_class] += 1
-        except Exception as e:
-            logger.info(f"Failed to read {fpath}: {e}")
+    counts: Dict[str, int] = defaultdict(int)
+    for _, data in _iter_connector_data(config_path):
+        if "config" in data:
+            connector_class = data["config"].get("connector.class")
+        elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
+            connector_class = data["sm_config"][0].get("connector.class")
+        else:
+            connector_class = None
+        if connector_class:
+            counts[connector_class] += 1
     return counts
 
 def extract_config_name(data):
@@ -66,29 +69,20 @@ def collect_mapping_errors_with_details(config_path):
         "count": 0,
         "occurrences": []  # list of (config_name, transform_name)
     })
-    if not os.path.exists(config_path):
-        return error_summary
-
-    for fname in os.listdir(config_path):
-        fpath = os.path.join(config_path, fname)
-        if not fname.endswith(".json"):
+    for _, data in _iter_connector_data(config_path):
+        config_name = extract_config_name(data)
+        errors = []
+        if "mapping_errors" in data:
+            errors = data["mapping_errors"]
+        elif "config" in data and "mapping_errors" in data["config"]:
+            errors = data["config"]["mapping_errors"]
+        if not isinstance(errors, list):
             continue
-        try:
-            data = read_json(fpath)
-            config_name = extract_config_name(data)
-            errors = []
-            if "mapping_errors" in data:
-                errors = data["mapping_errors"]
-            elif "config" in data and "mapping_errors" in data["config"]:
-                errors = data["config"]["mapping_errors"]
-            if isinstance(errors, list):
-                for error in errors:
-                    error = error.strip()
-                    transform = extract_transform_name(error)
-                    error_summary[error]["count"] += 1
-                    error_summary[error]["occurrences"].append((config_name, transform))
-        except Exception as e:
-            logger.info(f"Failed to parse mapping_errors in {fpath}: {e}")
+        for error in errors:
+            error = error.strip()
+            transform = extract_transform_name(error)
+            error_summary[error]["count"] += 1
+            error_summary[error]["occurrences"].append((config_name, transform))
     return error_summary
 
 def summarize_output(base_dir):
@@ -206,10 +200,10 @@ def generate_tco_information_output(tco_info: Dict[str, Union[int, Dict[str, Any
                 lines.append(f"    - Tasks: None")
 
         lines.append("=" * 80)
-        with open(summary_file_path, 'w') as f:
+        with open(summary_file_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
         logger.info(f"TCO summary saved to: {summary_file_path}")
-    except Exception as e:
+    except OSError as e:
         logger.warning(f"Failed to save TCO summary to file: {e}")
 
 def generate_migration_summary(output_dir):
@@ -281,10 +275,10 @@ def generate_migration_summary(output_dir):
     # Save summary to text file
     summary_file_path = os.path.join(output_dir, "summary.txt")
     try:
-        with open(summary_file_path, 'w') as f:
+        with open(summary_file_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(summary_lines))
         logger.info(f"Migration summary saved to: {summary_file_path}")
-    except Exception as e:
+    except OSError as e:
         logger.warning(f"Failed to save summary to file: {e}")
 
     # Also print to console/logs

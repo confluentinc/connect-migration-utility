@@ -160,6 +160,58 @@ class DirectMappings:
 
         return recommended_values
 
+    def _build_template_index(
+        self,
+        fm_template: Dict[str, Any],
+    ) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, List[str]]]:
+        """Single-pass walk of the template producing ``(direct_mappings, fixed_values,
+        recommended_values)``. Equivalent to calling ``create_from_template``,
+        ``get_fixed_values``, and ``get_recommended_values`` in sequence, but iterates
+        the template entries once instead of three times.
+        """
+        direct_mappings: Dict[str, str] = {}
+        fixed_values: Dict[str, str] = {}
+        recommended_values: Dict[str, List[str]] = {}
+
+        if not fm_template or "templates" not in fm_template:
+            return direct_mappings, fixed_values, recommended_values
+
+        for template in fm_template["templates"]:
+            for config in template.get("connector_configs", []):
+                if "value" in config:
+                    value = config["value"]
+                    sm_property_template = config["name"]
+                    if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+                        direct_mappings[sm_property_template] = value[2:-1]
+                    else:
+                        direct_mappings[value] = sm_property_template
+                        fixed_values[sm_property_template] = value
+                elif "switch" in config:
+                    sm_property_template = config["name"]
+                    for switch_values in config["switch"].values():
+                        if not isinstance(switch_values, dict):
+                            continue
+                        for switch_value in switch_values.values():
+                            if (
+                                isinstance(switch_value, str)
+                                and switch_value.startswith("${")
+                                and switch_value.endswith("}")
+                            ):
+                                direct_mappings[sm_property_template] = switch_value[2:-1]
+                                break
+                        else:
+                            continue
+                        break
+                else:
+                    sm_property_template = config["name"]
+                    direct_mappings[sm_property_template] = sm_property_template
+
+            for config_def in template.get("config_defs", []):
+                if "recommended_values" in config_def:
+                    recommended_values[config_def["name"]] = config_def["recommended_values"]
+
+        return direct_mappings, fixed_values, recommended_values
+
     def apply_to_config(
         self,
         config: Dict[str, Any],
@@ -173,9 +225,7 @@ class DirectMappings:
         """
         mapped_config: Dict[str, Any] = {}
         mapping_errors: List[str] = []
-        direct_mappings = self.create_from_template(fm_template)
-        fixed_values = self.get_fixed_values(fm_template)
-        recommended_values = self.get_recommended_values(fm_template)
+        direct_mappings, fixed_values, recommended_values = self._build_template_index(fm_template)
 
         self.logger.info(f"Created {len(direct_mappings)} direct mappings from template")
         self.logger.info(f"Found {len(fixed_values)} fixed values from template")

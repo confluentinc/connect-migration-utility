@@ -49,17 +49,22 @@ class SensitiveDataRedactor:
         return any(pattern in key_lower for pattern in SENSITIVE_KEY_PATTERNS)
 
     def redact(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Return a deep copy of ``config`` with sensitive values replaced."""
+        """Return a deep copy of ``config`` with sensitive values replaced.
+
+        Sensitive keys redact whatever shape the value takes (scalar, list,
+        nested dict) — so ``{"passwords": ["a", "b"]}`` becomes
+        ``{"passwords": "********"}`` rather than leaking the list contents.
+        """
 
         def _walk(d: Dict[str, Any]) -> Dict[str, Any]:
             redacted: Dict[str, Any] = {}
             for k, v in d.items():
-                if isinstance(v, dict):
+                if self.is_sensitive(k):
+                    redacted[k] = REDACTED_PLACEHOLDER
+                elif isinstance(v, dict):
                     redacted[k] = _walk(v)
                 elif isinstance(v, list):
                     redacted[k] = [_walk(i) if isinstance(i, dict) else i for i in v]
-                elif self.is_sensitive(k):
-                    redacted[k] = REDACTED_PLACEHOLDER
                 else:
                     redacted[k] = v
             return redacted
