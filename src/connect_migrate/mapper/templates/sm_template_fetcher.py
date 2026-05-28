@@ -10,6 +10,8 @@ from typing import Any, Dict, Optional
 
 import requests
 
+from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
+
 
 class SmTemplateFetcher:
     def __init__(
@@ -21,6 +23,12 @@ class SmTemplateFetcher:
         self.disable_ssl_verify = disable_ssl_verify
         self.worker_auth = worker_auth
         self.logger = logger or logging.getLogger(__name__)
+        self._session = make_http_session(
+            disable_ssl_verify=disable_ssl_verify,
+            auth=worker_auth,
+            retries=2,
+            retry_on_methods=("GET", "PUT"),
+        )
 
     def fetch(self, connector_class: str, worker_url: Optional[str] = None) -> Dict[str, Any]:
         if not worker_url:
@@ -40,14 +48,7 @@ class SmTemplateFetcher:
 
             self.logger.info(f"Fetching SM template for {connector_class} from {url}")
             self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-            response = requests.put(
-                url,
-                json=data,
-                headers=headers,
-                verify=not self.disable_ssl_verify,
-                auth=self.worker_auth,
-                timeout=(5, 30),
-            )
+            response = self._session.put(url, json=data, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
             response.raise_for_status()
 
             template_data = response.json()

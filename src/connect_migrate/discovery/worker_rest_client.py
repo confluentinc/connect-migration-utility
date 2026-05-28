@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
+
 
 class WorkerRestClient:
     def __init__(
@@ -20,17 +22,15 @@ class WorkerRestClient:
         self.disable_ssl_verify = disable_ssl_verify
         self.auth = auth
         self.logger = logger or logging.getLogger(__name__)
+        self._session = make_http_session(
+            disable_ssl_verify=disable_ssl_verify, auth=auth, retries=3
+        )
 
     def is_alive(self, worker_url: str) -> bool:
         """Ping ``<worker_url>/connectors`` and return whether the worker responds OK."""
         test_url = f"{worker_url}/connectors"
         try:
-            response = requests.get(
-                test_url,
-                timeout=(5, 10),
-                verify=not self.disable_ssl_verify,
-                auth=self.auth,
-            )
+            response = self._session.get(test_url, timeout=(5, 10))
             if response.status_code == 200:
                 return True
             self.logger.warning(
@@ -50,8 +50,9 @@ class WorkerRestClient:
         """Make an HTTP GET request and return the JSON body, or ``None`` on error."""
         if logger is None:
             logger = logging.getLogger("worker_rest_client_default")
+        session = make_http_session(disable_ssl_verify=disable_ssl_verify, auth=auth, retries=3)
         try:
-            response = requests.get(url, timeout=(5, 30), verify=not disable_ssl_verify, auth=auth)
+            response = session.get(url, timeout=DEFAULT_HTTP_TIMEOUT)
             response.raise_for_status()
             payload = response.json()
             logger.debug(f"Response from {url} ({len(response.content)} bytes)")

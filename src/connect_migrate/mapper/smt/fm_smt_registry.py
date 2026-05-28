@@ -10,9 +10,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-import requests
-
 from connect_migrate.mapper.smt.smt_classifier import SmtClassifier
+from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
 
 
 class FmSmtRegistry:
@@ -31,6 +30,9 @@ class FmSmtRegistry:
         self._classifier = classifier
         self.logger = logger or logging.getLogger(__name__)
         self._fallback = self._load_fallback(fallback_file)
+        self._session = make_http_session(
+            retries=2, retry_on_methods=("GET", "PUT")
+        )
 
     def _load_fallback(self, fallback_file: Path) -> Dict[str, List[str]]:
         if fallback_file.exists():
@@ -59,7 +61,7 @@ class FmSmtRegistry:
                     "Content-Type": "application/json",
                     "Authorization": f"Basic {_encode_to_base64(self.bearer_token)}",
                 }
-                response = requests.put(url, params=params, json=data, headers=headers, timeout=(5, 30))
+                response = self._session.put(url, params=params, json=data, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
                 response.raise_for_status()
                 recommended = self._classifier.extract_recommended_transform_types(
                     response.json()

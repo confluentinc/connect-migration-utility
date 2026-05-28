@@ -16,6 +16,8 @@ from typing import Any, Callable, Dict, Optional
 
 import requests
 
+from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
+
 
 def encode_to_base64(input_string: str) -> str:
     """Encode a string to base64 (utf-8 in, utf-8 out)."""
@@ -38,6 +40,11 @@ class TranslateApiClient:
         self._resolve_plugin_name = plugin_name_resolver
         self.disable_ssl_verify = disable_ssl_verify
         self.logger = logger or logging.getLogger(__name__)
+        self._session = make_http_session(
+            disable_ssl_verify=disable_ssl_verify,
+            retries=2,
+            retry_on_methods=("GET", "PUT"),
+        )
 
     def translate(
         self,
@@ -78,13 +85,7 @@ class TranslateApiClient:
             )
             self.logger.debug(f"Translate URL: {url}")
 
-            response = requests.put(
-                url,
-                json=config_dict,
-                headers=headers,
-                verify=not self.disable_ssl_verify,
-                timeout=(5, 30),
-            )
+            response = self._session.put(url, json=config_dict, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
 
             if response.status_code != 200:
                 self.logger.warning(
