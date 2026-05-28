@@ -5,7 +5,7 @@ Preserves the external surface used by the rest of the codebase
 ``discover_and_save()`` instance method, and the static helpers used by
 :mod:`connect_migrate.cli.migrate_cli`,
 :mod:`connect_migrate.migration.offset_manager`, and
-:mod:`connect_migrate.connector_comparator`).
+:mod:`connect_migrate.mapper.connector_mapper`).
 
 Internally the work is delegated to:
 

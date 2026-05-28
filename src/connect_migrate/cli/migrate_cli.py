@@ -10,7 +10,7 @@ import shutil
 import logging
 
 from connect_migrate.migration.offset_manager import OffsetManager
-from connect_migrate.connector_comparator import ConnectorComparator
+from connect_migrate.mapper.connector_mapper import ConnectorMapper
 from connect_migrate.discovery.config_discovery import ConfigDiscovery
 from connect_migrate.utils.logging_setup import setup_logging
 
@@ -152,7 +152,7 @@ class ConnectorCreator:
         """
         self.logger.info(f"[INFO] Creating connector(s) from {json_file_path}")
         connectors_dict = {}
-        ConnectorComparator.parse_connector_file(json_file_path, connectors_dict, self.logger)
+        ConnectorMapper.parse_connector_file(json_file_path, connectors_dict, self.logger)
         results = []
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
         headers = {
@@ -300,7 +300,7 @@ def main():
         connector_fm_configs = {}
         for json_file in fm_config_dir.glob("*.json"):
             try:
-                ConnectorComparator.parse_connector_file(json_file, connector_fm_configs, logger)
+                ConnectorMapper.parse_connector_file(json_file, connector_fm_configs, logger)
             except Exception as e:
                 logger.error(f"Failed to extract connectors from {json_file}: {str(e)}")
                 continue

@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Union
 from connect_migrate.discovery.config_discovery import ConfigDiscovery
-from connect_migrate.connector_comparator import ConnectorComparator
+from connect_migrate.mapper.connector_mapper import ConnectorMapper
 from connect_migrate.output.summary_report import generate_migration_summary, generate_tco_information_output
 from connect_migrate.output.terraform_generator import TerraformGenerator
 from connect_migrate.utils.logging_setup import setup_logging
@@ -22,8 +22,8 @@ import json
 def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
     """Write FM configs to file in the discovered_configs structure"""
     # Directory structure
-    successful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
-    unsuccessful_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.UNSUCCESSFUL_CONFIGS_SUBDIR
+    successful_dir = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / ConnectorMapper.SUCCESSFUL_CONFIGS_SUBDIR
+    unsuccessful_dir = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / ConnectorMapper.UNSUCCESSFUL_CONFIGS_SUBDIR
     successful_fm_dir = successful_dir / ConfigDiscovery.FM_CONFIGS_DIR
     unsuccessful_fm_dir = unsuccessful_dir / ConfigDiscovery.FM_CONFIGS_DIR
 
@@ -59,10 +59,10 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
             with open(fm_file, 'w') as f:
                 json.dump(minimal_fm, f, indent=2)
 
-    logger.info(f"Saved {len(fm_configs)} FM configurations to {output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR}")
+    logger.info(f"Saved {len(fm_configs)} FM configurations to {output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR}")
 
     # Save all FM configs (full) in discovered_configs
-    all_configs_file = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / 'compiled_output_fm_configs.json'
+    all_configs_file = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / 'compiled_output_fm_configs.json'
     with open(all_configs_file, 'w') as f:
         json.dump(fm_configs, f, indent=2)
 
@@ -144,7 +144,7 @@ def main():
                 raise FileNotFoundError(f"Config directory not found or is not a directory: {args.config_dir}")
             all_connectors_dict = {}  # Accumulate all connectors here
             for file in sorted(config_dir.iterdir()):
-                ConnectorComparator.parse_connector_file(file, all_connectors_dict, logger)
+                ConnectorMapper.parse_connector_file(file, all_connectors_dict, logger)
             # Validation: ensure at least one connector was found
             if not all_connectors_dict:
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
@@ -174,7 +174,7 @@ def main():
             with open(args.worker_urls_file, 'r') as f:
                 worker_urls_list = [line.strip() for line in f if line.strip()]
 
-        comparator = ConnectorComparator(
+        comparator = ConnectorMapper(
             input_file=connectors_json,
             output_dir=output_dir,
             worker_urls=worker_urls_list,
@@ -215,7 +215,7 @@ def main():
             if not env_id or not cluster_id:
                 logger.info("Note: environment_id and/or cluster_id not provided. Using 'TO_BE_FILLED' placeholders in generated Terraform files.")
             try:
-                successful_configs_dir = output_dir / ConnectorComparator.DISCOVERED_CONFIGS_DIR / ConnectorComparator.SUCCESSFUL_CONFIGS_SUBDIR
+                successful_configs_dir = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / ConnectorMapper.SUCCESSFUL_CONFIGS_SUBDIR
                 terraform_generator = TerraformGenerator(
                     output_dir=output_dir,
                     environment_id=env_id,

@@ -55,7 +55,7 @@ class FieldDeriver:
 
         The returned callable has signature
         ``(user_configs, fm_configs, template_config_defs, config_name) -> Optional[str]``,
-        matching the original ``_derive_*`` methods on ``ConnectorComparator``.
+        matching the original ``_derive_*`` methods on ``ConnectorMapper``.
         """
         for group in self._groups:
             if group.handles(config_name):
