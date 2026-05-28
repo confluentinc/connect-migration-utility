@@ -31,7 +31,7 @@ class DebeziumV1ToV2Translator:
     V2_MYSQL_TEMPLATE_ID = "MySqlCdcSourceV2"
     V2_POSTGRESQL_TEMPLATE_ID = "PostgresCdcSourceV2"
     
-    def __init__(self, logger: logging.Logger = None):
+    def __init__(self, logger: logging.Logger = None) -> None:
         """
         Initialize the translator.
         

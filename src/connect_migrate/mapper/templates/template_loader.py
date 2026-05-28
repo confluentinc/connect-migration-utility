@@ -17,7 +17,7 @@ class TemplateLoader:
     * :meth:`load_one` reads a single template file by full path.
     """
 
-    def __init__(self, fm_template_dir: Path, logger: Optional[logging.Logger] = None):
+    def __init__(self, fm_template_dir: Path, logger: Optional[logging.Logger] = None) -> None:
         self.fm_template_dir = fm_template_dir
         self.logger = logger or logging.getLogger(__name__)
 

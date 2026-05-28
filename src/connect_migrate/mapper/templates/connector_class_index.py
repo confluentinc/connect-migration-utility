@@ -13,7 +13,7 @@ class ConnectorClassIndex:
     the naming convention for FM template files in this repo.
     """
 
-    def __init__(self, fm_template_dir: Path, logger: Optional[logging.Logger] = None):
+    def __init__(self, fm_template_dir: Path, logger: Optional[logging.Logger] = None) -> None:
         self.fm_template_dir = fm_template_dir
         self.logger = logger or logging.getLogger(__name__)
 

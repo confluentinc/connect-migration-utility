@@ -18,7 +18,7 @@ WORKER_CONFIG_PREFIXES: List[str] = [
 
 
 class LocalFileLoader:
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
         self.logger = logger or logging.getLogger(__name__)
 
     def extract_worker_urls_from_file(self, file_path: str) -> List[str]:
@@ -37,7 +37,7 @@ class LocalFileLoader:
                             raw_url = raw_url.strip().rstrip("/")
                             if raw_url.startswith("http://") or raw_url.startswith("https://"):
                                 urls.add(raw_url)
-        except Exception as e:
+        except OSError as e:
             self.logger.error(f"Error reading file '{file_path}': {e}")
         return list(urls)
 
@@ -60,6 +60,6 @@ class LocalFileLoader:
                             key.startswith(prefix) for prefix in allowed_prefixes
                         ):
                             new_configs[key] = value
-        except Exception as e:
+        except OSError as e:
             self.logger.error(f"Error reading the worker configs file: {e}")
         return new_configs

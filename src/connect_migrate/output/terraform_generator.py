@@ -17,7 +17,7 @@ from connect_migrate.mapper.connector_mapper import ConnectorMapper
 class TerraformGenerator:
     """Generate Terraform files for Confluent Cloud connectors."""
 
-    def __init__(self, output_dir: Path, environment_id: Optional[str], kafka_cluster_id: Optional[str], logger: Optional[logging.Logger] = None):
+    def __init__(self, output_dir: Path, environment_id: Optional[str], kafka_cluster_id: Optional[str], logger: Optional[logging.Logger] = None) -> None:
         """
         Initialize Terraform generator.
 

@@ -125,7 +125,7 @@ def calculate_similarity(sm_property: Dict[str, Any], fm_property: Property) -> 
     return 0.7 * semantic_score + 0.3 * string_score
 
 class SemanticPropertyMatcher:
-    def __init__(self):
+    def __init__(self) -> None:
         self.fm_embeddings = {}
         self.fm_properties = {}
         

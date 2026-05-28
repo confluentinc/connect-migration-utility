@@ -141,7 +141,7 @@ class BigQueryV1ToV2Transformer:
         "allow.bigquery.required.field.relaxation": "BigQuery required field relaxation is not supported in V2 connector. This allowed relaxing required field constraints.",
     }
     
-    def __init__(self, logger: logging.Logger = None):
+    def __init__(self, logger: logging.Logger = None) -> None:
         """
         Initialize the transformer.
         

@@ -34,7 +34,7 @@ class SensitiveDataRedactor:
                     clean = line.strip()
                     if clean and not clean.startswith("#"):
                         keys.add(clean.lower())
-        except Exception as e:
+        except OSError as e:
             self.logger.error(f"Failed to read sensitive config file: {e}")
         return keys
 

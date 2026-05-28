@@ -34,7 +34,7 @@ from connect_migrate.mapper.properties.derivations.servicebus_fields import (
 
 
 class FieldDeriver:
-    def __init__(self, jdbc_url_parser, logger: Optional[logging.Logger] = None):
+    def __init__(self, jdbc_url_parser, logger: Optional[logging.Logger] = None) -> None:
         self.logger = logger or logging.getLogger(__name__)
         self._groups: List[DerivationGroup] = [
             ConnectionFieldDeriver(jdbc_url_parser, self.logger),

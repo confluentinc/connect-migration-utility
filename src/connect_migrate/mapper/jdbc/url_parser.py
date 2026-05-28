@@ -6,7 +6,7 @@ from typing import Dict, Optional
 
 
 class JdbcUrlParser:
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
         self.logger = logger or logging.getLogger(__name__)
 
     def parse_jdbc_url(self, url: str) -> Dict[str, str]:

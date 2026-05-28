@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional
 class DerivationGroup:
     DERIVATIONS: Dict[str, str] = {}
 
-    def __init__(self, jdbc_url_parser, logger: Optional[logging.Logger] = None):
+    def __init__(self, jdbc_url_parser, logger: Optional[logging.Logger] = None) -> None:
         self.jdbc_url_parser = jdbc_url_parser
         self.logger = logger or logging.getLogger(__name__)
 

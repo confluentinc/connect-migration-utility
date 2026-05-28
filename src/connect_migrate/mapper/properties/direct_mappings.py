@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 class DirectMappings:
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
         self.logger = logger or logging.getLogger(__name__)
 
     def get_required_properties(self, fm_template: Dict[str, Any]) -> Dict[str, Any]:

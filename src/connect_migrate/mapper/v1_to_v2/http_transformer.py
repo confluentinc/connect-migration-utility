@@ -150,7 +150,7 @@ class HttpV1ToV2Transformer:
         "reporter.result.topic.name",
     ]
     
-    def __init__(self, logger: logging.Logger = None):
+    def __init__(self, logger: logging.Logger = None) -> None:
         """
         Initialize the transformer.
         
