@@ -17,7 +17,7 @@ import base64
 import requests
 from requests.auth import HTTPBasicAuth
 
-from connect_migrate.config_discovery import ConfigDiscovery
+from connect_migrate.discovery.config_discovery import ConfigDiscovery
 from connect_migrate.mapper.v1_to_v2.http_transformer import HttpV1ToV2Transformer
 from connect_migrate.mapper.v1_to_v2.bigquery_transformer import BigQueryV1ToV2Transformer
 from connect_migrate.mapper.v1_to_v2.debezium_translator import DebeziumV1ToV2Translator

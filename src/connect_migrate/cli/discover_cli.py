@@ -11,7 +11,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict, Union
-from connect_migrate.config_discovery import ConfigDiscovery
+from connect_migrate.discovery.config_discovery import ConfigDiscovery
 from connect_migrate.connector_comparator import ConnectorComparator
 from connect_migrate.output.summary_report import generate_migration_summary, generate_tco_information_output
 from connect_migrate.output.terraform_generator import TerraformGenerator
