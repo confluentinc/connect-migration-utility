@@ -33,11 +33,21 @@ from connect_migrate.mapper.cc_translate_client.translate_api_client import Tran
 from connect_migrate.mapper.properties.direct_mappings import DirectMappings
 from connect_migrate.mapper.properties.config_def_processor import ConfigDefProcessor
 from connect_migrate.mapper.properties.derivations import FieldDeriver
+from connect_migrate.constants.paths import (
+    DEFAULT_FM_TEMPLATE_DIR,
+    DISCOVERED_CONFIGS_DIR,
+    FM_TRANSFORMS_FALLBACK_FILE,
+    SUCCESSFUL_CONFIGS_SUBDIR,
+    UNSUCCESSFUL_CONFIGS_SUBDIR,
+)
+from connect_migrate.utils.json_files import read_json, write_json
 
 class ConnectorMapper:
-    DISCOVERED_CONFIGS_DIR: Path = Path("discovered_configs")
-    SUCCESSFUL_CONFIGS_SUBDIR: Path = Path("successful_configs")
-    UNSUCCESSFUL_CONFIGS_SUBDIR: Path = Path("unsuccessful_configs_with_errors")
+    # Re-exported for back-compat with callers (CLI) that already reference
+    # these as class constants. Source of truth is connect_migrate.constants.paths.
+    DISCOVERED_CONFIGS_DIR: Path = DISCOVERED_CONFIGS_DIR
+    SUCCESSFUL_CONFIGS_SUBDIR: Path = SUCCESSFUL_CONFIGS_SUBDIR
+    UNSUCCESSFUL_CONFIGS_SUBDIR: Path = UNSUCCESSFUL_CONFIGS_SUBDIR
 
     def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
                  env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False,
@@ -104,7 +114,7 @@ class ConnectorMapper:
         )
 
         # FM template handling
-        self.fm_template_dir = Path("templates/fm")
+        self.fm_template_dir = DEFAULT_FM_TEMPLATE_DIR
         self._template_loader = TemplateLoader(self.fm_template_dir, logger=self.logger)
         self._template_selector = TemplateSelector(
             fm_template_dir=self.fm_template_dir,
@@ -133,7 +143,7 @@ class ConnectorMapper:
             env_id=env_id,
             lkc_id=lkc_id,
             bearer_token=bearer_token,
-            fallback_file=Path("fm_transforms_list.json"),
+            fallback_file=FM_TRANSFORMS_FALLBACK_FILE,
             classifier=self._smt_classifier,
             logger=self.logger,
         )
@@ -573,8 +583,7 @@ class ConnectorMapper:
 
         # Save TCO information to a file
         tco_info_file = self.output_dir / 'tco_info.json'
-        with open(tco_info_file, 'w') as tco_file:
-            json.dump(tco_info, tco_file, indent=2)
+        write_json(tco_info_file, tco_info)
         self.logger.info(f"TCO information saved to {tco_info_file}")
 
         return tco_info

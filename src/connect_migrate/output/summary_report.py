@@ -6,13 +6,13 @@ This product includes software developed at The Apache Software Foundation.
 """
 
 import os
-import json
 import re
 import logging
 from collections import defaultdict
 from typing import Dict, Union, Any
 
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
+from connect_migrate.utils.json_files import read_json
 
 
 def count_files(path):
@@ -34,16 +34,15 @@ def get_connector_type_counts(config_path):
         if not fname.endswith(".json"):
             continue
         try:
-            with open(fpath, 'r') as f:
-                data = json.load(f)
-                if "config" in data:
-                    connector_class = data["config"].get("connector.class")
-                elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
-                    connector_class = data["sm_config"][0].get("connector.class")
-                else:
-                    connector_class = None
-                if connector_class:
-                    counts[connector_class] += 1
+            data = read_json(fpath)
+            if "config" in data:
+                connector_class = data["config"].get("connector.class")
+            elif "sm_config" in data and isinstance(data["sm_config"], list) and data["sm_config"]:
+                connector_class = data["sm_config"][0].get("connector.class")
+            else:
+                connector_class = None
+            if connector_class:
+                counts[connector_class] += 1
         except Exception as e:
             logger.info(f"Failed to read {fpath}: {e}")
     return counts
@@ -75,20 +74,19 @@ def collect_mapping_errors_with_details(config_path):
         if not fname.endswith(".json"):
             continue
         try:
-            with open(fpath, 'r') as f:
-                data = json.load(f)
-                config_name = extract_config_name(data)
-                errors = []
-                if "mapping_errors" in data:
-                    errors = data["mapping_errors"]
-                elif "config" in data and "mapping_errors" in data["config"]:
-                    errors = data["config"]["mapping_errors"]
-                if isinstance(errors, list):
-                    for error in errors:
-                        error = error.strip()
-                        transform = extract_transform_name(error)
-                        error_summary[error]["count"] += 1
-                        error_summary[error]["occurrences"].append((config_name, transform))
+            data = read_json(fpath)
+            config_name = extract_config_name(data)
+            errors = []
+            if "mapping_errors" in data:
+                errors = data["mapping_errors"]
+            elif "config" in data and "mapping_errors" in data["config"]:
+                errors = data["config"]["mapping_errors"]
+            if isinstance(errors, list):
+                for error in errors:
+                    error = error.strip()
+                    transform = extract_transform_name(error)
+                    error_summary[error]["count"] += 1
+                    error_summary[error]["occurrences"].append((config_name, transform))
         except Exception as e:
             logger.info(f"Failed to parse mapping_errors in {fpath}: {e}")
     return error_summary

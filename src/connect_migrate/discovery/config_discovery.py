@@ -14,23 +14,27 @@ Internally the work is delegated to:
 * :class:`connect_migrate.discovery.sensitive_data_redactor.SensitiveDataRedactor`
 """
 
-import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from requests.auth import HTTPBasicAuth
 
+from connect_migrate.constants.paths import (
+    COMPILED_INPUT_SM_CONFIGS_FILE,
+    FM_CONFIGS_SUBDIR,
+)
 from connect_migrate.discovery.local_file_loader import (
     LocalFileLoader,
     WORKER_CONFIG_PREFIXES,
 )
 from connect_migrate.discovery.sensitive_data_redactor import SensitiveDataRedactor
 from connect_migrate.discovery.worker_rest_client import WorkerRestClient
+from connect_migrate.utils.json_files import write_json
 
 
 class ConfigDiscovery:
-    FM_CONFIGS_DIR = "fm_configs"
+    FM_CONFIGS_DIR = FM_CONFIGS_SUBDIR
 
     def __init__(
         self,
@@ -129,9 +133,8 @@ class ConfigDiscovery:
                     all_connectors[config["name"]] = config
 
         output_data = {"connectors": all_connectors, "worker_configs": worker_configs}
-        output_file = self.output_dir / "compiled_input_sm_configs.json"
-        with open(output_file, "w") as f:
-            json.dump(output_data, f, indent=2)
+        output_file = self.output_dir / COMPILED_INPUT_SM_CONFIGS_FILE
+        write_json(output_file, output_data)
         self.logger.info(
             f"Saved {len(all_connectors)} connector configurations to {output_file}"
         )

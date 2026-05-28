@@ -16,7 +16,11 @@ from connect_migrate.mapper.connector_mapper import ConnectorMapper
 from connect_migrate.output.summary_report import generate_migration_summary, generate_tco_information_output
 from connect_migrate.output.terraform_generator import TerraformGenerator
 from connect_migrate.utils.logging_setup import setup_logging
-import json
+from connect_migrate.utils.json_files import write_json
+from connect_migrate.constants.paths import (
+    COMPILED_INPUT_SM_CONFIGS_FILE,
+    COMPILED_OUTPUT_FM_CONFIGS_FILE,
+)
 
 
 def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logger: logging.Logger):
@@ -41,30 +45,17 @@ def write_fm_configs_to_file(fm_configs: Dict[str, Any], output_dir: Path, logge
         }
         # Consider config unsuccessful if it has either errors or mapping_errors
         if mapping_errors:
-            # Save full config in unsuccessful_configs
-            full_config_file = unsuccessful_dir / f"{connector_name}.json"
-            with open(full_config_file, 'w') as f:
-                json.dump(fm_config, f, indent=2)
-            # Save minimal fm_config in fm_configs
-            fm_file = unsuccessful_fm_dir / f"fm_config_{connector_name}.json"
-            with open(fm_file, 'w') as f:
-                json.dump(minimal_fm, f, indent=2)
+            write_json(unsuccessful_dir / f"{connector_name}.json", fm_config)
+            write_json(unsuccessful_fm_dir / f"fm_config_{connector_name}.json", minimal_fm)
         else:
-            # Save full config in successful_configs
-            full_config_file = successful_dir / f"{connector_name}.json"
-            with open(full_config_file, 'w') as f:
-                json.dump(fm_config, f, indent=2)
-            # Save minimal fm_config in fm_configs
-            fm_file = successful_fm_dir / f"fm_config_{connector_name}.json"
-            with open(fm_file, 'w') as f:
-                json.dump(minimal_fm, f, indent=2)
+            write_json(successful_dir / f"{connector_name}.json", fm_config)
+            write_json(successful_fm_dir / f"fm_config_{connector_name}.json", minimal_fm)
 
     logger.info(f"Saved {len(fm_configs)} FM configurations to {output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR}")
 
     # Save all FM configs (full) in discovered_configs
-    all_configs_file = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / 'compiled_output_fm_configs.json'
-    with open(all_configs_file, 'w') as f:
-        json.dump(fm_configs, f, indent=2)
+    all_configs_file = output_dir / ConnectorMapper.DISCOVERED_CONFIGS_DIR / COMPILED_OUTPUT_FM_CONFIGS_FILE
+    write_json(all_configs_file, fm_configs)
 
     logger.info(f"Saved {len(fm_configs)} FM configurations to {all_configs_file}")
 
@@ -150,9 +141,8 @@ def main():
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
                 sys.exit(1)
             # Write all connectors to a single file
-            all_connectors_path = output_dir / 'compiled_input_sm_configs.json'
-            with open(all_connectors_path, 'w') as all_f:
-                json.dump({"connectors": all_connectors_dict}, all_f, indent=2)
+            all_connectors_path = output_dir / COMPILED_INPUT_SM_CONFIGS_FILE
+            write_json(all_connectors_path, {"connectors": all_connectors_dict})
             logger.info(f"Wrote all connectors to {all_connectors_path}")
             connectors_json = all_connectors_path
         elif discovery:
