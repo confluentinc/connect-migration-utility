@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from connect_migrate.constants.sensitive_keys import STATIC_SENSITIVE_CONFIG_KEYS
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
 
 
@@ -79,9 +80,11 @@ class TerraformGenerator:
 
     def _is_sensitive_field(self, key: str, value: Any) -> bool:
         """Determine if a config field is sensitive."""
+        if key in STATIC_SENSITIVE_CONFIG_KEYS:
+            return True
         key_lower = key.lower()
         # Check for common sensitive field patterns
-        sensitive_patterns = ['password', 'secret', 'key', 'token', 'credential', 'auth']
+        sensitive_patterns = ['password', 'secret', 'token', 'credential', 'auth']
         if any(pattern in key_lower for pattern in sensitive_patterns):
             return True
         # Check for key vault references
