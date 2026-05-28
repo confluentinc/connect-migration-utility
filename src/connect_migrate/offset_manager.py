@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, Dict, Any, Union
 import requests
-from config_discovery import ConfigDiscovery
+from connect_migrate.config_discovery import ConfigDiscovery
 
 
 class OffsetManager:

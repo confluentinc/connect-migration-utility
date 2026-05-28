@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "connect-migrate"
+version = "0.1.0"
+description = "Utility to migrate self-managed Kafka Connect connectors to Confluent Cloud fully-managed connectors."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "sentence-transformers>=2.2.2",
+    "scikit-learn>=1.0.2",
+    "torch>=1.9.0",
+    "numpy>=1.21.0",
+    "rapidfuzz>=2.13.0",
+    "python-json-logger>=2.0.7",
+    "requests>=2.26.0",
+]
+
+[project.scripts]
+connect-migrate-discover = "connect_migrate.cli.discover_cli:main"
+connect-migrate-migrate = "connect_migrate.cli.migrate_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["connect_migrate*"]

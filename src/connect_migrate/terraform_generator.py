@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-from connector_comparator import ConnectorComparator
+from connect_migrate.connector_comparator import ConnectorComparator
 
 
 class TerraformGenerator:

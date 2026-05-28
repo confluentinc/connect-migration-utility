@@ -12,15 +12,15 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set, Union, Tuple
 import re
-from semantic_matcher import SemanticMatcher, Property
+from connect_migrate.semantic_matcher import SemanticMatcher, Property
 import base64
 import requests
 from requests.auth import HTTPBasicAuth
 
-from config_discovery import ConfigDiscovery
-from http_v1_to_v2_transformer import HttpV1ToV2Transformer
-from bigquery_v1_to_v2_transformer import BigQueryV1ToV2Transformer
-from debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
+from connect_migrate.config_discovery import ConfigDiscovery
+from connect_migrate.http_v1_to_v2_transformer import HttpV1ToV2Transformer
+from connect_migrate.bigquery_v1_to_v2_transformer import BigQueryV1ToV2Transformer
+from connect_migrate.debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
 
 
 class ConnectorComparator:
