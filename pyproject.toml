@@ -19,6 +19,9 @@ dependencies = [
     "requests>=2.26.0",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
 [project.scripts]
 connect-migrate-discover = "connect_migrate.cli.discover_cli:main"
 connect-migrate-migrate = "connect_migrate.cli.migrate_cli:main"
@@ -26,3 +29,8 @@ connect-migrate-migrate = "connect_migrate.cli.migrate_cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["connect_migrate*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
