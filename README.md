@@ -21,14 +21,31 @@ Follow the steps below to install the migration tool:
 git clone <repository-url>
 ```
 
-2. Go to the clone repository and install the dependencies:
+2. Go to the cloned repository and install the package:
 
 ```bash
 cd connect-migration-utility
 
-# Install dependencies
+# Install in editable mode (recommended) — picks up dependencies from pyproject.toml.
+pip install -e .
+
+# Or install only the runtime deps without installing the package itself:
 pip install -r requirements.txt
 ```
+
+Installing with `pip install -e .` exposes two console scripts on your
+PATH:
+
+```
+connect-migrate-discover ...      # alias for: python src/discovery_script.py ...
+connect-migrate-migrate  ...      # alias for: python src/migrate_connector_script.py ...
+```
+
+The original `python src/discovery_script.py ...` and
+`python src/migrate_connector_script.py ...` invocations continue to
+work — the legacy entry points are thin shims that forward to the new
+console scripts, so every example in this README is valid in either
+form.
 
 
 ## Migrate 
@@ -522,6 +539,97 @@ The utility provides mapping warnings for certain configurations that may affect
 ```
 
 
+
+## Codebase tour (for contributors)
+
+The package is laid out so the directory tree follows the customer flow.
+
+**`discover` command:** `cli/` → `discovery/` (load SM configs) → `mapper/` (transform SM → FM) → `output/` (write summary + Terraform)
+
+**`migrate` command:** `cli/` → load pre-mapped FM configs → `migration/` (POST to Confluent Cloud, handle offsets) → `output/` (write success/failure report)
+
+```
+src/connect_migrate/
+  cli/                                 Command-line entry points
+    discover_cli.py                      main() for discovery
+    migrate_cli.py                       main() for migration
+
+  discovery/                           Step 1: load SM connector configs
+    worker_rest_client.py                Connect REST API client
+    local_file_loader.py                 file/dir config loading
+    sensitive_data_redactor.py           redacts sensitive keys
+    config_discovery.py                  back-compat facade
+
+  mapper/                              Step 2: SM config → FM config
+    connector_mapper.py                  ConnectorMapper — public orchestrator
+    templates/
+      template_loader.py                 reads FM template files
+      template_selector.py               picks the right template (CDC version, JDBC db type, user prompt)
+      connector_class_index.py           connector.class → template path index
+      sm_template_fetcher.py             fetches SM template from a worker
+    properties/
+      direct_mappings.py                 template-driven property mappings
+      config_def_processor.py            walks connector_configs entries
+      derivations/                       per-field FM-config derivers (7 grouped classes + facade)
+        base.py                            DerivationGroup base
+        connection_fields.py               host/port/user/password/db.name/...
+        format_fields.py                   input/output key/value formats
+        auth_fields.py                     authentication_method, ssl.mode
+        redis_fields.py                    redis_*
+        servicebus_fields.py               azure.servicebus.*
+        csfle_fields.py                    csfle_enabled, csfle_on_failure
+        schema_registry_fields.py          subject_name_strategy variants
+    jdbc/
+      url_parser.py                      JDBC + MongoDB URL parsing
+      database_inferrer.py               infers mysql / postgresql / oracle / sqlserver / snowflake
+    smt/
+      smt_classifier.py                  splits transforms into allowed / disallowed
+      fm_smt_registry.py                 list of FM-supported SMTs (HTTP + JSON fallback)
+    semantic_matching/
+      property_matcher.py                SemanticPropertyMatcher (embeddings + fuzzy)
+    cc_translate_client/
+      translate_api_client.py            client for the CC /translate endpoint
+    v1_to_v2/                          v1 → v2 transformers per connector family
+      debezium_translator.py
+      http_transformer.py
+      bigquery_transformer.py
+
+  migration/                           Step 3: create FM connectors on Confluent Cloud
+    offset_manager.py                    OffsetManager
+
+  output/                              User-facing output artifacts
+    summary_report.py                    summary.txt generator
+    terraform_generator.py               Terraform HCL generator
+
+  constants/                           Static config (paths, key lists)
+    paths.py                             default dirs / filenames
+    sensitive_keys.py                    static redaction key list
+
+  utils/                               Cross-cutting helpers
+    logging_setup.py                     setup_logging
+    http_session.py                      configured requests.Session factory
+    json_files.py                        read_json / write_json / iter_json_files
+
+src/discovery_script.py                3-line shim → cli.discover_cli:main
+src/migrate_connector_script.py        3-line shim → cli.migrate_cli:main
+
+tests/unit/                            92 unit tests for the pure modules
+```
+
+### Running the tests
+
+```bash
+pip install -e ".[test]"
+pytest                                  # runs all tests
+pytest tests/unit/                      # just the unit suite
+```
+
+### Naming rules
+
+- **Directory names follow the customer flow:** `discovery/`, `mapper/`, `migration/`, `output/` are the four major steps. Sub-directories (`mapper/templates/`, `mapper/jdbc/`, etc.) name sub-steps within a step.
+- **File names are nouns describing their content** — `worker_rest_client.py`, `connector_creator.py`, `template_selector.py`. No bare `parser.py` / `loader.py` / `common.py`.
+- **One public class per file**, named to match the file (`WorkerRestClient` in `worker_rest_client.py`).
+- **`*Deriver`** for single-field SM→FM derivations, **`*Transformer`** for whole-config v1→v2 reshapes, **`*Translator`** only for Debezium v1→v2 (preserves an established term).
 
 ## License
 
