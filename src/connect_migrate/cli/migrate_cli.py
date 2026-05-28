@@ -9,7 +9,7 @@ import json
 import shutil
 import logging
 
-from connect_migrate.offset_manager import OffsetManager
+from connect_migrate.migration.offset_manager import OffsetManager
 from connect_migrate.connector_comparator import ConnectorComparator
 from connect_migrate.config_discovery import ConfigDiscovery
 from connect_migrate.utils.logging_setup import setup_logging

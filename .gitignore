@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build / install artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local model / cache dirs (not committed)
+models/

@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any, Dict, Union
 from connect_migrate.config_discovery import ConfigDiscovery
 from connect_migrate.connector_comparator import ConnectorComparator
-from connect_migrate.summary import generate_migration_summary, generate_tco_information_output
-from connect_migrate.terraform_generator import TerraformGenerator
+from connect_migrate.output.summary_report import generate_migration_summary, generate_tco_information_output
+from connect_migrate.output.terraform_generator import TerraformGenerator
 from connect_migrate.utils.logging_setup import setup_logging
 import json
 

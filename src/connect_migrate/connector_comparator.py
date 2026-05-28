@@ -12,15 +12,15 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set, Union, Tuple
 import re
-from connect_migrate.semantic_matcher import SemanticMatcher, Property
+from connect_migrate.mapper.semantic_matching.property_matcher import SemanticPropertyMatcher, Property
 import base64
 import requests
 from requests.auth import HTTPBasicAuth
 
 from connect_migrate.config_discovery import ConfigDiscovery
-from connect_migrate.http_v1_to_v2_transformer import HttpV1ToV2Transformer
-from connect_migrate.bigquery_v1_to_v2_transformer import BigQueryV1ToV2Transformer
-from connect_migrate.debezium_v1_to_v2_translator import DebeziumV1ToV2Translator
+from connect_migrate.mapper.v1_to_v2.http_transformer import HttpV1ToV2Transformer
+from connect_migrate.mapper.v1_to_v2.bigquery_transformer import BigQueryV1ToV2Transformer
+from connect_migrate.mapper.v1_to_v2.debezium_translator import DebeziumV1ToV2Translator
 
 
 class ConnectorComparator:
@@ -35,7 +35,7 @@ class ConnectorComparator:
         self.input_file = input_file
         self.output_dir = output_dir
         # Use local model
-        self.semantic_matcher = SemanticMatcher()
+        self.semantic_matcher = SemanticPropertyMatcher()
         
         # Debezium version for CDC template selection (default: v2)
         self.debezium_version = debezium_version.lower()
