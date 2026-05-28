@@ -24,6 +24,12 @@ from connect_migrate.mapper.v1_to_v2.debezium_translator import DebeziumV1ToV2Tr
 from connect_migrate.mapper.templates.template_loader import TemplateLoader
 from connect_migrate.mapper.templates.template_selector import TemplateSelector
 from connect_migrate.mapper.templates.connector_class_index import ConnectorClassIndex
+from connect_migrate.mapper.templates.sm_template_fetcher import SmTemplateFetcher
+from connect_migrate.mapper.jdbc.url_parser import JdbcUrlParser
+from connect_migrate.mapper.jdbc.database_inferrer import DatabaseInferrer
+from connect_migrate.mapper.smt.smt_classifier import SmtClassifier
+from connect_migrate.mapper.smt.fm_smt_registry import FmSmtRegistry
+from connect_migrate.mapper.cc_translate_client.translate_api_client import TranslateApiClient
 
 
 class ConnectorComparator:
@@ -91,13 +97,19 @@ class ConnectorComparator:
 
 
 
-        # Load template files - hardcoded FM template directory
+        # JDBC parsing + database family inference
+        self._jdbc_url_parser = JdbcUrlParser(logger=self.logger)
+        self._database_inferrer = DatabaseInferrer(
+            self._jdbc_url_parser, logger=self.logger
+        )
+
+        # FM template handling
         self.fm_template_dir = Path("templates/fm")
         self._template_loader = TemplateLoader(self.fm_template_dir, logger=self.logger)
         self._template_selector = TemplateSelector(
             fm_template_dir=self.fm_template_dir,
             debezium_version=self.debezium_version,
-            database_type_resolver=self._get_database_type,
+            database_type_resolver=self._database_inferrer.infer_database_type,
             logger=self.logger,
         )
         self._connector_class_index = ConnectorClassIndex(
@@ -108,32 +120,33 @@ class ConnectorComparator:
         )
         self.connector_class_to_template = self._connector_class_index.build()
 
-        # Load combined FM transforms as fallback
-        self.fm_transforms_fallback = self._load_fm_transforms_fallback()
+        # SM template fetcher (worker REST)
+        self._sm_template_fetcher = SmTemplateFetcher(
+            disable_ssl_verify=self.disable_ssl_verify,
+            worker_auth=self.worker_auth,
+            logger=self.logger,
+        )
 
-        # Database type mappings
-        self.jdbc_database_types = {
-            'mysql': {
-                'url_patterns': ['mysql', 'mariadb'],
-                'default_port': '3306',
-            },
-            'oracle': {
-                'url_patterns': ['oracle', 'oracle:thin'],
-                'default_port': '1521',
-            },
-            'sqlserver': {
-                'url_patterns': ['sqlserver', 'mssql'],
-                'default_port': '1433',
-            },
-            'postgresql': {
-                'url_patterns': ['postgresql', 'postgres'],
-                'default_port': '5432',
-            },
-            'snowflake': {
-                'url_patterns': ['snowflake'],
-                'default_port': '443',
-            }
-        }
+        # SMT (Single Message Transform) classification + FM SMT registry
+        self._smt_classifier = SmtClassifier(logger=self.logger)
+        self._fm_smt_registry = FmSmtRegistry(
+            env_id=env_id,
+            lkc_id=lkc_id,
+            bearer_token=bearer_token,
+            fallback_file=Path("fm_transforms_list.json"),
+            classifier=self._smt_classifier,
+            logger=self.logger,
+        )
+
+        # Confluent Cloud /translate API client
+        self._translate_api_client = TranslateApiClient(
+            env_id=env_id,
+            lkc_id=lkc_id,
+            bearer_token=bearer_token,
+            plugin_name_resolver=self._template_selector.get_plugin_name,
+            disable_ssl_verify=self.disable_ssl_verify,
+            logger=self.logger,
+        )
 
         # Static property mappings to prevent incorrect semantic matching
         # These will be determined dynamically based on connector type (source vs sink)
@@ -290,384 +303,6 @@ class ConnectorComparator:
         
         return fm_configs, warnings, errors
 
-    def _translate_connector_config_via_api(self, connector_name: str, config_dict: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """
-        Translate connector config using the Confluent Cloud /translate API endpoint.
-        
-        This method calls the API:
-        PUT https://api.confluent.cloud/connect/v1/environments/{env_id}/clusters/{cluster_id}/connector-plugins/{plugin_name}/config/translate
-        
-        Args:
-            connector_name: Name of the connector
-            config_dict: Dictionary of connector configuration
-            
-        Returns:
-            Dictionary with 'config' and 'warnings' on success, None on failure
-        """
-        if not self.env_id or not self.lkc_id or not self.bearer_token:
-            self.logger.debug("Skipping /translate API call - missing env_id, lkc_id, or bearer_token")
-            return None
-        
-        connector_class = config_dict.get('connector.class')
-        if not connector_class:
-            self.logger.warning("Cannot call /translate API - no connector.class in config")
-            return None
-        
-        # Get plugin name from FM template (or JDBC-specific logic)
-        plugin_name = self._template_selector.get_plugin_name(connector_class, config_dict)
-        if not plugin_name:
-            self.logger.warning(f"Cannot call /translate API - could not determine plugin name for connector class: {connector_class}")
-            return None
-        
-        url = f"https://api.confluent.cloud/connect/v1/environments/{self.env_id}/clusters/{self.lkc_id}/connector-plugins/{plugin_name}/config/translate"
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
-        }
-        
-        try:
-            self.logger.info(f"Calling /translate API for connector '{connector_name}' with plugin '{plugin_name}'")
-            self.logger.debug(f"Translate URL: {url}")
-            
-            response = requests.put(
-                url, 
-                json=config_dict, 
-                headers=headers, 
-                verify=not self.disable_ssl_verify
-            )
-            
-            if response.status_code != 200:
-                self.logger.warning(f"/translate API failed with status {response.status_code}: {response.text}")
-                return None
-            
-            result = response.json()
-            self.logger.info(f"Successfully translated connector '{connector_name}' via /translate API")
-            
-            # Parse warnings from response
-            warnings = []
-            if 'warnings' in result and result['warnings']:
-                for warning in result['warnings']:
-                    field = warning.get('field', 'unknown')
-                    message = warning.get('message', '')
-                    warnings.append(f"[Translate API] {field}: {message}")
-                self.logger.info(f"Translation returned {len(warnings)} warnings")
-            
-            # Parse errors from response
-            errors = []
-            if 'errors' in result and result['errors']:
-                for error in result['errors']:
-                    field = error.get('field', 'unknown')
-                    message = error.get('message', '')
-                    errors.append(f"[Translate API] {field}: {message}")
-                self.logger.info(f"Translation returned {len(errors)} errors")
-            
-            return {
-                'config': result.get('config', {}),
-                'warnings': warnings,
-                'errors': errors
-            }
-            
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(f"/translate API request failed: {str(e)}")
-            return None
-        except json.JSONDecodeError as e:
-            self.logger.warning(f"/translate API returned invalid JSON: {str(e)}")
-            return None
-        except Exception as e:
-            self.logger.warning(f"/translate API call failed with unexpected error: {str(e)}")
-            return None
-
-    def encode_to_base64(self, input_string):
-        # Convert the input string to bytes
-        byte_data = input_string.encode('utf-8')
-        # Encode the bytes to base64
-        base64_bytes = base64.b64encode(byte_data)
-        # Convert the base64 bytes back to string
-        base64_string = base64_bytes.decode('utf-8')
-        return base64_string
-
-    def extract_transforms_config(config_dict):
-        # Extract all keys starting with "transforms"
-        return {k: v for k, v in config_dict.items() if isinstance(k, str) and k.startswith("transforms")}
-
-    def extract_recommended_transform_types(self, response_json):
-        configs = response_json.get("configs", [])
-        for config in configs:
-            value = config.get("value", {})
-            if value.get("name") == "transforms.transform_0.type":
-                return value.get("recommended_values", [])
-        return []
-
-    def get_SM_template(self, connector_class: str, worker_url: str = None) -> Dict[str, Any]:
-        """Get SM template for a connector class using the specified worker URL"""
-        if not worker_url:
-            self.logger.info(f"No worker URL provided - skipping SM template fetch for {connector_class}")
-            return {}
-
-        # Add http:// protocol if not present
-        if not worker_url.startswith(('http://', 'https://')):
-            worker_url = f"http://{worker_url}"
-            self.logger.info(f"Added http:// protocol to worker URL: {worker_url}")
-
-        try:
-            url = f"{worker_url}/connector-plugins/{connector_class}/config/validate"
-            data = {
-                "connector.class": connector_class
-            }
-            headers = {
-                "Content-Type": "application/json"
-            }
-
-            self.logger.info(f"Fetching SM template for {connector_class} from {url}")
-            self.logger.info(f"Request body: {json.dumps(data, indent=2)}")
-            response = requests.put(url, json=data, headers=headers, verify=not self.disable_ssl_verify, auth=self.worker_auth)
-            response.raise_for_status()
-
-            template_data = response.json()
-            self.logger.info(f"Successfully fetched SM template for {connector_class} from {worker_url}")
-
-            # Log detailed information about the SM template structure
-            self.logger.info(f"=== SM Template Analysis for {connector_class} ===")
-            self.logger.info(f"Template data type: {type(template_data)}")
-
-            if isinstance(template_data, dict):
-                self.logger.info(f"Template keys: {list(template_data.keys())}")
-
-                # Log configs (newer format)
-                if 'configs' in template_data:
-                    configs = template_data['configs']
-                    self.logger.info(f"Number of configs: {len(configs) if isinstance(configs, list) else 'Not a list'}")
-
-                    if isinstance(configs, list) and configs:
-                        self.logger.info(f"Sample configs (first 5):")
-                        for i, config_def in enumerate(configs[:5]):
-                            if isinstance(config_def, dict):
-                                name = config_def.get('name', 'Unknown')
-                                config_type = config_def.get('type', 'Unknown')
-                                required = config_def.get('required', False)
-                                default_value = config_def.get('default_value', 'None')
-                                self.logger.info(f"  {i+1}. {name} (type: {config_type}, required: {required}, default: {default_value})")
-
-                # Log groups (newer format)
-                if 'groups' in template_data:
-                    groups = template_data['groups']
-                    self.logger.info(f"Number of groups: {len(groups) if isinstance(groups, list) else 'Not a list'}")
-
-                    if isinstance(groups, list):
-                        for i, group in enumerate(groups):
-                            if isinstance(group, dict):
-                                group_name = group.get('name', 'Unknown')
-                                group_configs = group.get('configs', [])
-                                self.logger.info(f"  Group {i+1}: {group_name} ({len(group_configs)} configs)")
-
-                                # Log sample configs from each group
-                                if group_configs:
-                                    self.logger.info(f"    Sample configs in {group_name}:")
-                                    for j, config_def in enumerate(group_configs[:3]):
-                                        if isinstance(config_def, dict):
-                                            name = config_def.get('name', 'Unknown')
-                                            config_type = config_def.get('type', 'Unknown')
-                                            self.logger.info(f"      {j+1}. {name} (type: {config_type})")
-
-                # Log config definitions (older format)
-                if 'config' in template_data:
-                    config_defs = template_data['config']
-                    self.logger.info(f"Number of config definitions: {len(config_defs) if isinstance(config_defs, list) else 'Not a list'}")
-
-                    if isinstance(config_defs, list) and config_defs:
-                        self.logger.info(f"Sample config definitions (first 5):")
-                        for i, config_def in enumerate(config_defs[:5]):
-                            if isinstance(config_def, dict):
-                                name = config_def.get('name', 'Unknown')
-                                config_type = config_def.get('type', 'Unknown')
-                                required = config_def.get('required', False)
-                                default_value = config_def.get('default_value', 'None')
-                                self.logger.info(f"  {i+1}. {name} (type: {config_type}, required: {required}, default: {default_value})")
-
-                # Log sections (older format)
-                if 'sections' in template_data:
-                    sections = template_data['sections']
-                    self.logger.info(f"Number of sections: {len(sections) if isinstance(sections, list) else 'Not a list'}")
-
-                    if isinstance(sections, list):
-                        for i, section in enumerate(sections):
-                            if isinstance(section, dict):
-                                section_name = section.get('name', 'Unknown')
-                                section_configs = section.get('config_defs', [])
-                                self.logger.info(f"  Section {i+1}: {section_name} ({len(section_configs)} configs)")
-
-                                # Log sample configs from each section
-                                if section_configs:
-                                    self.logger.info(f"    Sample configs in {section_name}:")
-                                    for j, config_def in enumerate(section_configs[:3]):
-                                        if isinstance(config_def, dict):
-                                            name = config_def.get('name', 'Unknown')
-                                            config_type = config_def.get('type', 'Unknown')
-                                            self.logger.info(f"      {j+1}. {name} (type: {config_type})")
-
-                # Log any other important fields
-                for key in ['name', 'version', 'type']:
-                    if key in template_data:
-                        self.logger.info(f"{key.capitalize()}: {template_data[key]}")
-
-            self.logger.info(f"=== End SM Template Analysis for {connector_class} ===")
-            return template_data
-
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"Failed to fetch SM template for {connector_class} from {worker_url}: {str(e)}")
-            return {}
-
-    def _load_fm_transforms_fallback(self) -> Dict[str, List[str]]:
-        """Load combined FM transforms from file as fallback"""
-        fallback_file = Path("fm_transforms_list.json")
-        if fallback_file.exists():
-            try:
-                with open(fallback_file, 'r') as f:
-                    data = json.load(f)
-                self.logger.info(f"Loaded FM transforms fallback with {len(data)} template IDs")
-                return data
-            except Exception as e:
-                self.logger.warning(f"Failed to load FM transforms fallback: {str(e)}")
-        else:
-            self.logger.warning(f"FM transforms fallback file not found: {fallback_file}")
-        return {}
-
-    def get_FM_SMT(self, plugin_type) -> Set[str]:
-        # First try to get transforms via HTTP call if credentials are provided
-        if self.env_id and self.lkc_id and self.bearer_token:
-            try:
-                url = (
-                    f"https://confluent.cloud/api/internal/accounts/{self.env_id}/clusters/{self.lkc_id}/connector-plugins/{plugin_type}/config/validate"
-                )
-                params = {
-                    "extra_fields": "configs/metadata,configs/internal"
-                }
-                data = {
-                    "transforms": "transform_0",
-                    "connector.class": plugin_type
-                }
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Basic {self.encode_to_base64(self.bearer_token)}"
-                }
-                response = requests.put(url, params=params, json=data, headers=headers)
-                response.raise_for_status()
-                recommended_values = self.extract_recommended_transform_types(response.json())
-                if recommended_values:
-                    self.logger.info(f"Successfully fetched {len(recommended_values)} transforms for {plugin_type} via HTTP")
-                    return recommended_values
-            except Exception as e:
-                self.logger.warning(f"Failed to fetch FM transforms for {plugin_type} via HTTP: {str(e)}")
-        else:
-            self.logger.info(f"Skipping HTTP call for {plugin_type} - no Confluent Cloud credentials provided")
-
-        # Fallback to local file
-        if plugin_type in self.fm_transforms_fallback:
-            transforms = self.fm_transforms_fallback[plugin_type]
-            self.logger.info(f"Using fallback transforms for {plugin_type}: {len(transforms)} transforms")
-            return set(transforms)
-
-        self.logger.warning(f"No transforms found for {plugin_type} in HTTP call or fallback file")
-        return set()
-
-    def get_transforms_config(self, config: Dict[str, Any], plugin_type: str) -> Dict[str, Dict[str, Any]]:
-
-        fm_smt = self.get_FM_SMT(plugin_type)
-
-        return self.classify_transform_configs_with_full_chain(config, fm_smt)
-
-    def classify_transform_configs_with_full_chain(
-        self,
-        config: Dict[str, Any],
-        allowed_transform_types: set
-    ) -> Dict[str, Dict[str, Any]]:
-        result: Dict[str, Dict[str, Any]] = {
-            'allowed': {},
-            'disallowed': {},
-            'mapping_errors': []
-        }
-
-        transform_chain = config.get("transforms", "")
-        aliases = [alias.strip() for alias in transform_chain.split(",") if alias.strip()]
-
-        allowed_aliases = []
-        disallowed_aliases = []
-
-        # Track which predicates are associated with disallowed transforms
-        disallowed_predicates = set()
-
-        for alias in aliases:
-            type_key = f"transforms.{alias}.type"
-            transform_type = config.get(type_key)
-
-            if not transform_type:
-                disallowed_aliases.append(alias)
-                error_msg = f"Transform '{alias}' has no type specified"
-                result['mapping_errors'].append(error_msg)
-                self.logger.warning(error_msg)
-                for k, v in config.items():
-                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
-                        result['disallowed'][k] = v
-                        # Check if this transform references a predicate
-                        if k == f"transforms.{alias}.predicate":
-                            disallowed_predicates.add(v)
-                continue
-
-            if transform_type in allowed_transform_types:
-                allowed_aliases.append(alias)
-                for k, v in config.items():
-                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
-                        result['allowed'][k] = v
-            else:
-                disallowed_aliases.append(alias)
-                error_msg = f"Transform '{alias}' of type '{transform_type}' is not supported in Fully Managed Connector. Potentially Custom SMT can be used."
-                result['mapping_errors'].append(error_msg)
-                self.logger.warning(error_msg)
-                for k, v in config.items():
-                    if isinstance(k, str) and k.startswith(f"transforms.{alias}."):
-                        result['disallowed'][k] = v
-                        # Check if this transform references a predicate
-                        if k == f"transforms.{alias}.predicate":
-                            disallowed_predicates.add(v)
-                            self.logger.info(f"Transform {alias} of type {transform_type} is not supported, so its predicate {v} will also be filtered out")
-
-        # Handle predicates
-        predicates_chain = config.get("predicates", "")
-        predicate_aliases = [alias.strip() for alias in predicates_chain.split(",") if alias.strip()]
-
-        allowed_predicate_aliases = []
-        disallowed_predicate_aliases = []
-
-        for predicate_alias in predicate_aliases:
-            # Check if this predicate is associated with a disallowed transform
-            if predicate_alias in disallowed_predicates:
-                disallowed_predicate_aliases.append(predicate_alias)
-                predicate_error_msg = f"Predicate '{predicate_alias}' is filtered out because it's associated with an unsupported transform."
-                result['mapping_errors'].append(predicate_error_msg)
-                for k, v in config.items():
-                    if isinstance(k, str) and k.startswith(f"predicates.{predicate_alias}."):
-                        result['disallowed'][k] = v
-                self.logger.info(f"Predicate {predicate_alias} is associated with a disallowed transform, so it will be filtered out")
-            else:
-                # This predicate is not associated with any disallowed transform, so it's allowed
-                allowed_predicate_aliases.append(predicate_alias)
-                for k, v in config.items():
-                    if isinstance(k, str) and k.startswith(f"predicates.{predicate_alias}."):
-                        result['allowed'][k] = v
-
-        if allowed_aliases:
-            result['allowed']["transforms"] = ", ".join(allowed_aliases)
-        if disallowed_aliases:
-            result['disallowed']["transforms"] = ", ".join(disallowed_aliases)
-
-        if allowed_predicate_aliases:
-            result['allowed']["predicates"] = ", ".join(allowed_predicate_aliases)
-        if disallowed_predicate_aliases:
-            result['disallowed']["predicates"] = ", ".join(disallowed_predicate_aliases)
-
-        return result
-
     def _get_templates_for_connector(self, connector_class: str, connector_name: str = None, config: Dict[str, Any] = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Get SM and FM templates for a connector class"""
         # Get worker URL from connector config if available
@@ -682,7 +317,7 @@ class ConnectorComparator:
         # Fetch SM template via HTTP (if worker URL available)
         if worker_url:
             self.logger.info(f"Fetching SM template for {connector_class} via HTTP from {worker_url}...")
-            sm_template = self.get_SM_template(connector_class, worker_url)
+            sm_template = self._sm_template_fetcher.fetch(connector_class, worker_url)
         else:
             self.logger.info(f"No worker URL available - skipping SM template fetch for {connector_class}")
             sm_template = {}
@@ -733,236 +368,6 @@ class ConnectorComparator:
 
         # Return templates
         return sm_template, self.fm_templates.get(fm_template_path, {})
-
-    def _get_database_type(self, config: Dict[str, Any]) -> str:
-        """Determine database type from JDBC connector config"""
-        # Check connection URL
-        if 'connection.url' in config and isinstance(config['connection.url'], str):
-            url = config['connection.url'].lower()
-            self.logger.info(f"Analyzing JDBC URL for database type: {url}")
-
-            # More precise pattern matching - look for jdbc:database_type:// pattern
-            for db_type, info in self.jdbc_database_types.items():
-                for pattern in info['url_patterns']:
-                    # Look for the pattern in the JDBC protocol part specifically
-                    if f'jdbc:{pattern}://' in url:
-                        self.logger.info(f"Detected database type '{db_type}' using precise pattern 'jdbc:{pattern}://'")
-                        return db_type
-
-            # Fallback to the old method for backward compatibility
-            for db_type, info in self.jdbc_database_types.items():
-                if any(pattern in url for pattern in info['url_patterns']):
-                    self.logger.info(f"Detected database type '{db_type}' using fallback pattern matching")
-                    return db_type
-
-            self.logger.warning(f"No database type detected for URL: {url}")
-
-        # Check specific database type config if available
-        if 'database.type' in config:
-            db_type = config['database.type'].lower()
-            self.logger.info(f"Using database type from config: {db_type}")
-            return db_type
-
-        self.logger.warning("No database type detected, returning 'unknown'")
-        return 'unknown'
-
-    def _parse_jdbc_url(self, url: str) -> Dict[str, str]:
-        """Parse JDBC URL to extract connection details from real JDBC URLs, including Oracle complex formats."""
-
-        original_url = url
-        url = url.lower()
-        connection_info = {}
-
-        self.logger.debug(f"Parsing JDBC URL: {original_url}")
-
-        # Detect Oracle complex format by presence of '@(DESCRIPTION='
-        # "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=<span>{connection.host})(PORT=</span>{connection.port}))(CONNECT_DATA=(<span>{db.connection.type}=</span>{db.name}))(SECURITY=(SSL_SERVER_CERT_DN="${ssl.server.cert.dn}")))"
-        if '@(DESCRIPTION=' in original_url:
-            self.logger.debug("Detected Oracle complex format with DESCRIPTION block.")
-            # Extract HOST (case-insensitive to handle Host, HOST, host, etc.)
-            host_match = re.search(r'\(HOST=([^\)]+)\)', original_url, re.IGNORECASE)
-            if host_match:
-                connection_info['host'] = host_match.group(1)
-                self.logger.debug(f"[ORACLE] Extracted host: {connection_info['host']}")
-            # Extract PORT (case-insensitive to handle Port, PORT, port, etc.)
-            port_match = re.search(r'\(PORT=([^\)]+)\)', original_url, re.IGNORECASE)
-            if port_match:
-                connection_info['port'] = port_match.group(1)
-                self.logger.debug(f"[ORACLE] Extracted port: {connection_info['port']}")
-            # Extract db.connection.type and db.name (fix group assignments)
-            # Handle both SERVICE_NAME and SID, case-insensitive
-            dbtype_dbname_match = re.search(r'\(CONNECT_DATA=\(([^=\)]+)=([^\)]+)\)\)', original_url, re.IGNORECASE)
-            if dbtype_dbname_match:
-                connection_info['db.connection.type'] = dbtype_dbname_match.group(1)
-                connection_info['db.name'] = dbtype_dbname_match.group(2)
-                self.logger.debug(f"[ORACLE] Extracted db.connection.type: {connection_info['db.connection.type']}")
-                self.logger.debug(f"[ORACLE] Extracted db.name: {connection_info['db.name']}")
-            # Extract ssl.server.cert.dn (case-insensitive to handle ssl_server_cert_dn, SSL_SERVER_CERT_DN, etc.)
-            ssl_cert_dn_match = re.search(r'SSL_SERVER_CERT_DN=\\?"?([^\)\"]+)\\?"?\)', original_url, re.IGNORECASE)
-            if ssl_cert_dn_match:
-                connection_info['ssl.server.cert.dn'] = ssl_cert_dn_match.group(1)
-                self.logger.debug(f"[ORACLE] Extracted ssl.server.cert.dn: {connection_info['ssl.server.cert.dn']}")
-            self.logger.debug(f"[ORACLE] Final connection_info: {connection_info}")
-            return connection_info
-        else:
-            self.logger.debug("Using standard JDBC URL parsing logic.")
-
-        # Existing logic for standard format
-        # Extract host - look for pattern like jdbc:postgresql://localhost:5432/dbname
-        host_match = re.search(r'jdbc:[^:]+://([^:/]+)', url)
-        if host_match:
-            host = host_match.group(1)
-            connection_info['host'] = host
-            self.logger.debug(f"Extracted host: {connection_info['host']}")
-
-        # Extract port - look for pattern like :5432/
-        port_match = re.search(r'://[^:]+:(\d+)', url)
-        if port_match:
-            port = port_match.group(1)
-            connection_info['port'] = port
-            self.logger.debug(f"Extracted port: {connection_info['port']}")
-
-        # Extract database name - look for pattern like /dbname? or /dbname
-        db_match = re.search(r'://[^/]+/([^/?]+)', url)
-        if db_match:
-            db_name = db_match.group(1)
-            connection_info['db.name'] = db_name
-            self.logger.debug(f"Extracted db_name: {connection_info['db.name']}")
-
-        # Extract user from query parameters
-        user_match = re.search(r'[?&]user=([^&]+)', url)
-        if user_match:
-            user = user_match.group(1)
-            connection_info['user'] = user
-            self.logger.debug(f"Extracted user: {connection_info['user']}")
-
-        # Extract password from query parameters
-        password_match = re.search(r'[?&]password=([^&]+)', url)
-        if password_match:
-            password = password_match.group(1)
-            connection_info['password'] = password
-            self.logger.debug(f"Extracted password: {connection_info['password']}")
-
-        self.logger.debug(f"Final connection_info: {connection_info}")
-        return connection_info
-
-    def _parse_mongodb_connection_string(self, url: str) -> Dict[str, str]:
-        """Parse MongoDB connection string to extract connection details"""
-        original_url = url
-        url = url.lower()
-        connection_info = {}
-
-        self.logger.debug(f"Parsing MongoDB connection string: {original_url}")
-
-        # Handle MongoDB Atlas connection strings (mongodb+srv://)
-        # Format: mongodb+srv://username:password@cluster.mongodb.net/database?options
-        if 'mongodb+srv://' in url:
-            # Extract the part after mongodb+srv://
-            srv_part = url.replace('mongodb+srv://', '')
-
-            # Split by @ to separate credentials from host
-            if '@' in srv_part:
-                credentials_part, host_part = srv_part.split('@', 1)
-
-                # Extract username and password from credentials
-                if ':' in credentials_part:
-                    user, password = credentials_part.split(':', 1)
-                    connection_info['user'] = user
-                    connection_info['password'] = password
-                    self.logger.debug(f"Extracted user: {connection_info['user']}")
-                    self.logger.debug(f"Extracted password: {connection_info['password']}")
-
-                # Extract host from host part
-                host = host_part.split('/')[0].split('?')[0]
-                connection_info['host'] = host
-                self.logger.debug(f"Extracted host: {connection_info['host']}")
-
-                # Extract database if present
-                if '/' in host_part:
-                    db_part = host_part.split('/', 1)[1]
-                    if '?' in db_part:
-                        db_name = db_part.split('?')[0]
-                    else:
-                        db_name = db_part
-                    connection_info['database'] = db_name
-                    self.logger.debug(f"Extracted database: {connection_info['database']}")
-
-        # Handle regular MongoDB connection strings (mongodb://)
-        elif 'mongodb://' in url:
-            # Extract the part after mongodb://
-            mongo_part = url.replace('mongodb://', '')
-
-            # Split by @ to separate credentials from host
-            if '@' in mongo_part:
-                credentials_part, host_part = mongo_part.split('@', 1)
-
-                # Extract username and password from credentials
-                if ':' in credentials_part:
-                    user, password = credentials_part.split(':', 1)
-                    connection_info['user'] = user
-                    connection_info['password'] = password
-                    self.logger.debug(f"Extracted user: {connection_info['user']}")
-                    self.logger.debug(f"Extracted password: {connection_info['password']}")
-
-                # Extract host from host part
-                host = host_part.split('/')[0].split('?')[0]
-                connection_info['host'] = host
-                self.logger.debug(f"Extracted host: {connection_info['host']}")
-
-                # Extract database if present
-                if '/' in host_part:
-                    db_part = host_part.split('/', 1)[1]
-                    if '?' in db_part:
-                        db_name = db_part.split('?')[0]
-                    else:
-                        db_name = db_part
-                    connection_info['database'] = db_name
-                    self.logger.debug(f"Extracted database: {connection_info['database']}")
-            else:
-                # No credentials, just host
-                host = mongo_part.split('/')[0].split('?')[0]
-                connection_info['host'] = host
-                self.logger.debug(f"Extracted host: {connection_info['host']}")
-
-                # Extract database if present
-                if '/' in mongo_part:
-                    db_part = mongo_part.split('/', 1)[1]
-                    if '?' in db_part:
-                        db_name = db_part.split('?')[0]
-                    else:
-                        db_name = db_part
-                    connection_info['database'] = db_name
-                    self.logger.debug(f"Extracted database: {connection_info['database']}")
-
-        self.logger.debug(f"Final MongoDB connection_info: {connection_info}")
-        return connection_info
-
-    def _map_jdbc_properties(self, config: Dict[str, Any], db_type: str) -> Dict[str, Any]:
-        """Map JDBC properties to database-specific properties"""
-        self.logger.debug(f"Mapping JDBC properties for config: {config}")
-
-        # Get database-specific property mappings
-        db_info = self.jdbc_database_types.get(db_type, {})
-        property_mappings = db_info.get('property_mappings', {})
-        self.logger.debug(f"Property mappings for {db_type}: {property_mappings}")
-
-        # Parse JDBC URL and map properties
-        if 'connection.url' in config and isinstance(config['connection.url'], str) and config['connection.url'].startswith('jdbc:'):
-            connection_info = self._parse_jdbc_url(config['connection.url'])
-
-            # Map connection details to database-specific properties
-            mapped_config = {}
-            for fm_prop, jdbc_prop in property_mappings.items():
-                if jdbc_prop in connection_info:
-                    mapped_config[fm_prop] = connection_info[jdbc_prop]
-                    self.logger.debug(f"Mapped {jdbc_prop} ({connection_info[jdbc_prop]}) to {fm_prop}")
-                else:
-                    self.logger.debug(f"JDBC property {jdbc_prop} not found in connection_info")
-
-            self.logger.debug(f"Final JDBC mapped config: {mapped_config}")
-            return mapped_config
-
-        return {}
 
     def _get_required_properties(self, fm_template: Dict[str, Any]) -> Dict[str, Any]:
         """Extract required properties from FM template"""
@@ -1204,8 +609,8 @@ class ConnectorComparator:
         # Map properties based on connector type
         jdbc_mapped = {}
         if 'connection.url' in config and isinstance(config['connection.url'], str) and config['connection.url'].startswith('jdbc:'):
-            connector_type = self._get_database_type(config)
-            jdbc_mapped = self._map_jdbc_properties(config, connector_type)
+            connector_type = self._database_inferrer.infer_database_type(config)
+            jdbc_mapped = self._database_inferrer.map_jdbc_properties(config, connector_type)
             mapped_config.update(jdbc_mapped)
 
         # Track all handled properties to avoid remapping
@@ -1257,7 +662,7 @@ class ConnectorComparator:
                     mapped_config[prop_name] = prop_info['default_value']
                     handled_properties.add(prop_name)
                     self.logger.info(f"Using default value for required property: {prop_name}")
-            transforms_data = self.get_transforms_config(config, plugin_type)
+            transforms_data = self._smt_classifier.classify(config, self._fm_smt_registry.get_smts_for_plugin(plugin_type))
             mapped_config.update(transforms_data['allowed'])
 
             # Add mapping errors from transforms processing
@@ -1703,7 +1108,7 @@ class ConnectorComparator:
         if self.env_id and self.lkc_id and self.bearer_token:
             self.logger.info(f"Attempting /translate API for connector '{connector_name}'")
             try:
-                translate_result = self._translate_connector_config_via_api(connector_name, config_dict)
+                translate_result = self._translate_api_client.translate(connector_name, config_dict)
                 
                 if translate_result is not None:
                     # API translation succeeded - use the result
@@ -1999,7 +1404,7 @@ class ConnectorComparator:
         elif 'templates' in fm_template and len(fm_template['templates']) > 0:
             plugin_type = fm_template['templates'][0].get('template_id', 'Unknown')
 
-        transforms_data = self.get_transforms_config(config_dict, plugin_type)
+        transforms_data = self._smt_classifier.classify(config_dict, self._fm_smt_registry.get_smts_for_plugin(plugin_type))
         fm_configs.update(transforms_data['allowed'])
 
         # Add mapping errors from transforms processing
@@ -2464,20 +1869,20 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('host')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
             mongo_uri = user_configs['connection.uri']
-            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
             return parsed.get('host')
 
         # Check for MongoDB-specific connection string configs
         for config_key in ['mongodb.connection.string', 'connection.string']:
             if config_key in user_configs:
                 mongo_uri = user_configs[config_key]
-                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
                 return parsed.get('host')
 
         return None
@@ -2488,7 +1893,7 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('port')
         return None
     def _derive_connection_user(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
@@ -2497,20 +1902,20 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('user')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
             mongo_uri = user_configs['connection.uri']
-            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
             return parsed.get('user')
 
         # Check for MongoDB-specific connection string configs
         for config_key in ['mongodb.connection.string', 'connection.string']:
             if config_key in user_configs:
                 mongo_uri = user_configs[config_key]
-                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
                 return parsed.get('user')
 
         return None
@@ -2521,20 +1926,20 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('password')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
             mongo_uri = user_configs['connection.uri']
-            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
             return parsed.get('password')
 
         # Check for MongoDB-specific connection string configs
         for config_key in ['mongodb.connection.string', 'connection.string']:
             if config_key in user_configs:
                 mongo_uri = user_configs[config_key]
-                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
                 return parsed.get('password')
 
         return None
@@ -2545,7 +1950,7 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 # The _parse_jdbc_url method returns 'db.name', not 'database'
                 return parsed.get('db.name')
         return None
@@ -2557,21 +1962,21 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 # The _parse_jdbc_url method returns 'db.name', not 'database'
                 return parsed.get('db.name')
 
         # Try to extract from MongoDB connection string
         if 'connection.uri' in user_configs:
             mongo_uri = user_configs['connection.uri']
-            parsed = self._parse_mongodb_connection_string(mongo_uri)
+            parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
             return parsed.get('database')
 
         # Check for MongoDB-specific connection string configs
         for config_key in ['mongodb.connection.string', 'connection.string']:
             if config_key in user_configs:
                 mongo_uri = user_configs[config_key]
-                parsed = self._parse_mongodb_connection_string(mongo_uri)
+                parsed = self._jdbc_url_parser.parse_mongodb_url(mongo_uri)
                 return parsed.get('database')
 
         # Check for direct db.name config
@@ -2590,7 +1995,7 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('db.connection.type')
 
         # Check for direct db.connection.type config
@@ -2606,7 +2011,7 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('ssl.server.cert.dn')
 
         # Check for direct ssl.server.cert.dn config
@@ -2622,7 +2027,7 @@ class ConnectorComparator:
         if 'connection.url' in user_configs:
             jdbc_url = user_configs['connection.url']
             if jdbc_url.startswith('jdbc:'):
-                parsed = self._parse_jdbc_url(jdbc_url)
+                parsed = self._jdbc_url_parser.parse_jdbc_url(jdbc_url)
                 return parsed.get('host')
 
         # Check for direct database.server.name config
