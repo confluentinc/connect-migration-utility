@@ -469,7 +469,7 @@ class ConnectorMapper:
 
                 # Transform SM to FM using the new method
                 # Note: HTTP, BigQuery, and Debezium V1 to V2 transformations are handled inside transformSMToFm
-                result = self.transformSMToFm(connector['name'], original_sm_config)
+                result = self.transform_sm_to_fm(connector['name'], original_sm_config)
 
                 # Create FM config object in the expected format
                 fm_config = {
@@ -588,154 +588,203 @@ class ConnectorMapper:
 
         return tco_info
 
-    def transformSMToFm(self, connector_name:str, user_configs: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_sm_to_fm(self, connector_name: str, user_configs: Dict[str, Any]) -> Dict[str, Any]:
+        """Transform a Self-Managed connector config into a Fully-Managed config.
+
+        The transform runs as a pipeline of named stages so each stage is
+        independently testable. See the ``_stage_*`` helpers below.
+
+        Returns a dict with ``name``, ``fm_configs``, ``warnings``, ``errors``.
         """
-        Transform Self-Managed (SM) connector configurations to Fully Managed (FM) configurations.
+        # Stage 1: Validate + normalize.
+        config_dict, validation_error = self._stage_validate_and_normalize(user_configs)
+        if validation_error is not None:
+            return {'fm_configs': [], 'warnings': [], 'errors': [validation_error]}
 
-        Args:
-            user_configs: Dictionary of configuration key-value pairs where:
-                - Key: Configuration property name (string)
-                - Value: Configuration property value (will be converted to string)
-                Example: {"connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector", "connection.url": "jdbc:mysql://localhost:3306/mydb"}
-
-        Returns:
-            Dictionary containing:
-                - 'fm_configs': List of successfully transformed FM configurations
-                - 'warnings': List of warning messages
-                - 'errors': List of error messages
-        """
-        result = {
-            'fm_configs': [],
-            'warnings': [],
-            'errors': []
-        }
-
-        # Validate input
-        if not isinstance(user_configs, dict):
-            result['errors'].append("Input must be a dictionary of configuration key-value pairs")
-            return result
-
-        if not user_configs:
-            result['errors'].append("No configuration properties provided")
-            return result
-
-        # Convert all values to strings
-        config_dict = {}
-        for key, value in user_configs.items():
-            config_dict[key] = str(value)
-
-        # Check for required connector.class
-        if 'connector.class' not in config_dict:
-            result['errors'].append("Missing required 'connector.class' configuration")
-            return result
-
-        # Store original connector class to detect if v1 to v2 translation is needed after SM to FM
         original_connector_class = config_dict.get('connector.class', '')
 
-        # Flag to track if translation was done via API
-        translation_done_via_api = False
-        
-        # STEP 0: Try /translate API when env_id and lkc_id are available
-        # This is the preferred method as it uses Confluent Cloud's translation service
-        # Falls back to existing SM-to-FM template-based translation on failure or exception
-        if self.env_id and self.lkc_id and self.bearer_token:
-            self.logger.info(f"Attempting /translate API for connector '{connector_name}'")
-            try:
-                translate_result = self._translate_api_client.translate(connector_name, config_dict)
-                
-                if translate_result is not None:
-                    # API translation succeeded - use the result
-                    self.logger.info(f"Successfully translated connector '{connector_name}' via /translate API")
-                    
-                    fm_configs = translate_result.get('config', {})
-                    warnings = translate_result.get('warnings', [])
-                    errors = translate_result.get('errors', [])
-                    
-                    # Ensure name is set
-                    if 'name' not in fm_configs:
-                        fm_configs['name'] = connector_name
-                    
-                    translation_done_via_api = True
-                else:
-                    # API translation returned None - fall back to SM-to-FM translation
-                    self.logger.info(f"/translate API returned no result for connector '{connector_name}', falling back to SM-to-FM translation")
-            except Exception as e:
-                # Any exception from translate API - fall back to SM-to-FM translation
-                self.logger.warning(f"/translate API exception for connector '{connector_name}': {str(e)}, falling back to SM-to-FM translation")
-        else:
-            self.logger.debug(f"Skipping /translate API for connector '{connector_name}' - credentials not provided")
-        
-        # If API translation succeeded, apply post-translation steps and return
-        if translation_done_via_api:
-            # Apply Debezium v1 to v2 translation if needed (common post-translation step)
-            fm_configs, warnings, errors = self._apply_debezium_v1_to_v2_if_needed(
-                original_connector_class, fm_configs, warnings, errors
-            )
-            
-            # Return the result
-            result['fm_configs'] = fm_configs
-            result['warnings'] = warnings
-            result['errors'] = errors
-            result['name'] = connector_name
-            
-            return result
+        # Stage 2: Try the /translate API fast-path. If it succeeds we apply
+        # Debezium v1->v2 and return; otherwise we fall through to the local
+        # template-based mapping.
+        api_result = self._stage_translate_api(connector_name, config_dict, original_connector_class)
+        if api_result is not None:
+            return api_result
 
-        # FALLBACK: Use existing SM-to-FM template-based translation
-        # Get template ID (connector class)
+        # Stage 3: Resolve SM + FM templates.
         template_id = config_dict.get('connector.class')
-
         sm_template, fm_template = self._get_templates_for_connector(template_id, connector_name, config_dict)
-
         if fm_template is None:
-            result['errors'].append(f"No FM template found for connector class: {template_id}")
-            # Continue without config processing - just return the basic structure
-            result['fm_configs'] = {
-                'connector.class': template_id,
-                'name': connector_name,
+            return {
+                'fm_configs': {'connector.class': template_id, 'name': connector_name},
+                'warnings': [],
+                'errors': [f"No FM template found for connector class: {template_id}"],
             }
-            return result
 
-        # Extract template components (following Java TemplateEngine pattern)
+        # Stage 4: Extract config defs from the FM template.
         try:
-            # Validate template structure
-            if not isinstance(fm_template, dict):
-                raise ValueError(f"Expected fm_template to be a dict, got {type(fm_template)}")
-
-            if 'templates' not in fm_template:
-                raise ValueError("fm_template missing 'templates' key")
-
-            if not isinstance(fm_template['templates'], (list, tuple)):
-                raise ValueError(f"Expected fm_template['templates'] to be a list, got {type(fm_template['templates'])}")
-
-            # Log template structure for debugging
-            self.logger.debug(f"Template structure: {list(fm_template.keys())}")
-            self.logger.debug(f"Number of templates: {len(fm_template['templates'])}")
-
-            connector_config_defs = self._config_def_processor.extract_connector_config_defs(fm_template)
-            template_config_defs = self._config_def_processor.extract_template_config_defs(fm_template)
-
-            self.logger.debug(f"Extracted {len(connector_config_defs)} connector config defs and {len(template_config_defs)} template config defs")
-
-        except Exception as e:
-            self.logger.error(f"Error extracting template components: {str(e)}")
-            # Return basic structure with error
-            result['errors'].append(f"Error extracting template components: {str(e)}")
-            result['fm_configs'] = {
-                'connector.class': template_id,
-                'name': connector_name,
+            connector_config_defs, template_config_defs = self._stage_extract_config_defs(fm_template)
+        except ValueError as e:
+            self.logger.error(f"Error extracting template components: {e}")
+            return {
+                'fm_configs': {'connector.class': template_id, 'name': connector_name},
+                'warnings': [],
+                'errors': [f"Error extracting template components: {e}"],
             }
-            return result
 
-        # Initialize FM configs and message lists (following Java pattern)
-        fm_configs = {}
-        transforms_configs = {}  # Separate dictionary for transforms and predicates
-        warnings = []
-        errors = []
-        semantic_match_list = set()  # Track configs that need semantic matching
+        # Per-call mutable state shared by the remaining stages.
+        fm_configs: Dict[str, Any] = {}
+        transforms_configs: Dict[str, str] = {}
+        warnings: List[str] = []
+        errors: List[str] = []
+        semantic_match_list: set = set()
 
-        # Step 1: Handle connector.class and name (following Java pattern)
+        # Stage 5: Apply defaults (connector.class, name, tasks.max).
+        self._stage_apply_defaults(connector_name, config_dict, fm_template, fm_configs, errors)
+
+        # Stage 6: Re-validate the config-def shapes returned by stage 4.
+        shape_error = self._stage_validate_config_def_shapes(template_config_defs, connector_config_defs)
+        if shape_error is not None:
+            errors.append(shape_error)
+            return {'fm_configs': [], 'warnings': warnings, 'errors': errors}
+
+        # Stage 7: Apply user-config -> FM-config mapping via connector/template
+        # config-defs, routing transforms/predicates into transforms_configs and
+        # recording semantic-match candidates.
+        self._stage_apply_user_config_mapping(
+            config_dict, connector_config_defs, template_config_defs,
+            fm_configs, warnings, errors, transforms_configs, semantic_match_list,
+        )
+
+        # Stage 8: Field-derivation pass over template_config_defs.
+        self._stage_apply_template_derivations(template_config_defs, config_dict, fm_configs, errors)
+
+        # Stage 9: Direct-name-match pass (with consumer/producer override normalization).
+        self._stage_direct_match_pass(config_dict, template_config_defs, fm_configs, semantic_match_list)
+
+        # Stage 10: Semantic matching for everything we still haven't placed.
+        self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
+
+        # Stage 11: Required-config / default-value / recommended-value validation.
+        self._check_required_configs(fm_configs, template_config_defs, errors)
+
+        # Stage 12: SMT classification (which transforms are allowed in FM?).
+        self._stage_classify_transforms(config_dict, fm_template, fm_configs, errors)
+
+        if 'connector.class' in fm_configs:
+            self.logger.info(f"Final connector.class value: {fm_configs['connector.class']}")
+        else:
+            self.logger.warning("connector.class not found in final fm_configs")
+
+        # Stage 13: v1->v2 post-translation transformers (Debezium, HTTP, BigQuery).
+        fm_configs, warnings, errors = self._stage_apply_v1_to_v2_translations(
+            original_connector_class, fm_configs, warnings, errors,
+        )
+
+        return {
+            'name': connector_name,
+            'fm_configs': fm_configs,
+            'warnings': warnings,
+            'errors': errors,
+        }
+
+    # ---- pipeline stages -------------------------------------------------
+
+    def _stage_validate_and_normalize(
+        self, user_configs: Dict[str, Any]
+    ) -> Tuple[Dict[str, str], Optional[str]]:
+        """Validate the input and stringify every value. Returns ``(config_dict, error)``."""
+        if not isinstance(user_configs, dict):
+            return {}, "Input must be a dictionary of configuration key-value pairs"
+        if not user_configs:
+            return {}, "No configuration properties provided"
+
+        config_dict = {key: str(value) for key, value in user_configs.items()}
+        if 'connector.class' not in config_dict:
+            return config_dict, "Missing required 'connector.class' configuration"
+        return config_dict, None
+
+    def _stage_translate_api(
+        self,
+        connector_name: str,
+        config_dict: Dict[str, str],
+        original_connector_class: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Try the CC ``/translate`` API. Return a fully-formed result dict on success, else ``None``."""
+        if not (self.env_id and self.lkc_id and self.bearer_token):
+            self.logger.debug(
+                f"Skipping /translate API for connector '{connector_name}' - credentials not provided"
+            )
+            return None
+
+        self.logger.info(f"Attempting /translate API for connector '{connector_name}'")
+        try:
+            translate_result = self._translate_api_client.translate(connector_name, config_dict)
+        except Exception as e:
+            self.logger.warning(
+                f"/translate API exception for connector '{connector_name}': {str(e)}, "
+                f"falling back to SM-to-FM translation"
+            )
+            return None
+
+        if translate_result is None:
+            self.logger.info(
+                f"/translate API returned no result for connector '{connector_name}', "
+                f"falling back to SM-to-FM translation"
+            )
+            return None
+
+        self.logger.info(f"Successfully translated connector '{connector_name}' via /translate API")
+        fm_configs = translate_result.get('config', {})
+        warnings = translate_result.get('warnings', [])
+        errors = translate_result.get('errors', [])
+        if 'name' not in fm_configs:
+            fm_configs['name'] = connector_name
+
+        fm_configs, warnings, errors = self._apply_debezium_v1_to_v2_if_needed(
+            original_connector_class, fm_configs, warnings, errors,
+        )
+        return {
+            'fm_configs': fm_configs,
+            'warnings': warnings,
+            'errors': errors,
+            'name': connector_name,
+        }
+
+    def _stage_extract_config_defs(
+        self, fm_template: Dict[str, Any]
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Validate the FM template structure and pull out the two config-def lists."""
+        if not isinstance(fm_template, dict):
+            raise ValueError(f"Expected fm_template to be a dict, got {type(fm_template)}")
+        if 'templates' not in fm_template:
+            raise ValueError("fm_template missing 'templates' key")
+        if not isinstance(fm_template['templates'], (list, tuple)):
+            raise ValueError(
+                f"Expected fm_template['templates'] to be a list, got {type(fm_template['templates'])}"
+            )
+
+        self.logger.debug(f"Template structure: {list(fm_template.keys())}")
+        self.logger.debug(f"Number of templates: {len(fm_template['templates'])}")
+
+        connector_config_defs = self._config_def_processor.extract_connector_config_defs(fm_template)
+        template_config_defs = self._config_def_processor.extract_template_config_defs(fm_template)
+
+        self.logger.debug(
+            f"Extracted {len(connector_config_defs)} connector config defs and "
+            f"{len(template_config_defs)} template config defs"
+        )
+        return connector_config_defs, template_config_defs
+
+    def _stage_apply_defaults(
+        self,
+        connector_name: str,
+        config_dict: Dict[str, str],
+        fm_template: Dict[str, Any],
+        fm_configs: Dict[str, Any],
+        errors: List[str],
+    ) -> None:
+        """Apply connector.class (from template_id), name, and tasks.max defaults to ``fm_configs``."""
         if 'connector.class' in config_dict:
-            # Get template_id from the first template in the templates array
             template_id = None
             if 'templates' in fm_template and len(fm_template['templates']) > 0:
                 template_id = fm_template['templates'][0].get('template_id')
@@ -750,66 +799,65 @@ class ConnectorMapper:
                 fm_configs['connector.class'] = template_id
                 self.logger.info(f"Set connector.class to template_id: {template_id}")
             else:
-                # Fallback to the original connector.class if template_id is not found
                 fm_configs['connector.class'] = config_dict['connector.class']
                 self.logger.info(f"Set connector.class to original value: {config_dict['connector.class']}")
         else:
-            errors.append(f"connector.class property is required.")
+            errors.append("connector.class property is required.")
 
-        # Always set the name from connector_name parameter
         fm_configs['name'] = connector_name
         self.logger.info(f"Set name in fm_configs from connector_name parameter: {connector_name}")
 
-        if 'tasks.max' in config_dict:
-            fm_configs['tasks.max'] = config_dict['tasks.max']
-        else:
-            fm_configs['tasks.max'] = "1"
+        fm_configs['tasks.max'] = config_dict.get('tasks.max', "1")
 
-        # Step 2: Process user configs (following Java pattern)
-        # Validate template_config_defs is a list
+    def _stage_validate_config_def_shapes(
+        self,
+        template_config_defs: Any,
+        connector_config_defs: Any,
+    ) -> Optional[str]:
+        """Validate both config-def lists are non-empty lists. Return an error message or ``None``."""
         if not isinstance(template_config_defs, (list, tuple)):
-            self.logger.error(f"template_config_defs is not a list, got {type(template_config_defs)}: {template_config_defs}")
-            errors.append(f"Invalid template_config_defs type: {type(template_config_defs)}")
-            return result
-
-        # Validate connector_config_defs is a list
+            self.logger.error(
+                f"template_config_defs is not a list, got {type(template_config_defs)}: {template_config_defs}"
+            )
+            return f"Invalid template_config_defs type: {type(template_config_defs)}"
         if not isinstance(connector_config_defs, (list, tuple)):
-            self.logger.error(f"connector_config_defs is not a list, got {type(connector_config_defs)}: {connector_config_defs}")
-            errors.append(f"Invalid connector_config_defs type: {type(connector_config_defs)}")
-            return result
-
-        # Additional safety check - ensure template_config_defs is not empty
+            self.logger.error(
+                f"connector_config_defs is not a list, got {type(connector_config_defs)}: {connector_config_defs}"
+            )
+            return f"Invalid connector_config_defs type: {type(connector_config_defs)}"
         if not template_config_defs:
             self.logger.error("template_config_defs is empty or None")
-            errors.append("template_config_defs is empty or None")
-            return result
+            return "template_config_defs is empty or None"
+        return None
 
+    def _stage_apply_user_config_mapping(
+        self,
+        config_dict: Dict[str, str],
+        connector_config_defs: List[Dict[str, Any]],
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, Any],
+        warnings: List[str],
+        errors: List[str],
+        transforms_configs: Dict[str, str],
+        semantic_match_list: set,
+    ) -> None:
+        """Map each user config into ``fm_configs`` via connector/template config-defs."""
+        user_config_key = None
         try:
             for user_config_key, user_config_value in config_dict.items():
-
-                # Check if this is a transforms or predicates config
                 if user_config_key.startswith('connector.class') or user_config_key.startswith('name'):
                     continue
-
                 if user_config_key.startswith('transforms') or user_config_key.startswith('predicates'):
                     transforms_configs[user_config_key] = user_config_value
                     continue
 
-              
-                # Find if user config is present in Connector config def
                 matching_connector_config_def = None
-                if isinstance(connector_config_defs, (list, tuple)):
-                    for connector_config_def in connector_config_defs:
-                        if isinstance(connector_config_def, dict) and connector_config_def.get('name') == user_config_key:
-                            matching_connector_config_def = connector_config_def
-                            break
-                        
-                else:
-                    self.logger.warning(f"Expected connector_config_defs to be a list, got {type(connector_config_defs)}")
-                    continue
+                for connector_config_def in connector_config_defs:
+                    if isinstance(connector_config_def, dict) and connector_config_def.get('name') == user_config_key:
+                        matching_connector_config_def = connector_config_def
+                        break
 
                 if matching_connector_config_def is not None:
-                    # User config present in Connector config def
                     self._config_def_processor.process_user_config(
                         matching_connector_config_def,
                         user_config_value,
@@ -818,56 +866,69 @@ class ConnectorMapper:
                         warnings,
                         errors,
                         config_dict,
-                        semantic_match_list
+                        semantic_match_list,
                     )
                 else:
-                    # Check if this config is defined in template_config_defs
                     config_found_in_template = False
-
                     try:
                         for template_config_def in template_config_defs:
                             original_user_config_key = user_config_key
                             if (user_config_key.startswith('consumer.') or user_config_key.startswith('producer.')) and \
-                            not user_config_key.startswith('consumer.override.') and not user_config_key.startswith('producer.override.'):
+                                    not user_config_key.startswith('consumer.override.') and not user_config_key.startswith('producer.override.'):
                                 user_config_key = user_config_key.replace('consumer.', 'consumer.override.')
                                 user_config_key = user_config_key.replace('producer.', 'producer.override.')
                             elif user_config_key.startswith('consumer.override.') or user_config_key.startswith('producer.override.'):
-                                # Remove override. from config in template_config_def.get('name')
                                 user_config_key = user_config_key.replace('consumer.override.', 'consumer.')
                                 user_config_key = user_config_key.replace('producer.override.', 'producer.')
 
-                            if isinstance(template_config_def, dict) and (template_config_def.get('name') == user_config_key or template_config_def.get('name') == original_user_config_key):
+                            if isinstance(template_config_def, dict) and (
+                                template_config_def.get('name') == user_config_key
+                                or template_config_def.get('name') == original_user_config_key
+                            ):
                                 config_found_in_template = True
                                 break
                     except Exception as e:
-                        self.logger.error(f"Error iterating over template_config_defs for {user_config_key}: {str(e)}")
-                        self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
+                        self.logger.error(
+                            f"Error iterating over template_config_defs for {user_config_key}: {str(e)}"
+                        )
+                        self.logger.error(
+                            f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}"
+                        )
                         config_found_in_template = False
 
                     if not config_found_in_template:
-                        # User config not present in either Connector config def or template config defs - warn
-                        warning_msg = f"Unused connector config '{user_config_key}'. Given value will be ignored. Default value will be used if any."
+                        warning_msg = (
+                            f"Unused connector config '{user_config_key}'. Given value will be ignored. "
+                            f"Default value will be used if any."
+                        )
                         warnings.append(warning_msg)
                         self.logger.warning(warning_msg)
-
         except Exception as e:
             self.logger.error(f"Error processing user configs: {str(e)}")
             errors.append(f"Error processing user configs {user_config_key}: {str(e)}")
-            # Continue with basic config
 
-        # Step 3: Process template configs using config derivation methods
+    def _stage_apply_template_derivations(
+        self,
+        template_config_defs: List[Dict[str, Any]],
+        config_dict: Dict[str, str],
+        fm_configs: Dict[str, Any],
+        errors: List[str],
+    ) -> None:
+        """For each template config def, dispatch to a field-deriver and fill ``fm_configs``."""
         self.logger.info(f"Processing {len(template_config_defs)} template config definitions")
         try:
             for template_config_def in template_config_defs:
                 template_config_name = template_config_def.get("name")
                 is_required = template_config_def.get("required", False)
-                self.logger.debug(f"Processing template config: {template_config_name}, required: {is_required}")
+                self.logger.debug(
+                    f"Processing template config: {template_config_name}, required: {is_required}"
+                )
 
-                # Get the method to derive this config from user configs
                 derivation_method = self._field_deriver.lookup(template_config_name, template_config_def)
-
                 if derivation_method:
-                    derived_value = derivation_method(config_dict, fm_configs, template_config_defs, template_config_name)
+                    derived_value = derivation_method(
+                        config_dict, fm_configs, template_config_defs, template_config_name
+                    )
                     if derived_value is not None:
                         fm_configs[template_config_name] = derived_value
                         self.logger.debug(f"Derived value for {template_config_name}: {derived_value}")
@@ -877,9 +938,15 @@ class ConnectorMapper:
             self.logger.error(f"Error processing template configs: {str(e)}")
             errors.append(f"Error processing template configs: {str(e)}")
 
-        # Step 4: Before semantic matching, check if user config keys directly match template config def names
+    def _stage_direct_match_pass(
+        self,
+        config_dict: Dict[str, str],
+        template_config_defs: List[Dict[str, Any]],
+        fm_configs: Dict[str, Any],
+        semantic_match_list: set,
+    ) -> None:
+        """For each user config not yet in fm_configs, fill it if its name (or its consumer/producer-normalized form) matches a template-config-def name."""
         for user_config_key, user_config_value in config_dict.items():
-            # Skip if already in fm_configs
             if user_config_key in fm_configs:
                 if user_config_key in semantic_match_list:
                     semantic_match_list.remove(user_config_key)
@@ -892,16 +959,13 @@ class ConnectorMapper:
             elif user_config_key.startswith('producer.') or user_config_key.startswith('consumer.'):
                 user_config_key = user_config_key.replace('producer.', 'producer.override.')
                 user_config_key = user_config_key.replace('consumer.', 'consumer.override.')
-                
 
-            # Check if user config key matches any template config def name
             try:
                 for template_config_def in template_config_defs:
                     if isinstance(template_config_def, dict):
                         template_config_name = template_config_def.get("name")
-                    
+
                         if template_config_name == user_config_key:
-                            # Direct match found - add to fm_configs
                             fm_configs[user_config_key] = user_config_value
                             self.logger.info(f"Direct match found: {user_config_key} = {user_config_value}")
                             if user_config_key in semantic_match_list or original_user_config_key in semantic_match_list:
@@ -909,86 +973,76 @@ class ConnectorMapper:
                                 semantic_match_list.remove(original_user_config_key)
                             break
                         if template_config_name == original_user_config_key:
-                            # Direct match found - add to fm_configs
                             fm_configs[original_user_config_key] = user_config_value
-                            self.logger.info(f"Direct match found: {original_user_config_key} = {user_config_value}")
+                            self.logger.info(
+                                f"Direct match found: {original_user_config_key} = {user_config_value}"
+                            )
                             if user_config_key in semantic_match_list or original_user_config_key in semantic_match_list:
                                 semantic_match_list.remove(user_config_key)
                                 semantic_match_list.remove(original_user_config_key)
-                            break    
+                            break
             except Exception as e:
                 self.logger.error(f"Error checking template config match for {user_config_key}: {str(e)}")
-                self.logger.error(f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}")
+                self.logger.error(
+                    f"template_config_defs type: {type(template_config_defs)}, content: {template_config_defs}"
+                )
 
-        # Step 5: do semantic matching for the configs that are not present in the template
-        self._do_semantic_matching(fm_configs, semantic_match_list, config_dict, template_config_defs, sm_template)
-
-        # Check for required configs that are missing after semantic matching
-        self._check_required_configs(fm_configs, template_config_defs, errors)
-
-        # Process transforms configs
-        # Extract template_id from the correct location
+    def _stage_classify_transforms(
+        self,
+        config_dict: Dict[str, str],
+        fm_template: Dict[str, Any],
+        fm_configs: Dict[str, Any],
+        errors: List[str],
+    ) -> None:
+        """Resolve which transforms FM allows for this plugin and merge them into ``fm_configs``."""
         plugin_type = "Unknown"
         if fm_template.get('template_id'):
             plugin_type = fm_template.get('template_id')
         elif 'templates' in fm_template and len(fm_template['templates']) > 0:
             plugin_type = fm_template['templates'][0].get('template_id', 'Unknown')
 
-        transforms_data = self._smt_classifier.classify(config_dict, self._fm_smt_registry.get_smts_for_plugin(plugin_type))
+        transforms_data = self._smt_classifier.classify(
+            config_dict, self._fm_smt_registry.get_smts_for_plugin(plugin_type)
+        )
         fm_configs.update(transforms_data['allowed'])
-
-        # Add mapping errors from transforms processing
         if 'mapping_errors' in transforms_data:
             errors.extend(transforms_data['mapping_errors'])
 
-        # Debug logging for final connector.class value
-        if 'connector.class' in fm_configs:
-            self.logger.info(f"Final connector.class value: {fm_configs['connector.class']}")
-        else:
-            self.logger.warning("connector.class not found in final fm_configs")
-
-        # Step: Apply Debezium v1 to v2 translation if needed (common post-translation step)
+    def _stage_apply_v1_to_v2_translations(
+        self,
+        original_connector_class: str,
+        fm_configs: Dict[str, Any],
+        warnings: List[str],
+        errors: List[str],
+    ) -> Tuple[Dict[str, Any], List[str], List[str]]:
+        """Apply Debezium / HTTP / BigQuery v1->v2 post-translation transformers in order."""
         fm_configs, warnings, errors = self._apply_debezium_v1_to_v2_if_needed(
-            original_connector_class, fm_configs, warnings, errors
+            original_connector_class, fm_configs, warnings, errors,
         )
 
-        # Step: Translate HTTP v1 FM configs to v2 FM configs
-        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
-        # Auto-detect HTTP V1 connector and transform to V2
         if self.http_transformer.is_http_v1(original_connector_class):
-            self.logger.info(f"Detected HTTP V1 config, translating FM configs to V2 format")
+            self.logger.info("Detected HTTP V1 config, translating FM configs to V2 format")
             fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.http_transformer.translate_v1_to_v2(fm_configs)
-            # Add v1 to v2 translation warnings
             for warning in v1_to_v2_warnings:
                 warnings.append(f"[HTTP v1→v2 Translation] {warning}")
-            # Add v1 to v2 translation errors
             for error in v1_to_v2_errors:
                 errors.append(f"[HTTP v1→v2 Translation] {error}")
-            self.logger.info(f"HTTP V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+            self.logger.info(
+                f"HTTP V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}"
+            )
 
-        # Step: Translate BigQuery v1 FM configs to v2 FM configs
-        # This happens AFTER SM to FM translation is complete (similar to Debezium pattern)
-        # Auto-detect BigQuery V1 connector and transform to V2
         if self.bigquery_transformer.is_bigquery_v1(original_connector_class):
-            self.logger.info(f"Detected BigQuery V1 config, translating FM configs to V2 format")
+            self.logger.info("Detected BigQuery V1 config, translating FM configs to V2 format")
             fm_configs, v1_to_v2_warnings, v1_to_v2_errors = self.bigquery_transformer.translate_v1_to_v2(fm_configs)
-            # Add v1 to v2 translation warnings
             for warning in v1_to_v2_warnings:
                 warnings.append(f"[BigQuery v1→v2 Translation] {warning}")
-            # Add v1 to v2 translation errors
             for error in v1_to_v2_errors:
                 errors.append(f"[BigQuery v1→v2 Translation] {error}")
-            self.logger.info(f"BigQuery V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}")
+            self.logger.info(
+                f"BigQuery V1 to V2 FM translation complete. Connector class is now: {fm_configs.get('connector.class')}"
+            )
 
-        # Return the result in the required format
-        result = {
-            "name": connector_name,
-            "fm_configs": fm_configs,
-            "warnings": warnings,
-            "errors": errors
-        }
-
-        return result
+        return fm_configs, warnings, errors
 
     def _do_semantic_matching(self, fm_configs: Dict[str, str], semantic_match_list: set, user_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], sm_template: Dict[str, Any]):
         """
