@@ -1208,34 +1208,4 @@ class ConnectorMapper:
         self.logger.debug(f"SM property '{config_name}' not found in template")
         return None
 
-    def _load_semantic_matcher_from_path(self):
-        """Load semantic matcher class from the specified path"""
-        if not self.semantic_matcher_path:
-            return
-
-        try:
-            semantic_matcher_file = Path(self.semantic_matcher_path)
-            if not semantic_matcher_file.exists():
-                self.logger.warning(f"Semantic matcher file not found: {self.semantic_matcher_path}")
-                return
-
-            self.logger.info(f"Loading semantic matcher from: {self.semantic_matcher_path}")
-
-            # Import the custom semantic matcher module
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("custom_semantic_matcher", semantic_matcher_file)
-            custom_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(custom_module)
-
-            # Get the SemanticMatcher class from the custom module
-            if hasattr(custom_module, 'SemanticMatcher'):
-                CustomSemanticMatcher = custom_module.SemanticMatcher
-                self.semantic_matcher = CustomSemanticMatcher()
-                self.logger.info(f"Successfully loaded custom semantic matcher from {self.semantic_matcher_path}")
-            else:
-                self.logger.error(f"SemanticMatcher class not found in {self.semantic_matcher_path}")
-
-        except Exception as e:
-            self.logger.error(f"Error loading semantic matcher from {self.semantic_matcher_path}: {e}")
-            # Continue with default semantic matcher
 

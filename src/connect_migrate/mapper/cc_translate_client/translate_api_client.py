@@ -83,6 +83,7 @@ class TranslateApiClient:
                 json=config_dict,
                 headers=headers,
                 verify=not self.disable_ssl_verify,
+                timeout=(5, 30),
             )
 
             if response.status_code != 200:

@@ -46,6 +46,7 @@ class SmTemplateFetcher:
                 headers=headers,
                 verify=not self.disable_ssl_verify,
                 auth=self.worker_auth,
+                timeout=(5, 30),
             )
             response.raise_for_status()
 

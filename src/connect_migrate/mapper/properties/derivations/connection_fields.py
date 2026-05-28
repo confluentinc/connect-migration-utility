@@ -19,7 +19,7 @@ class ConnectionFieldDeriver(DerivationGroup):
         'ssl.server.cert.dn': '_derive_ssl_server_cert_dn',
     }
 
-    def _derive_connection_url(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
+    def _derive_connection_url(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
         """Derive connection.url from user configs specifically for Snowflake connectors"""
 
         # Check for JDBC URL patterns that might contain Snowflake URLs
@@ -206,19 +206,3 @@ class ConnectionFieldDeriver(DerivationGroup):
         # Default fallback
         return None
 
-    def _derive_database_server_name(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
-        """Derive database.server.name from user configs (e.g., from JDBC URL)"""
-        # Try to extract from JDBC URL
-        if 'connection.url' in user_configs:
-            jdbc_url = user_configs['connection.url']
-            if jdbc_url.startswith('jdbc:'):
-                parsed = self.jdbc_url_parser.parse_jdbc_url(jdbc_url)
-                return parsed.get('host')
-
-        # Check for direct database.server.name config
-        if 'database.server.name' in user_configs:
-            return user_configs['database.server.name']
-
-        # Check for server name config
-        if 'server.name' in user_configs:
-            return user_configs['server.name']

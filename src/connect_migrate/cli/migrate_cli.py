@@ -1,13 +1,14 @@
 import argparse
+import base64
+import getpass
+import json
+import logging
+import shutil
 from pathlib import Path
-import sys
+from typing import Any, Dict, List, Optional
+
 import requests
 from requests.auth import HTTPBasicAuth
-import base64
-from typing import Dict, Any, List, Optional, Tuple, Union
-import json
-import shutil
-import logging
 
 from connect_migrate.migration.offset_manager import OffsetManager
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
@@ -119,9 +120,8 @@ class ConnectorCreator:
 
         headers = {
             "Content-Type": "application/json",
+            "Authorization": f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}",
         }
-        self.logger.info(f"[INFO] Bearer token: {bearer_token}")
-        headers["Authorization"] = f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}"
 
         body = {
             "name": name,
@@ -190,13 +190,39 @@ class ConnectorCreator:
         return results
 
 
+def _prepare_output_dir(path: Path, clean: bool) -> None:
+    """Create ``path`` (mkdir -p). If ``clean`` is set, rmtree it first, but refuse
+    to operate on dangerous paths ($HOME, cwd, or any ancestor of cwd)."""
+    if clean and path.exists():
+        resolved = path.resolve()
+        cwd = Path.cwd().resolve()
+        home = Path.home().resolve()
+        if resolved == home:
+            raise SystemExit(f"Refusing to --clean home directory: {resolved}")
+        if resolved == cwd:
+            raise SystemExit(f"Refusing to --clean current working directory: {resolved}")
+        try:
+            cwd.relative_to(resolved)
+        except ValueError:
+            pass
+        else:
+            raise SystemExit(f"Refusing to --clean an ancestor of cwd: {resolved}")
+        if resolved == resolved.parent:
+            raise SystemExit(f"Refusing to --clean filesystem root: {resolved}")
+        shutil.rmtree(resolved)
+    path.mkdir(parents=True, exist_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Create Confluent Cloud connectors from JSON file")
     parser.add_argument('--fm-config-dir', type=str, required=True,
                         help='Directory containing FM connector JSON config files')
     parser.add_argument('--migration-output-dir', type=str, default='migration_output')
-    parser.add_argument('--bearer-token', type=str, required=True,
-                        help='Confluent Cloud bearer token (api_key:api_secret) (or use --prompt-bearer-token for secure input)')
+    token_group = parser.add_mutually_exclusive_group(required=True)
+    token_group.add_argument('--bearer-token', type=str,
+                             help='Confluent Cloud bearer token (api_key:api_secret). Mutually exclusive with --prompt-bearer-token.')
+    token_group.add_argument('--prompt-bearer-token', action='store_true',
+                             help='Prompt for the bearer token interactively (recommended; the input is not echoed).')
     parser.add_argument('--kafka-api-key', type=str, help='Kafka API key for LKC cluster')
     parser.add_argument('--kafka-api-secret', type=str, help='Kafka API secret for LKC cluster')
     parser.add_argument('--kafka-service-account-id', type=str, help='Confluent Cloud service account (optional, alternative to api_key/api_secret)')
@@ -212,26 +238,28 @@ def main():
 
 
 
-    parser.add_argument('--prompt-bearer-token', action='store_true',
-                        help='Prompt for bearer token securely (recommended)')
     parser.add_argument('--semantic-cache-folder', type=str,
                         help='Cache folder for sentence transformer models (default: auto-detected from pip installation)')
+    parser.add_argument('--clean', action='store_true',
+                        help='Delete migration-output-dir before writing. Refuses to operate on $HOME, cwd, or any ancestor of cwd.')
 
     args = parser.parse_args()
 
     fm_config_dir = Path(args.fm_config_dir)
-    migration_output_dir = Path(getattr(args, 'migration_output_dir', None) or "migration_output")
-    if migration_output_dir.exists():
-        # Remove existing directory and its contents
-        shutil.rmtree(migration_output_dir)
-    migration_output_dir.mkdir(parents=True)
+    migration_output_dir = Path(args.migration_output_dir or "migration_output")
+    _prepare_output_dir(migration_output_dir, clean=args.clean)
 
     # Setup logging
     setup_logging(migration_output_dir)
     logger = logging.getLogger(__name__)
 
 
-    bearer_token = args.bearer_token
+    if args.prompt_bearer_token:
+        bearer_token = getpass.getpass("Confluent Cloud bearer token (api_key:api_secret): ")
+        if not bearer_token:
+            parser.error("--prompt-bearer-token requires a non-empty token")
+    else:
+        bearer_token = args.bearer_token
 
     kafka_auth = KafkaAuth(
         api_key=getattr(args, 'kafka_api_key', None),

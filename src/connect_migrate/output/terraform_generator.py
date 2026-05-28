@@ -33,13 +33,21 @@ class TerraformGenerator:
         self.logger = logger or logging.getLogger(__name__)
 
     def _sanitize_resource_name(self, name: str) -> str:
-        """Sanitize connector name for Terraform resource name."""
-        # Replace invalid characters with underscores
-        sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
-        # Ensure it starts with a letter or underscore
+        """Sanitize a connector name into a Terraform resource identifier.
+
+        Terraform identifiers may contain letters, digits, and underscores, and
+        must start with a letter or underscore. The result is also lowercased
+        so the same identifier is used by both the resource block and any
+        cross-references (e.g. outputs.tf).
+        """
+        sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name)
         if sanitized and not (sanitized[0].isalpha() or sanitized[0] == '_'):
             sanitized = '_' + sanitized
-        return sanitized
+        return sanitized.lower()
+
+    def _sanitize_filename(self, name: str) -> str:
+        """Sanitize a connector name into a safe filename component (no path separators)."""
+        return re.sub(r'[^A-Za-z0-9._-]', '_', name).lstrip('.') or 'connector'
 
     def _escape_hcl_string(self, value: str) -> str:
         """Escape special characters in HCL string values."""
@@ -83,11 +91,18 @@ class TerraformGenerator:
 
     def _generate_connector_resource(self, connector_name: str, config: Dict[str, Any], warnings: Optional[List[Dict[str, str]]] = None) -> str:
         """Generate Terraform resource block for a single connector (matching Go template format)."""
-        resource_name = self._sanitize_resource_name(connector_name).lower()
-        
-        lines = []
-        
-        # Add warnings comment if present
+        resource_name = self._sanitize_resource_name(connector_name)
+
+        sensitive_items: List[tuple] = []
+        nonsensitive_items: List[tuple] = []
+        for key, value in sorted(config.items()):
+            if self._is_sensitive_field(key, value):
+                sensitive_items.append((key, value))
+            else:
+                nonsensitive_items.append((key, value))
+
+        lines: List[str] = []
+
         if warnings:
             lines.append('/*')
             lines.append(' * The following warnings were returned by the connector config translation endpoint:')
@@ -97,7 +112,7 @@ class TerraformGenerator:
                 lines.append(f' * - [{field}] {message}')
             lines.append(' */')
             lines.append('')
-        
+
         lines.append(f'resource "confluent_connector" "{resource_name}" {{')
         lines.append('  environment {')
         lines.append(f'    id = "{self.environment_id}"')
@@ -107,26 +122,22 @@ class TerraformGenerator:
         lines.append('  }')
         lines.append('')
         lines.append('  config_sensitive = {')
-        lines.append('    /*')
-        lines.append('    ## Choose one of the following options:')
-        lines.append('    ## https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_connector')
-        lines.append('')
-        lines.append('      "kafka.auth.mode"  = "KAFKA_API_KEY",')
-        lines.append('      "kafka.api.key"    = "<cluster_api_key>",')
-        lines.append('      "kafka.api.secret" = "<cluster_api_secret>",')
-        lines.append('    ## ----------------------------------------------- ##')
-        lines.append('      "kafka.auth.mode"          = "SERVICE_ACCOUNT",')
-        lines.append('      "kafka.service.account.id" = "<service_account_id>"')
-        lines.append('    */')
+        lines.append('    # Add Kafka auth credentials here. Pick one mode:')
+        lines.append('    #   "kafka.auth.mode"  = "KAFKA_API_KEY"')
+        lines.append('    #   "kafka.api.key"    = "<cluster_api_key>"')
+        lines.append('    #   "kafka.api.secret" = "<cluster_api_secret>"')
+        lines.append('    # or:')
+        lines.append('    #   "kafka.auth.mode"          = "SERVICE_ACCOUNT"')
+        lines.append('    #   "kafka.service.account.id" = "<service_account_id>"')
+        for key, value in sensitive_items:
+            formatted_value = self._format_config_value(value)
+            lines.append(f'    "{self._escape_hcl_string(key)}" = {formatted_value}')
         lines.append('  }')
         lines.append('')
         lines.append('  config_nonsensitive = {')
-
-        # Add all configs to config_nonsensitive
-        for key, value in sorted(config.items()):
+        for key, value in nonsensitive_items:
             formatted_value = self._format_config_value(value)
             lines.append(f'    "{self._escape_hcl_string(key)}" = {formatted_value}')
-        
         lines.append('  }')
         lines.append('}')
         lines.append('')
@@ -238,17 +249,16 @@ variable "kafka_cluster_id" {
                     self.logger.warning(f"Skipping {config_file}: missing 'config' field")
                     continue
 
-                # Generate individual Terraform file for this connector (matching Go format)
-                filename = f"{connector_name}-connector.tf"
+                filename = f"{self._sanitize_filename(connector_name)}-connector.tf"
                 filepath = terraform_dir / filename
 
                 resource_block = self._generate_connector_resource(connector_name, config, warnings)
-                
-                with open(filepath, 'w') as f:
+
+                with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(resource_block)
-                
+
                 connector_names.append(connector_name)
-                self.logger.info(f"✅ Generated: {filename}")
+                self.logger.info(f"Generated: {filename}")
 
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse JSON file {config_file}: {e}")
@@ -291,17 +301,16 @@ variable "kafka_cluster_id" {
 
             warnings = fm_config.get('warnings', [])
 
-            # Generate individual Terraform file for this connector (matching Go format)
-            filename = f"{connector_name}-connector.tf"
+            filename = f"{self._sanitize_filename(connector_name)}-connector.tf"
             filepath = terraform_dir / filename
 
             resource_block = self._generate_connector_resource(connector_name, config, warnings)
-            
-            with open(filepath, 'w') as f:
+
+            with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(resource_block)
-            
+
             connector_names.append(connector_name)
-            self.logger.info(f"✅ Generated: {filename}")
+            self.logger.info(f"Generated: {filename}")
 
         if not connector_names:
             self.logger.warning("No successful connector configurations found for Terraform generation")

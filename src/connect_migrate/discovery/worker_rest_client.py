@@ -27,7 +27,7 @@ class WorkerRestClient:
         try:
             response = requests.get(
                 test_url,
-                timeout=3,
+                timeout=(5, 10),
                 verify=not self.disable_ssl_verify,
                 auth=self.auth,
             )
@@ -51,10 +51,11 @@ class WorkerRestClient:
         if logger is None:
             logger = logging.getLogger("worker_rest_client_default")
         try:
-            response = requests.get(url, timeout=5, verify=not disable_ssl_verify, auth=auth)
+            response = requests.get(url, timeout=(5, 30), verify=not disable_ssl_verify, auth=auth)
             response.raise_for_status()
-            logger.info(f"Response from {url}: {response.json()}")
-            return response.json()
+            payload = response.json()
+            logger.debug(f"Response from {url} ({len(response.content)} bytes)")
+            return payload
         except requests.exceptions.RequestException as e:
             logger.error(f"HTTP error for {url}: {e}")
         except ValueError:

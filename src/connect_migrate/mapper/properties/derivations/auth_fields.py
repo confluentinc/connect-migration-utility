@@ -1,6 +1,5 @@
 """Derive FM authentication and SSL-mode fields."""
 
-import re
 from typing import Any, Dict, List, Optional
 
 from connect_migrate.mapper.properties.derivations.base import DerivationGroup
@@ -11,42 +10,7 @@ class AuthFieldDeriver(DerivationGroup):
         'ssl.mode': '_derive_ssl_mode',
     }
 
-    def _derive_authentication_method(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
-
-        """Derive authentication.method from user configs"""
-        # Check for various authentication-related configs
-        auth_configs = [
-            'security.protocol',
-            'sasl.mechanism',
-            'authentication.type',
-            'auth.method'
-        ]
-
-        for auth_config in auth_configs:
-            if auth_config in user_configs:
-                auth_value = user_configs[auth_config].lower()
-                if 'plain' in auth_value:
-                    return 'PLAIN'
-                elif 'scram' in auth_value:
-                    return 'SCRAM'
-                elif 'oauth' in auth_value or 'bearer' in auth_value:
-                    return 'OAUTHBEARER'
-                elif 'ssl' in auth_value or 'tls' in auth_value:
-                    return 'SSL'
-                else:
-                    return auth_value
-
-        # Try to get default from template if available
-        if template_config_defs:
-            template_default = self._get_template_default_value(template_config_defs, 'authentication.method')
-            if template_default:
-                resolved_default = self._resolve_template_default(template_default, fm_configs)
-                return resolved_default
-
-        # Default fallback
-        return 'PLAIN'
-
-    def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive ssl.mode from user configs"""
         # Check for direct ssl.mode config first

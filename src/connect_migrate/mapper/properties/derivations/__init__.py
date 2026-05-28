@@ -22,7 +22,6 @@ from connect_migrate.mapper.properties.derivations.base import DerivationGroup
 from connect_migrate.mapper.properties.derivations.connection_fields import (
     ConnectionFieldDeriver,
 )
-from connect_migrate.mapper.properties.derivations.csfle_fields import CsfleFieldDeriver
 from connect_migrate.mapper.properties.derivations.format_fields import FormatFieldDeriver
 from connect_migrate.mapper.properties.derivations.redis_fields import RedisFieldDeriver
 from connect_migrate.mapper.properties.derivations.schema_registry_fields import (
@@ -42,7 +41,6 @@ class FieldDeriver:
             AuthFieldDeriver(jdbc_url_parser, self.logger),
             RedisFieldDeriver(jdbc_url_parser, self.logger),
             ServiceBusFieldDeriver(jdbc_url_parser, self.logger),
-            CsfleFieldDeriver(jdbc_url_parser, self.logger),
             SchemaRegistryFieldDeriver(jdbc_url_parser, self.logger),
         ]
 

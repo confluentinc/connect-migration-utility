@@ -59,7 +59,7 @@ class FmSmtRegistry:
                     "Content-Type": "application/json",
                     "Authorization": f"Basic {_encode_to_base64(self.bearer_token)}",
                 }
-                response = requests.put(url, params=params, json=data, headers=headers)
+                response = requests.put(url, params=params, json=data, headers=headers, timeout=(5, 30))
                 response.raise_for_status()
                 recommended = self._classifier.extract_recommended_transform_types(
                     response.json()

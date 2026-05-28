@@ -162,11 +162,8 @@ class TestApplyToConfig:
             ]
         }
         mapped, errors = make_mappings().apply_to_config({"input.format": "XML"}, template)
-        # An error is recorded. The value is still present in mapped_config
-        # because the original code writes it *before* checking recommended
-        # values — see the comment "Don't map the property if value is invalid"
-        # in apply_to_config, which is misleading: a `continue` skips later
-        # processing but doesn't undo the earlier write. This test pins the
-        # actual (latent-bug) behavior, not the intended one.
+        # Out-of-recommended-values is reported as an error AND the original
+        # SM value is preserved in mapped_config — intentional, so the user can
+        # see what was attempted and hand-edit the generated FM config.
         assert any("not in recommended values" in e for e in errors)
         assert mapped.get("input.format") == "XML"
