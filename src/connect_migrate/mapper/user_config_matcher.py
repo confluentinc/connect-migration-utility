@@ -37,11 +37,16 @@ class UserConfigMatcher:
         Builds two indexes once (O(n)) instead of doing two nested scans per user
         config (O(user_configs × config_defs)).
         """
-        connector_def_by_name: Dict[str, Dict[str, Any]] = {
-            cd['name']: cd
-            for cd in connector_config_defs
-            if isinstance(cd, dict) and 'name' in cd
-        }
+        # First match wins: master iterated connector_config_defs and broke on
+        # first matching name. A naive dict comprehension would let later
+        # entries overwrite earlier ones — e.g. the s3-sink template defines
+        # `partitioner.class` once as a switch (reverse-maps user's FQN to the
+        # short recommended-values form) and again later as a constant FQN; the
+        # switch must win.
+        connector_def_by_name: Dict[str, Dict[str, Any]] = {}
+        for cd in connector_config_defs:
+            if isinstance(cd, dict) and 'name' in cd:
+                connector_def_by_name.setdefault(cd['name'], cd)
         template_names: set = {
             cd['name']
             for cd in template_config_defs

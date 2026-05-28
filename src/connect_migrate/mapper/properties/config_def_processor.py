@@ -316,6 +316,12 @@ class ConfigDefProcessor:
             return
 
         config_name = connector_config_def.get("name")
+        # Same first-write-wins guard that _process_switch_case applies: if an
+        # earlier template entry already mapped this config (e.g. a switch
+        # reverse-translated the user's FQN to a short name), don't overwrite
+        # it with a later template's constant FQN.
+        if fm_configs.get(config_name) is not None:
+            return
         if value != user_config_value:
             warnings.append(
                 f"{config_name} : FM config has constant value '{value}' but user "
