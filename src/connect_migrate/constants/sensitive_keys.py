@@ -1,9 +1,13 @@
-"""Static data: keys that should always be redacted from connector configs."""
+"""Static data: keys that should always be redacted from connector configs.
 
-from typing import List
+``STATIC_SENSITIVE_CONFIG_KEYS`` is a ``frozenset`` so ``in`` membership
+checks against it are O(1) instead of O(n) for the ~120-entry list.
+"""
+
+from typing import FrozenSet, List
 
 
-STATIC_SENSITIVE_CONFIG_KEYS: List[str] = [
+STATIC_SENSITIVE_CONFIG_KEYS: FrozenSet[str] = frozenset([
     "activemq.password",
     "appdynamics.proxy.password",
     "aws.access.key.id",
@@ -122,7 +126,7 @@ STATIC_SENSITIVE_CONFIG_KEYS: List[str] = [
     "v3.$username.privacy.password",
     "vertica.password",
     "zendesk.password",
-]
+])
 
 
 SENSITIVE_KEY_PATTERNS: List[str] = ["password", "token", "secret", "credential"]

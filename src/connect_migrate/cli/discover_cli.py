@@ -105,38 +105,37 @@ def main():
 
     try:
         discovery = None
-        if getattr(args, 'worker_urls', None) or getattr(args, 'worker_urls_file', None):
+        if args.worker_urls or args.worker_urls_file:
             discovery = ConfigDiscovery(
-                worker_urls=getattr(args, 'worker_urls', None),
-                worker_urls_file=getattr(args, 'worker_urls_file', None),
-                redact=getattr(args, 'redact', None),
+                worker_urls=args.worker_urls,
+                worker_urls_file=args.worker_urls_file,
+                redact=args.redact,
                 output_dir=output_dir,
-                sensitive_file=getattr(args, 'sensitive_file', None),
-                worker_config_file=getattr(args, 'worker_config_file', None),
-                disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
-                worker_username=getattr(args, 'worker_username', None),
-                worker_password=getattr(args, 'worker_password', None)
+                sensitive_file=args.sensitive_file,
+                worker_config_file=args.worker_config_file,
+                disable_ssl_verify=args.disable_ssl_verify,
+                worker_username=args.worker_username,
+                worker_password=args.worker_password,
             )
 
         # Step 1: Get Connector Configs (either from discovery, file, or directory)
-        if getattr(args, 'config_file', None) and getattr(args, 'config_dir', None):
+        if args.config_file and args.config_dir:
             logger.error("Cannot specify both --config-file and --config-dir. Please use only one.")
             sys.exit(1)
-        elif getattr(args, 'config_file', None):
+        elif args.config_file:
             logger.info(f"Reading connector configurations from file: {args.config_file}")
             connectors_json = Path(args.config_file)
             if not connectors_json.exists():
                 raise FileNotFoundError(f"Config file not found: {args.config_file}")
             logger.info(f"Using config file: {connectors_json}")
-        elif getattr(args, 'config_dir', None):
+        elif args.config_dir:
             logger.info(f"Reading connector configurations from directory: {args.config_dir}")
             config_dir = Path(args.config_dir)
             if not config_dir.exists() or not config_dir.is_dir():
                 raise FileNotFoundError(f"Config directory not found or is not a directory: {args.config_dir}")
-            all_connectors_dict = {}  # Accumulate all connectors here
+            all_connectors_dict: Dict[str, Any] = {}
             for file in sorted(config_dir.iterdir()):
                 ConnectorMapper.parse_connector_file(file, all_connectors_dict, logger)
-            # Validation: ensure at least one connector was found
             if not all_connectors_dict:
                 logger.error(f"No valid connector configs found in directory: {args.config_dir}")
                 sys.exit(1)
@@ -157,24 +156,24 @@ def main():
         logger.info("Starting connector processing...")
 
         # Parse worker URLs for the comparator
-        worker_urls_list = []
-        if getattr(args, 'worker_urls', None):
+        worker_urls_list: list = []
+        if args.worker_urls:
             worker_urls_list = [url.strip() for url in args.worker_urls.split(',')]
-        elif hasattr(args, 'worker_urls_file') and getattr(args, 'worker_urls_file', None):
-            with open(args.worker_urls_file, 'r') as f:
+        elif args.worker_urls_file:
+            with open(args.worker_urls_file, 'r', encoding='utf-8') as f:
                 worker_urls_list = [line.strip() for line in f if line.strip()]
 
         comparator = ConnectorMapper(
             input_file=connectors_json,
             output_dir=output_dir,
             worker_urls=worker_urls_list,
-            env_id=getattr(args, 'environment_id', None),
-            lkc_id=getattr(args, 'cluster_id', None),
+            env_id=args.environment_id,
+            lkc_id=args.cluster_id,
             bearer_token=bearer_token,
-            disable_ssl_verify=getattr(args, 'disable_ssl_verify', None),
-            worker_username=getattr(args, 'worker_username', None),
-            worker_password=getattr(args, 'worker_password', None),
-            debezium_version=getattr(args, 'debezium_version', 'v2')
+            disable_ssl_verify=args.disable_ssl_verify,
+            worker_username=args.worker_username,
+            worker_password=args.worker_password,
+            debezium_version=args.debezium_version,
         )
         fm_configs = comparator.process_connectors()
         if fm_configs:
@@ -198,9 +197,9 @@ def main():
             logger.info("Continuing without summary generation...")
 
         # Generate Terraform files only if --terraform flag is provided
-        if getattr(args, 'terraform', False):
-            env_id = getattr(args, 'environment_id', None)
-            cluster_id = getattr(args, 'cluster_id', None)
+        if args.terraform:
+            env_id = args.environment_id
+            cluster_id = args.cluster_id
             logger.info("Generating Terraform files...")
             if not env_id or not cluster_id:
                 logger.info("Note: environment_id and/or cluster_id not provided. Using 'TO_BE_FILLED' placeholders in generated Terraform files.")

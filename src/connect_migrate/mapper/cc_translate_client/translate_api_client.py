@@ -9,19 +9,14 @@ plugin name, or HTTP/JSON failure produces a ``None`` return rather than
 raising; callers are expected to fall back to local template-based mapping.
 """
 
-import base64
 import json
 import logging
 from typing import Any, Callable, Dict, Optional
 
 import requests
 
+from connect_migrate.utils.encoding import encode_to_base64
 from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
-
-
-def encode_to_base64(input_string: str) -> str:
-    """Encode a string to base64 (utf-8 in, utf-8 out)."""
-    return base64.b64encode(input_string.encode("utf-8")).decode("utf-8")
 
 
 class TranslateApiClient:

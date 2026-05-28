@@ -86,28 +86,23 @@ def main():
         bearer_token = args.bearer_token
 
     kafka_auth = KafkaAuth(
-        api_key=getattr(args, 'kafka_api_key', None),
-        api_secret=getattr(args, 'kafka_api_secret', None),
-        service_account_id=getattr(args, 'kafka_service_account_id', None),
-        auth_mode=getattr(args, 'kafka_auth_mode', 'KAFKA_API_KEY')
+        api_key=args.kafka_api_key,
+        api_secret=args.kafka_api_secret,
+        service_account_id=args.kafka_service_account_id,
+        auth_mode=args.kafka_auth_mode,
     )
     kafka_auth.verify_kafka_auth()
 
     env_id = args.environment_id
     lkc_id = args.cluster_id
     environment = "prod"
-    worker_urls = getattr(args, 'worker_urls', None)
-    if worker_urls:
-        worker_urls = worker_urls.split(',')
-    else:
-        worker_urls = []
-
-    disable_ssl_verify = getattr(args, 'disable_ssl_verify', False)
+    worker_urls = args.worker_urls.split(',') if args.worker_urls else []
+    disable_ssl_verify = args.disable_ssl_verify
     migration_mode = args.migration_mode
 
     # Setup basic auth for Connect worker API if credentials provided
-    worker_username = getattr(args, 'worker_username', None)
-    worker_password = getattr(args, 'worker_password', None)
+    worker_username = args.worker_username
+    worker_password = args.worker_password
     worker_auth = None
     if worker_username and worker_password:
         worker_auth = HTTPBasicAuth(worker_username, worker_password)
@@ -143,8 +138,8 @@ def main():
                 failures.append({"file": str(json_file), "error": str(e)})
                 print(f"Failed to create connectors from {json_file}: {str(e)}")
                 continue
-    elif migration_mode in  ['stop_create_latest_offset', 'create_latest_offset']:
-        if not getattr(args, 'worker_urls', None):
+    elif migration_mode in ['stop_create_latest_offset', 'create_latest_offset']:
+        if not args.worker_urls:
             parser.error(f"--worker-urls is required to fetch offsets for migration mode '{migration_mode}'")
 
         offset_manager = OffsetManager.get_instance(logger)

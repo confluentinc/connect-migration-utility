@@ -36,9 +36,7 @@ class DirectMappings:
                         is_required = config_def.get("required", False)
                         if isinstance(is_required, str):
                             is_required = is_required.lower() == "true"
-                        elif isinstance(is_required, bool):
-                            is_required = is_required
-                        else:
+                        elif not isinstance(is_required, bool):
                             is_required = False
 
                         if is_required and not config_def.get("internal", False):

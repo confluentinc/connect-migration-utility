@@ -16,7 +16,7 @@ class FormatFieldDeriver(DerivationGroup):
         'output.data.value.format': '_derive_output_data_value_format',
     }
 
-    def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_input_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
         """Derive input.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
         reverse_format_mapping = {
@@ -54,7 +54,7 @@ class FormatFieldDeriver(DerivationGroup):
         # Default fallback
         return 'JSON'
 
-    def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_input_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive input.data.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -93,7 +93,7 @@ class FormatFieldDeriver(DerivationGroup):
         # Default fallback
         return 'JSON'
 
-    def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_output_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive output.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -128,7 +128,7 @@ class FormatFieldDeriver(DerivationGroup):
         # Default fallback
         return 'JSON'
 
-    def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_output_data_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive output.data.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -163,7 +163,7 @@ class FormatFieldDeriver(DerivationGroup):
         # Default fallback
         return 'JSON'
 
-    def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_output_data_key_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive output.data.key.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)
@@ -202,7 +202,7 @@ class FormatFieldDeriver(DerivationGroup):
         # Default fallback
         return 'JSON'
 
-    def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_output_data_value_format(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive output.data.value.format from user configs using reverse format mapping"""
         # Reverse data format mapping from template (converter class -> format key)

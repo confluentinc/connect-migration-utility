@@ -10,7 +10,6 @@ orchestrator and the domain classes can be reused / unit-tested without
 importing the CLI.
 """
 
-import base64
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -18,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
+from connect_migrate.utils.encoding import encode_to_base64
 
 
 class KafkaAuth:
@@ -53,14 +53,6 @@ class ConnectorCreator:
         else:
             raise ValueError(f"Unknown environment: {environment}")
 
-    @staticmethod
-    def encode_to_base64(bearer_token: str) -> str:
-        """
-        Encode the bearer token as per documentation: echo -n "bearer_token" | base64
-        This encodes only the bearer_token string, not ":bearer_token".
-        """
-        return base64.b64encode(bearer_token.encode('utf-8')).decode('utf-8')
-
     def stop_cp_connector(self, worker_url: str, connector_name: str, disable_ssl_verify: bool = False, auth=None) -> None:
         """Makes an HTTP PUT request to stop a connector."""
         url = f"{worker_url}/connectors/{connector_name}/stop"
@@ -92,9 +84,10 @@ class ConnectorCreator:
             self.logger.info(f"[INFO] Response body for '{name}': {response.text}")
             response.raise_for_status()
         except Exception as e:
-            self.logger.error(f"[ERROR] Failed to create connector '{name}': {response.status_code if 'response' in locals() else 'N/A'} {response.text if 'response' in locals() else str(e)}")
-            raise RuntimeError(
-                f"Failed to create connector '{name}': {response.status_code if 'response' in locals() else 'N/A'} {response.text if 'response' in locals() else str(e)}") from e
+            status = response.status_code if response is not None else 'N/A'
+            body_text = response.text if response is not None else str(e)
+            self.logger.error(f"[ERROR] Failed to create connector '{name}': {status} {body_text}")
+            raise RuntimeError(f"Failed to create connector '{name}': {status} {body_text}") from e
 
         return response.json()
 
@@ -123,7 +116,7 @@ class ConnectorCreator:
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}",
+            "Authorization": f"Basic {encode_to_base64(bearer_token)}",
         }
 
         body = {
@@ -159,7 +152,7 @@ class ConnectorCreator:
         url = self.url_template.format(environment_id=environment_id, kafka_cluster_id=kafka_cluster_id)
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Basic {ConnectorCreator.encode_to_base64(bearer_token)}"
+            "Authorization": f"Basic {encode_to_base64(bearer_token)}"
         }
 
         self.logger.info(f"[INFO] API URL: {url}")

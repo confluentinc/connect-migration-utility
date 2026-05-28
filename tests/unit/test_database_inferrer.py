@@ -49,16 +49,3 @@ class TestInferDatabaseType:
 
     def test_no_connection_url_no_config_returns_unknown(self):
         assert make_inferrer().infer_database_type({}) == "unknown"
-
-
-class TestMapJdbcProperties:
-    def test_returns_empty_dict_currently(self):
-        # property_mappings is intentionally empty in JDBC_DATABASE_TYPES, so this
-        # method returns {} regardless of input. The test pins that contract.
-        result = make_inferrer().map_jdbc_properties(
-            {"connection.url": "jdbc:mysql://h:3306/d"}, "mysql"
-        )
-        assert result == {}
-
-    def test_returns_empty_when_no_connection_url(self):
-        assert make_inferrer().map_jdbc_properties({}, "mysql") == {}

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from connect_migrate.mapper.smt.smt_classifier import SmtClassifier
+from connect_migrate.utils.encoding import encode_to_base64
 from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
 
 
@@ -59,7 +60,7 @@ class FmSmtRegistry:
                 data = {"transforms": "transform_0", "connector.class": plugin_type}
                 headers = {
                     "Content-Type": "application/json",
-                    "Authorization": f"Basic {_encode_to_base64(self.bearer_token)}",
+                    "Authorization": f"Basic {encode_to_base64(self.bearer_token)}",
                 }
                 response = self._session.put(url, params=params, json=data, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
                 response.raise_for_status()
@@ -71,7 +72,7 @@ class FmSmtRegistry:
                         f"Successfully fetched {len(recommended)} transforms for "
                         f"{plugin_type} via HTTP"
                     )
-                    return recommended
+                    return set(recommended)
             except Exception as e:
                 self.logger.warning(
                     f"Failed to fetch FM transforms for {plugin_type} via HTTP: {str(e)}"
@@ -92,11 +93,3 @@ class FmSmtRegistry:
             f"No transforms found for {plugin_type} in HTTP call or fallback file"
         )
         return set()
-
-
-def _encode_to_base64(input_string: str) -> str:
-    # Local helper to avoid importing the shared base64 encoder cross-package
-    # at module import time; identical behavior to translate_api_client's helper.
-    import base64
-
-    return base64.b64encode(input_string.encode("utf-8")).decode("utf-8")

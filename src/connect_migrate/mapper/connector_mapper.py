@@ -7,15 +7,12 @@ This product includes software developed at The Apache Software Foundation.
 
 import json
 import logging
-import os
-
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Set, Union, Tuple
-import re
-from connect_migrate.mapper.semantic_matching.property_matcher import SemanticPropertyMatcher, Property
-import base64
-import requests
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from requests.auth import HTTPBasicAuth
+
+from connect_migrate.mapper.semantic_matching.property_matcher import SemanticPropertyMatcher
 
 from connect_migrate.discovery.config_discovery import ConfigDiscovery
 from connect_migrate.mapper.v1_to_v2.http_transformer import HttpV1ToV2Transformer
@@ -49,9 +46,11 @@ class ConnectorMapper:
     SUCCESSFUL_CONFIGS_SUBDIR: Path = SUCCESSFUL_CONFIGS_SUBDIR
     UNSUCCESSFUL_CONFIGS_SUBDIR: Path = UNSUCCESSFUL_CONFIGS_SUBDIR
 
-    def __init__(self, input_file: Path, output_dir: Path, worker_urls: List[str] = None,
-                 env_id: str = None, lkc_id: str = None, bearer_token: str = None, disable_ssl_verify: bool = False,
-                 worker_username: str = None, worker_password: str = None, debezium_version: str = 'v2'):
+    def __init__(self, input_file: Path, output_dir: Path, worker_urls: Optional[List[str]] = None,
+                 env_id: Optional[str] = None, lkc_id: Optional[str] = None,
+                 bearer_token: Optional[str] = None, disable_ssl_verify: bool = False,
+                 worker_username: Optional[str] = None, worker_password: Optional[str] = None,
+                 debezium_version: str = 'v2'):
         self.logger = logging.getLogger(__name__)
         self.input_file = input_file
         self.output_dir = output_dir
@@ -75,7 +74,7 @@ class ConnectorMapper:
         self.bigquery_transformer = BigQueryV1ToV2Transformer(logger=self.logger)
         
         # Worker URLs for fetching SM templates
-        self.worker_urls = worker_urls or []
+        self.worker_urls: List[str] = list(worker_urls) if worker_urls else []
 
         # Confluent Cloud credentials for FM transforms (optional)
         self.env_id = env_id
@@ -188,105 +187,104 @@ class ConnectorMapper:
             'org.apache.kafka.connect.json.JsonConverter': 'JSON'
         }
 
-        self.premium_pack_connector_dict = {
+        # Source-of-truth membership sets. premium ∩ commercial is non-empty by
+        # historical design; ``connector_pack_type`` (below) checks premium first.
+        self.premium_pack_connectors: frozenset = frozenset({
+            "io.confluent.connect.jms.IbmMqSinkConnector",
+            "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+            "io.confluent.connect.splunk.s2s.SplunkS2SSourceConnector",
+            # Cloud connectors
+            "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
+            "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector",
+        })
 
-            "io.confluent.connect.jms.IbmMqSinkConnector":{},
-            "io.confluent.connect.ibm.mq.IbmMQSourceConnector": {},
-            "io.confluent.connect.splunk.s2s.SplunkS2SSourceConnector": {},
-
-            #Cloud connectors
-            "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector": {},
-            "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector": {},
-        }
-
-        self.commercial_pack_connector_dict = {
-            "io.confluent.connect.amps.AmpsSourceConnector": {},
-            "io.confluent.connect.weblogic.WeblogicSourceConnector": {},
-            "io.confluent.connect.ftps.FtpsSourceConnector": {},
-            "io.confluent.connect.ftps.FtpsSinkConnector": {},
-            "io.confluent.connect.jms.ActiveMqSinkConnector": {},
-            "io.confluent.connect.kudu.KuduSourceConnector": {},
-            "io.confluent.connect.kudu.KuduSinkConnector": {},
-            "io.confluent.connect.appdynamics.metrics.AppDynamicsMetricsSinkConnector": {},
-            "io.confluent.connect.cassandra.CassandraSinkConnector": {},
-            "io.confluent.connect.diode.sink.DataDiodeSinkConnector": {},
-            "io.confluent.connect.diode.source.DataDiodeSourceConnector": {},
-            "io.confluent.connect.firebase.FirebaseSourceConnector": {},
-            "io.confluent.connect.firebase.FirebaseSinkConnector": {},
-            "io.confluent.connect.hbase.HBaseSinkConnector": {},
-            "io.confluent.connect.hdfs2.Hdfs2SourceConnector": {},
-            "io.confluent.connect.hdfs3.Hdfs3SinkConnector": {},
-            "io.confluent.connect.hdfs3.Hdfs3SourceConnector": {},
-            "io.confluent.connect.omnisci.OmnisciSinkConnector": {},
-            "io.confluent.connect.jms.IbmMqSinkConnector": {},
-            "io.confluent.influxdb.source.InfluxdbSourceConnector": {},
-            "io.confluent.influxdb.InfluxDBSinkConnector": {},
-            "io.confluent.connect.jms.JmsSinkConnector": {},
-            "io.confluent.connect.jms.JmsSourceConnector": {},
-            "io.confluent.connect.mapr.db.MapRDBSinkConnector": {},
-            "io.confluent.connect.netezza.NetezzaSinkConnector": {},
-            "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector": {},
-            "io.confluent.connect.snmp.SnmpTrapSourceConnector": {},
-            "io.confluent.salesforce.SalesforcePushTopicSourceConnector": {},
-            "io.confluent.salesforce.SalesforceSObjectSinkConnector": {},
-            "io.confluent.salesforce.SalesforceCdcSourceConnector": {},
-            "io.confluent.salesforce.SalesforcePlatformEventSourceConnector": {},
-            "io.confluent.salesforce.SalesforcePlatformEventSinkConnector": {},
-            "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector": {},
-            "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector": {},
-            "io.confluent.connect.solace.SolaceSourceConnector": {},
-            "io.confluent.connect.SplunkHttpSourceConnector": {},
-            "io.confluent.connect.syslog.SyslogSourceConnector": {},
-            "io.confluent.connect.tibco.TibcoSourceConnector": {},
-            "io.confluent.connect.jms.TibcoSinkConnector": {},
-            "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector": {},
-            "io.confluent.vertica.VerticaSinkConnector": {},
-            "io.confluent.connect.teradata.TeradataSourceConnector": {},
-            "io.confluent.connect.teradata.TeradataSinkConnector": {},
-
-            #Cloud connectors
-            "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink": {},
-            "io.confluent.connect.activemq.ActiveMQSourceConnector": {},
-            "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector": {},
-            "io.confluent.connect.aws.cloudwatch.metrics.AwsCloudWatchMetricsSinkConnector": {},
-            "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector": {},
-            "io.confluent.connect.kinesis.KinesisSourceConnector": {},
-            "io.confluent.connect.aws.redshift.RedshiftSinkConnector": {},
-            "io.confluent.connect.s3.source.S3SourceConnector": {},
-            "io.confluent.connect.sqs.source.SqsSourceConnector": {},
-            "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector": {},
-            "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector": {},
-            "io.confluent.connect.azure.search.AzureSearchSinkConnector": {},
-            "io.confluent.connect.azure.datalake.gen2.AzureDataLakeGen2SinkConnector": {},
-            "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector": {},
-            "io.confluent.connect.azure.functions.AzureFunctionsSinkConnector": {},
-            "io.confluent.connect.azure.servicebus.ServiceBusSourceConnector": {},
-            "io.confluent.connect.azureloganalytics.AzureLogAnalyticsSinkConnector": {},
-            "io.confluent.connect.databricks.deltalake.DatabricksDeltaLakeSinkConnector": {},
-            "io.confluent.connect.datadog.metrics.DatadogMetricsSinkConnector": {},
-            "io.confluent.connect.github.GithubSourceConnector": {},
-            "io.confluent.connect.gcp.bigtable.BigtableSinkConnector": {},
-            "io.confluent.connect.gcp.functions.GoogleCloudFunctionsSinkConnector": {},
-            "io.confluent.connect.gcp.pubsub.PubSubSourceConnector": {},
-            "io.confluent.connect.gcp.spanner.SpannerSinkConnector": {},
-            "io.confluent.connect.gcs.GcsSourceConnector": {},
-            "io.confluent.connect.gcs.GcsSinkConnector": {},
-            "io.confluent.connect.gcp.dataproc.DataprocSinkConnector": {},
-            "io.confluent.connect.http.HttpSourceConnector": {},
-            "io.confluent.connect.http.HttpSinkConnector": {},
-            "io.confluent.connect.ibm.mq.IbmMQSourceConnector": {},
-            "io.confluent.connect.jira.JiraSourceConnector": {},
-            "io.confluent.connect.mqtt.MqttSinkConnector": {},
-            "io.confluent.connect.pagerduty.PagerDutySinkConnector": {},
-            "io.confluent.connect.rabbitmq.RabbitMQSourceConnector": {},
-            "io.confluent.connect.rabbitmq.sink.RabbitMQSinkConnector": {},
-            "io.confluent.connect.sftp.SftpGenericSourceConnector": {},
-            "io.confluent.connect.sftp.SftpSinkConnector": {},
-            "io.confluent.connect.servicenow.ServiceNowSourceConnector": {},
-            "io.confluent.connect.servicenow.ServiceNowSinkConnector": {},
-            "io.confluent.connect.jms.SolaceSinkConnector": {},
-            "io.confluent.connect.zendesk.ZendeskSourceConnector": {}
-        }
+        self.commercial_pack_connectors: frozenset = frozenset({
+            "io.confluent.connect.amps.AmpsSourceConnector",
+            "io.confluent.connect.weblogic.WeblogicSourceConnector",
+            "io.confluent.connect.ftps.FtpsSourceConnector",
+            "io.confluent.connect.ftps.FtpsSinkConnector",
+            "io.confluent.connect.jms.ActiveMqSinkConnector",
+            "io.confluent.connect.kudu.KuduSourceConnector",
+            "io.confluent.connect.kudu.KuduSinkConnector",
+            "io.confluent.connect.appdynamics.metrics.AppDynamicsMetricsSinkConnector",
+            "io.confluent.connect.cassandra.CassandraSinkConnector",
+            "io.confluent.connect.diode.sink.DataDiodeSinkConnector",
+            "io.confluent.connect.diode.source.DataDiodeSourceConnector",
+            "io.confluent.connect.firebase.FirebaseSourceConnector",
+            "io.confluent.connect.firebase.FirebaseSinkConnector",
+            "io.confluent.connect.hbase.HBaseSinkConnector",
+            "io.confluent.connect.hdfs2.Hdfs2SourceConnector",
+            "io.confluent.connect.hdfs3.Hdfs3SinkConnector",
+            "io.confluent.connect.hdfs3.Hdfs3SourceConnector",
+            "io.confluent.connect.omnisci.OmnisciSinkConnector",
+            "io.confluent.connect.jms.IbmMqSinkConnector",
+            "io.confluent.influxdb.source.InfluxdbSourceConnector",
+            "io.confluent.influxdb.InfluxDBSinkConnector",
+            "io.confluent.connect.jms.JmsSinkConnector",
+            "io.confluent.connect.jms.JmsSourceConnector",
+            "io.confluent.connect.mapr.db.MapRDBSinkConnector",
+            "io.confluent.connect.netezza.NetezzaSinkConnector",
+            "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector",
+            "io.confluent.connect.snmp.SnmpTrapSourceConnector",
+            "io.confluent.salesforce.SalesforcePushTopicSourceConnector",
+            "io.confluent.salesforce.SalesforceSObjectSinkConnector",
+            "io.confluent.salesforce.SalesforceCdcSourceConnector",
+            "io.confluent.salesforce.SalesforcePlatformEventSourceConnector",
+            "io.confluent.salesforce.SalesforcePlatformEventSinkConnector",
+            "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector",
+            "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector",
+            "io.confluent.connect.solace.SolaceSourceConnector",
+            "io.confluent.connect.SplunkHttpSourceConnector",
+            "io.confluent.connect.syslog.SyslogSourceConnector",
+            "io.confluent.connect.tibco.TibcoSourceConnector",
+            "io.confluent.connect.jms.TibcoSinkConnector",
+            "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector",
+            "io.confluent.vertica.VerticaSinkConnector",
+            "io.confluent.connect.teradata.TeradataSourceConnector",
+            "io.confluent.connect.teradata.TeradataSinkConnector",
+            # Cloud connectors
+            "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink",
+            "io.confluent.connect.activemq.ActiveMQSourceConnector",
+            "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
+            "io.confluent.connect.aws.cloudwatch.metrics.AwsCloudWatchMetricsSinkConnector",
+            "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector",
+            "io.confluent.connect.kinesis.KinesisSourceConnector",
+            "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
+            "io.confluent.connect.s3.source.S3SourceConnector",
+            "io.confluent.connect.sqs.source.SqsSourceConnector",
+            "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
+            "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
+            "io.confluent.connect.azure.search.AzureSearchSinkConnector",
+            "io.confluent.connect.azure.datalake.gen2.AzureDataLakeGen2SinkConnector",
+            "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector",
+            "io.confluent.connect.azure.functions.AzureFunctionsSinkConnector",
+            "io.confluent.connect.azure.servicebus.ServiceBusSourceConnector",
+            "io.confluent.connect.azureloganalytics.AzureLogAnalyticsSinkConnector",
+            "io.confluent.connect.databricks.deltalake.DatabricksDeltaLakeSinkConnector",
+            "io.confluent.connect.datadog.metrics.DatadogMetricsSinkConnector",
+            "io.confluent.connect.github.GithubSourceConnector",
+            "io.confluent.connect.gcp.bigtable.BigtableSinkConnector",
+            "io.confluent.connect.gcp.functions.GoogleCloudFunctionsSinkConnector",
+            "io.confluent.connect.gcp.pubsub.PubSubSourceConnector",
+            "io.confluent.connect.gcp.spanner.SpannerSinkConnector",
+            "io.confluent.connect.gcs.GcsSourceConnector",
+            "io.confluent.connect.gcs.GcsSinkConnector",
+            "io.confluent.connect.gcp.dataproc.DataprocSinkConnector",
+            "io.confluent.connect.http.HttpSourceConnector",
+            "io.confluent.connect.http.HttpSinkConnector",
+            "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+            "io.confluent.connect.jira.JiraSourceConnector",
+            "io.confluent.connect.mqtt.MqttSinkConnector",
+            "io.confluent.connect.pagerduty.PagerDutySinkConnector",
+            "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
+            "io.confluent.connect.rabbitmq.sink.RabbitMQSinkConnector",
+            "io.confluent.connect.sftp.SftpGenericSourceConnector",
+            "io.confluent.connect.sftp.SftpSinkConnector",
+            "io.confluent.connect.servicenow.ServiceNowSourceConnector",
+            "io.confluent.connect.servicenow.ServiceNowSinkConnector",
+            "io.confluent.connect.jms.SolaceSinkConnector",
+            "io.confluent.connect.zendesk.ZendeskSourceConnector",
+        })
 
     def _apply_debezium_v1_to_v2_if_needed(
         self, 
@@ -490,9 +488,9 @@ class ConnectorMapper:
 
     def connector_pack_type(self, connector_class: str) -> str:
         """Determine connector pack type based on connector class"""
-        if connector_class in self.premium_pack_connector_dict:
+        if connector_class in self.premium_pack_connectors:
             return 'premium_pack_connectors'
-        elif connector_class in self.commercial_pack_connector_dict:
+        elif connector_class in self.commercial_pack_connectors:
             return 'commercial_pack_connectors'
         elif connector_class == 'unknown':
             return 'unknown_pack_connectors'

@@ -1,6 +1,5 @@
 """Derive FM Redis-connector fields (hostname, port, ssl mode)."""
 
-import re
 from typing import Any, Dict, List, Optional
 
 from connect_migrate.mapper.properties.derivations.base import DerivationGroup
@@ -13,7 +12,7 @@ class RedisFieldDeriver(DerivationGroup):
         'redis.ssl.mode': '_derive_redis_ssl_mode',
     }
 
-    def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_redis_hostname(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive redis.hostname from user configs"""
         # Check for direct redis.hostname config first
@@ -59,7 +58,7 @@ class RedisFieldDeriver(DerivationGroup):
 
         return None
 
-    def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_redis_portnumber(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive redis.portnumber from user configs"""
         # Check for direct redis.portnumber config first
@@ -111,7 +110,7 @@ class RedisFieldDeriver(DerivationGroup):
         # Default Redis port
         return '6379'
 
-    def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
+    def _derive_redis_ssl_mode(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: Optional[List[Dict[str, Any]]] = None, config_name: Optional[str] = None) -> Optional[str]:
 
         """Derive redis.ssl.mode from user configs"""
         # Check for direct redis.ssl.mode config first
