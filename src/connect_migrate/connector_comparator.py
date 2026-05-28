@@ -30,7 +30,8 @@ from connect_migrate.mapper.jdbc.database_inferrer import DatabaseInferrer
 from connect_migrate.mapper.smt.smt_classifier import SmtClassifier
 from connect_migrate.mapper.smt.fm_smt_registry import FmSmtRegistry
 from connect_migrate.mapper.cc_translate_client.translate_api_client import TranslateApiClient
-
+from connect_migrate.mapper.properties.direct_mappings import DirectMappings
+from connect_migrate.mapper.properties.config_def_processor import ConfigDefProcessor
 
 class ConnectorComparator:
     DISCOVERED_CONFIGS_DIR: Path = Path("discovered_configs")
@@ -95,8 +96,6 @@ class ConnectorComparator:
         else:
             self.logger.info("No Confluent Cloud credentials provided - will use fallback FM transforms only")
 
-
-
         # JDBC parsing + database family inference
         self._jdbc_url_parser = JdbcUrlParser(logger=self.logger)
         self._database_inferrer = DatabaseInferrer(
@@ -145,6 +144,13 @@ class ConnectorComparator:
             bearer_token=bearer_token,
             plugin_name_resolver=self._template_selector.get_plugin_name,
             disable_ssl_verify=self.disable_ssl_verify,
+            logger=self.logger,
+        )
+
+        # Per-property mapping helpers
+        self._direct_mappings = DirectMappings(logger=self.logger)
+        self._config_def_processor = ConfigDefProcessor(
+            derivation_resolver=self._get_config_derivation_method,
             logger=self.logger,
         )
 
@@ -369,207 +375,6 @@ class ConnectorComparator:
         # Return templates
         return sm_template, self.fm_templates.get(fm_template_path, {})
 
-    def _get_required_properties(self, fm_template: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract required properties from FM template"""
-        required_props = {}
-
-        # Look for properties in config_defs within templates
-        if 'templates' in fm_template:
-            for template in fm_template['templates']:
-                if 'config_defs' in template:
-                    for config_def in template['config_defs']:
-                        # Skip internal properties as they are handled by the Cloud platform
-                        # Check if required is explicitly set to "true" (string) or True (boolean)
-                        is_required = config_def.get('required', False)
-                        if isinstance(is_required, str):
-                            is_required = is_required.lower() == 'true'
-                        elif isinstance(is_required, bool):
-                            is_required = is_required
-                        else:
-                            is_required = False
-
-                        if is_required and not config_def.get('internal', False):
-                            required_props[config_def['name']] = config_def
-
-        return required_props
-
-    def _is_source_connector(self, fm_template: Dict[str, Any]) -> bool:
-        """Determine if a connector is a source or sink based on FM template connector_type"""
-        if not fm_template:
-            # Fallback to connector class name if no FM template
-            return True
-
-        # Check for connector_type in the main template
-        if fm_template.get('connector_type'):
-            return fm_template['connector_type'] == 'SOURCE'
-
-        # Check for connector_type in templates array
-        if 'templates' in fm_template:
-            for template in fm_template['templates']:
-                if template.get('connector_type'):
-                    return template['connector_type'] == 'SOURCE'
-
-        # Fallback to connector class name if no connector_type found
-        connector_class = fm_template.get('connector.class', '')
-        if not connector_class and 'templates' in fm_template and len(fm_template['templates']) > 0:
-            connector_class = fm_template['templates'][0].get('connector.class', '')
-
-        source_indicators = ['Source', 'CDC', 'XStream']
-        sink_indicators = ['Sink']
-
-        # Check for source indicators
-        for indicator in source_indicators:
-            if indicator in connector_class:
-                return True
-
-        # Check for sink indicators
-        for indicator in sink_indicators:
-            if indicator in connector_class:
-                return False
-
-        # Default to source if no clear indicator (this is a fallback)
-        return True
-
-    def _create_direct_mappings_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, str]:
-        """Create direct property mappings from FM template connector_configs section"""
-        mappings = {}
-
-        if not fm_template or 'templates' not in fm_template:
-            return mappings
-
-        # Look through all templates for connector_configs
-        for template in fm_template['templates']:
-            if 'connector_configs' in template:
-                for config in template['connector_configs']:
-                    # If the config has a 'value' field, it's a direct mapping
-                    if 'value' in config:
-                        value = config['value']
-                        sm_property_template = config['name']
-
-                        # Handle template variables like ${cleanup.policy}
-                        if isinstance(value, str) and value.startswith('${') and value.endswith('}'):
-                            # Extract the property name from the template variable
-                            fm_property_name = value[2:-1]  # Remove ${ and }
-                            # SM property (sm_property_template) maps to FM property (fm_property_name)
-                            mappings[sm_property_template] = fm_property_name
-                        else:
-                            # Direct value mapping
-                            mappings[value] = sm_property_template
-                    # If the config has a 'switch' field, handle switch mappings
-                    elif 'switch' in config:
-                        sm_property_template = config['name']
-                        switch_config = config['switch']
-
-                        # Extract template variables from switch values
-                        for switch_key, switch_values in switch_config.items():
-                            if isinstance(switch_values, dict):
-                                for condition, switch_value in switch_values.items():
-                                    if isinstance(switch_value, str) and switch_value.startswith('${') and switch_value.endswith('}'):
-                                        # Extract the property name from the template variable
-                                        fm_property_name = switch_value[2:-1]  # Remove ${ and }
-                                        # SM property (sm_property_template) maps to FM property (fm_property_name)
-                                        mappings[sm_property_template] = fm_property_name
-                                        break  # Use the first template variable found
-                    # If no 'value' or 'switch' field, it's a direct name mapping (same name in SM and FM)
-                    else:
-                        sm_property_template = config['name']
-                        mappings[sm_property_template] = sm_property_template
-
-        return mappings
-
-    def _map_using_template_direct_mappings(self, config: Dict[str, Any], fm_template: Dict[str, Any]) -> Dict[str, Any]:
-        """Map SM config to FM config using direct mappings from template"""
-        mapped_config = {}
-        mapping_errors = []
-        direct_mappings = self._create_direct_mappings_from_template(fm_template)
-        fixed_values = self._get_fixed_values_from_template(fm_template)
-        recommended_values = self._get_recommended_values_from_template(fm_template)
-
-        self.logger.info(f"Created {len(direct_mappings)} direct mappings from template")
-        self.logger.info(f"Found {len(fixed_values)} fixed values from template")
-        self.logger.info(f"Found {len(recommended_values)} properties with recommended values")
-
-        # Apply direct mappings (SM property -> FM property)
-        for sm_property, fm_property in direct_mappings.items():
-            if sm_property in config:
-                # Check if this FM property has a fixed value in template
-                if fm_property in fixed_values:
-                    template_value = fixed_values[fm_property]
-                    sm_value = config[sm_property]
-                    if str(sm_value) != str(template_value):
-                        # Use template's fixed value and add error
-                        mapped_config[fm_property] = template_value
-                        error_msg = f"Property '{sm_property}' value '{sm_value}' overridden by template fixed value '{template_value}' for '{fm_property}'"
-                        mapping_errors.append(error_msg)
-                        self.logger.warning(f"Fixed value override: {sm_property}='{sm_value}' -> {fm_property}='{template_value}'")
-                    else:
-                        # Values match, use SM value
-                        mapped_config[fm_property] = sm_value
-                        self.logger.info(f"Direct template mapping (values match): {sm_property} -> {fm_property}")
-                else:
-                    # No fixed value, use SM value
-                    sm_value = config[sm_property]
-                    mapped_config[fm_property] = sm_value
-
-                    # Validate against recommended values if available
-                    if fm_property in recommended_values:
-                        allowed_values = recommended_values[fm_property]
-                        if str(sm_value) not in allowed_values:
-                            error_msg = f"Property '{sm_property}' value '{sm_value}' is not in recommended values {allowed_values} for '{fm_property}'"
-                            mapping_errors.append(error_msg)
-                            self.logger.error(f"Value validation failed: {sm_property}='{sm_value}' not in {allowed_values}")
-                            # Don't map the property if value is invalid
-                            continue
-                        else:
-                            self.logger.info(f"Direct template mapping (validated): {sm_property} -> {fm_property}")
-
-        # Also map properties that have the same name in both SM and FM
-        for sm_property, value in config.items():
-            if sm_property not in mapped_config and sm_property in direct_mappings.values():
-                mapped_config[sm_property] = value
-                self.logger.info(f"Same-name mapping: {sm_property}")
-
-        return mapped_config, mapping_errors
-
-    def _get_fixed_values_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, str]:
-        """Extract fixed values from FM template connector_configs section"""
-        fixed_values = {}
-
-        if not fm_template or 'templates' not in fm_template:
-            return fixed_values
-
-        # Look through all templates for connector_configs
-        for template in fm_template['templates']:
-            if 'connector_configs' in template:
-                for config in template['connector_configs']:
-                    # If the config has a 'value' field that's not a template variable, it's a fixed value
-                    if 'value' in config:
-                        value = config['value']
-                        fm_property = config['name']
-
-                        # Skip template variables like ${cleanup.policy}
-                        if not (isinstance(value, str) and value.startswith('${') and value.endswith('}')):
-                            fixed_values[fm_property] = value
-
-        return fixed_values
-
-    def _get_recommended_values_from_template(self, fm_template: Dict[str, Any]) -> Dict[str, List[str]]:
-        """Extract recommended values from FM template config_defs section"""
-        recommended_values = {}
-
-        if not fm_template or 'templates' not in fm_template:
-            return recommended_values
-
-        # Look through all templates for config_defs
-        for template in fm_template['templates']:
-            if 'config_defs' in template:
-                for config_def in template['config_defs']:
-                    if 'recommended_values' in config_def:
-                        recommended_values[config_def['name']] = config_def['recommended_values']
-
-        return recommended_values
-
-# not being used
     def _generate_fm_config(self, connector: Dict[str, Any]) -> Dict[str, Any]:
         """Generate FM configuration for a connector"""
         name = connector['name']
@@ -625,7 +430,7 @@ class ConnectorComparator:
             self.logger.debug(f"Applying template mappings for {connector_class}")
 
             # Get required properties from FM template
-            required_props = self._get_required_properties(fm_template)
+            required_props = self._direct_mappings.get_required_properties(fm_template)
 
             # Extract template_id from the correct location
             plugin_type = "Unknown"
@@ -669,7 +474,7 @@ class ConnectorComparator:
             if 'mapping_errors' in transforms_data:
                 mapping_errors.extend(transforms_data['mapping_errors'])
             # Step 1: Try direct mappings from template connector_configs first
-            direct_mapped, direct_mapping_errors = self._map_using_template_direct_mappings(config, fm_template)
+            direct_mapped, direct_mapping_errors = self._direct_mappings.apply_to_config(config, fm_template)
             for fm_prop_name, value in direct_mapped.items():
                 if fm_prop_name not in handled_properties:
                     mapped_config[fm_prop_name] = value
@@ -719,7 +524,7 @@ class ConnectorComparator:
 
                     if not property_found:
                         # Step 3: Check static mappings based on connector type
-                        is_source = self._is_source_connector(fm_template)
+                        is_source = self._direct_mappings.is_source_connector(fm_template)
                         static_mappings = self.static_property_mappings_source if is_source else self.static_property_mappings_sink
 
                         if sm_prop_name in static_mappings:
@@ -1023,7 +828,6 @@ class ConnectorComparator:
                 else:
                     tco_info[connector_pack][connector_name]['connector_count'] += 1
 
-
                 # Ensure connector has tasks information
                 if 'tasks' not in connector or not connector['tasks']:
                     self.logger.error(f"{connector_name} missing required fields 'tasks' or 'tasks' status data is empty")
@@ -1153,7 +957,6 @@ class ConnectorComparator:
 
         sm_template, fm_template = self._get_templates_for_connector(template_id, connector_name, config_dict)
 
-
         if fm_template is None:
             result['errors'].append(f"No FM template found for connector class: {template_id}")
             # Continue without config processing - just return the basic structure
@@ -1179,8 +982,8 @@ class ConnectorComparator:
             self.logger.debug(f"Template structure: {list(fm_template.keys())}")
             self.logger.debug(f"Number of templates: {len(fm_template['templates'])}")
 
-            connector_config_defs = self._extract_connector_config_defs(fm_template)
-            template_config_defs = self._extract_template_config_defs(fm_template)
+            connector_config_defs = self._config_def_processor.extract_connector_config_defs(fm_template)
+            template_config_defs = self._config_def_processor.extract_template_config_defs(fm_template)
 
             self.logger.debug(f"Extracted {len(connector_config_defs)} connector config defs and {len(template_config_defs)} template config defs")
 
@@ -1252,8 +1055,6 @@ class ConnectorComparator:
             errors.append("template_config_defs is empty or None")
             return result
 
-
-
         try:
             for user_config_key, user_config_value in config_dict.items():
 
@@ -1280,7 +1081,7 @@ class ConnectorComparator:
 
                 if matching_connector_config_def is not None:
                     # User config present in Connector config def
-                    self._process_user_config_in_connector_config_def(
+                    self._config_def_processor.process_user_config(
                         matching_connector_config_def,
                         user_config_value,
                         template_config_defs,
@@ -1460,79 +1261,6 @@ class ConnectorComparator:
 
         return result
 
-    def _extract_connector_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract connector config definitions from FM template (following Java pattern)"""
-        connector_config_defs = []
-
-        if 'templates' in fm_template:
-            if not isinstance(fm_template['templates'], (list, tuple)):
-                self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
-                return connector_config_defs
-
-            for i, template in enumerate(fm_template['templates']):
-                self.logger.debug(f"Processing template {i}: {type(template)}")
-                if not isinstance(template, dict):
-                    self.logger.warning(f"Template {i} is not a dict: {type(template)}")
-                    continue
-
-                if 'connector_configs' in template:
-                    self.logger.debug(f"Template {i} has connector_configs: {type(template['connector_configs'])}")
-                    # Ensure connector_configs is a list/iterable, not a boolean or other type
-                    if isinstance(template['connector_configs'], (list, tuple)):
-                        connector_config_defs.extend(template['connector_configs'])
-                    else:
-                        self.logger.warning(f"Expected connector_configs to be a list, got {type(template['connector_configs'])}: {template['connector_configs']}")
-                        # Skip this template's connector_configs
-                        continue
-        else:
-            self.logger.warning("No 'templates' key found in fm_template")
-
-        return connector_config_defs
-
-    def _extract_template_config_defs(self, fm_template: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract template config definitions from FM template (following Java pattern)
-        When multiple templates define the same config, uses the first definition encountered."""
-        template_config_defs = []
-        seen_config_names = set()  # Track config names we've already seen
-
-        if 'templates' in fm_template:
-            if not isinstance(fm_template['templates'], (list, tuple)):
-                self.logger.error(f"fm_template['templates'] is not a list, got {type(fm_template['templates'])}: {fm_template['templates']}")
-                return template_config_defs
-
-            for i, template in enumerate(fm_template['templates']):
-                self.logger.debug(f"Processing template {i} for config_defs: {type(template)}")
-                if not isinstance(template, dict):
-                    self.logger.warning(f"Template {i} is not a dict: {type(template)}")
-                    continue
-
-                if 'config_defs' in template:
-                    self.logger.debug(f"Template {i} has config_defs: {type(template['config_defs'])}")
-                    # Ensure config_defs is a list/iterable, not a boolean or other type
-                    if isinstance(template['config_defs'], (list, tuple)):
-                        for config_def in template['config_defs']:
-                            if not isinstance(config_def, dict) or 'name' not in config_def:
-                                continue
-                            
-                            config_name = config_def['name']
-                            
-                            # Only add if we haven't seen this config name before (use first definition)
-                            if config_name not in seen_config_names:
-                                template_config_defs.append(config_def)
-                                seen_config_names.add(config_name)
-                                self.logger.debug(f"Added config '{config_name}' from template {i} (first definition)")
-                            else:
-                                self.logger.debug(f"Skipping duplicate config '{config_name}' from template {i} (using first definition)")
-                    else:
-                        self.logger.warning(f"Expected config_defs to be a list, got {type(template['config_defs'])}: {template['config_defs']}")
-                        # Skip this template's config_defs
-                        continue
-        else:
-            self.logger.warning("No 'templates' key found in fm_template")
-
-        self.logger.debug(f"Extracted {len(template_config_defs)} unique config definitions (using first definition for duplicates)")
-        return template_config_defs
-
     def _get_config_derivation_method(self, template_config_name: str, template_config_def: Dict[str, Any]):
         """
         Get the method to derive a template config from user configs.
@@ -1551,7 +1279,6 @@ class ConnectorComparator:
             'db.connection.type': self._derive_db_connection_type,
             'ssl.server.cert.dn': self._derive_ssl_server_cert_dn,
 
-
             # Data format configs
             'input.key.format': self._derive_input_key_format,
             'input.data.format': self._derive_input_data_format,
@@ -1559,7 +1286,6 @@ class ConnectorComparator:
             'output.data.format': self._derive_output_data_format,
             'output.data.key.format': self._derive_output_data_key_format,
             'output.data.value.format': self._derive_output_data_value_format,
-
 
             # SSL configs
             'ssl.mode': self._derive_ssl_mode,
@@ -1588,281 +1314,6 @@ class ConnectorComparator:
 
         return config_derivation_methods.get(template_config_name)
 
-    def _process_user_config_in_connector_config_def(
-        self,
-        connector_config_def: Dict[str, Any],
-        user_config_value: str,
-        template_config_defs: List[Dict[str, Any]],
-        fm_configs: Dict[str, str],
-        warnings: List[str],
-        errors: List[str],
-        user_configs: Dict[str, str],
-        semantic_match_list: set
-    ):
-        """Process a user config that is present in connector config def (following Java pattern)"""
-
-        # Special logging for validate.non.null configuration
-        config_name = connector_config_def.get('name')
-
-        # Case 1: value is constant string
-        if connector_config_def.get('value') is not None:
-            self._process_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings, user_configs, semantic_match_list)
-            return
-
-        # Case 2: Connector config value is switch case
-        if connector_config_def.get('switch') is not None:
-            self._process_switch_case(connector_config_def, user_configs, template_config_defs, fm_configs, warnings, errors, semantic_match_list)
-            return
-
-        # Case 3: Connector config def is a dynamic mapper
-        if connector_config_def.get('dynamic.mapper') is not None:
-            self._process_dynamic_mapper_case(connector_config_def, user_config_value, user_configs, template_config_defs, fm_configs, warnings, semantic_match_list)
-            return
-
-        # Case 4: Value is null
-        if connector_config_def.get('value') is None:
-            self._process_null_value_case(connector_config_def, user_config_value, template_config_defs, fm_configs, warnings)
-            return
-
-    def _process_value_case(
-        self,
-        connector_config_def: Dict[str, Any],
-        user_config_value: str,
-        template_config_defs: List[Dict[str, Any]],
-        fm_configs: Dict[str, str],
-        warnings: List[str],
-        user_configs: Dict[str, str],
-        semantic_match_list: set
-    ):
-        """Process value case (following Java pattern)"""
-        value = connector_config_def.get('value')
-        config_name = connector_config_def.get('name')
-
-        # Handle non-string values (like validate.non.null: false, numbers, etc.)
-        if not isinstance(value, str):
-
-            # For non-string values, just set the config directly
-            fm_configs[config_name] = str(value).lower() if isinstance(value, bool) else str(value)
-            return
-
-        # Check if value contains {{.logicalClusterId}} - this indicates internal config
-        if value is not None and (
-            'org.apache.kafka.common.security.plain.PlainLoginModule' in value or
-            '/mnt/secrets/connect-sr' in value or
-            ('{{.logicalClusterId}}' in value and not '/mnt/secrets/connect-external-secrets' in value)
-        ):
-            warnings.append(f"{connector_config_def.get('name')} is internal. User given value will be ignored.")
-            return
-
-        # Check if the value matches DEFAULT_PATTERN (contains ${CONFIG_KEY} references)
-        import re
-        default_pattern = re.compile(r'\$\{([^}]+)\}')
-        matcher = default_pattern.search(value)
-
-        if matcher:
-            # It's not a true constant, it's a combination of multiple high level keys
-            referenced_keys = self._find_referenced_keys(value, {td.get('name') for td in template_config_defs})
-
-            # Process each referenced key
-            for referenced_key in referenced_keys:
-                config_name = connector_config_def.get('name')
-                if fm_configs.get(config_name) is not None:
-                    #we already have found value for this config, no need to reprocess.
-                    return
-                # Check if user config already has a value for this config - if yes, copy it
-                if referenced_key in user_configs and user_configs[referenced_key].strip():
-                    fm_configs[config_name] = user_config_value
-                    return
-
-                referenced_template_config_def = self._find_template_config_def_by_name(referenced_key, template_config_defs)
-
-                if referenced_template_config_def is not None and not referenced_template_config_def.get('internal', False):
-                    # Check if there's a derivation method defined for this referenced key
-                    derivation_method = self._get_config_derivation_method(referenced_key, referenced_template_config_def)
-                    if derivation_method:
-                        # If there's a derivation method, return early as it will be handled later
-                        return
-
-                    # Check if connector config def value is of format ${<template def name>}
-                    if value == f"${{{referenced_key}}}":
-                        # Direct reference format, copy the value as is
-                        fm_configs[referenced_key] = user_config_value
-                elif referenced_template_config_def is not None and referenced_template_config_def.get('internal', False):
-                    warnings.append(f"The transformed FM config is internal and will be inferred. User given value will be ignored.")
-                else:
-                    semantic_match_list.add(config_name)
-                    self.logger.warning(f"'{config_name}' : Config transform not present in template for '{referenced_key}' which was referenced by connector config '{connector_config_def.get('name')}'. Will attempt a semantic match.")
-            return
-        else:
-            config_name = connector_config_def.get('name')
-            # It's a true constant value
-            if value != user_config_value:
-                # Case 1.1: not same as the value from user configs - Warn
-                warnings.append(f"{config_name} : FM config has constant value '{value}' but user provided '{user_config_value}'. User given value will be ignored.")
-            else:
-                # Case 1.2: Same value given by user - Add it to fm key and value
-                fm_configs[connector_config_def.get('name')] = user_config_value
-            return
-
-    def _process_switch_case(
-        self,
-        connector_config_def: Dict[str, Any],
-        user_configs: Dict[str, str],
-        template_config_defs: List[Dict[str, Any]],
-        fm_configs: Dict[str, str],
-        warnings: List[str],
-        errors: List[str],
-        semantic_match_list: set
-    ):
-        """Process switch case (following Java pattern)"""
-        switch_cases = connector_config_def.get('switch', {})
-
-        for template_config_key, switch_mapping in switch_cases.items():
-            if fm_configs.get(template_config_key) is not None:
-                # we already have found value for this config, no need to reprocess.
-                return
-            # Find corresponding template config def
-            template_config_def = self._find_template_config_def_by_name(template_config_key, template_config_defs)
-
-            if template_config_def is not None:
-                if template_config_def.get('internal', False):
-                    warnings.append(f"The transformed FM config is internal and will be inferred. User given value will be ignored.")
-                else:
-                    self._process_non_internal_switch_case(connector_config_def, template_config_def, switch_mapping, user_configs, fm_configs, warnings, semantic_match_list)
-            else:
-                self.logger.error(f"Switch case key '{template_config_key}' for config '{connector_config_def.get('name')}' is not part of template configs.")
-
-    def _process_non_internal_switch_case(
-        self,
-        connector_config_def: Dict[str, Any],
-        template_config_def: Dict[str, Any],
-        switch_mapping: Dict[str, str],
-        user_configs: Dict[str, str],
-        fm_configs: Dict[str, str],
-        warnings: List[str],
-        semantic_match_list: set
-    ):
-        """Process non-internal switch case (following Java pattern)"""
-        import re
-        default_pattern = re.compile(r'\$\{([^}]+)\}')
-
-        has_matchers = any(
-            value is not None and default_pattern.search(value)
-            for value in switch_mapping.values()
-        )
-
-        if has_matchers:
-            # Check for derivation method for the template config
-            template_config_name = template_config_def.get('name')
-            derivation_method = self._get_config_derivation_method(template_config_name, template_config_def)
-            if derivation_method:
-                # If there's a derivation method, return early as it will be handled later
-                return
-            # If no derivation method, continue with normal switch processing
-            # (This would be the complex matcher logic in the real implementation)
-            config_name = connector_config_def.get('name')
-            semantic_match_list.add(config_name)
-            self.logger.error(f"'{config_name}' : Switch case has matchers but no derivation method for '{template_config_name}'. Complex matcher logic not implemented. Will attempt a semantic match.")
-        else:
-            user_value = user_configs.get(connector_config_def.get('name'))
-            if user_value is not None:
-                high_level_value = self._apply_reverse_switch(switch_mapping, user_value)
-                if high_level_value is not None:
-                    fm_configs[template_config_def.get('name')] = high_level_value
-                else:
-                    warnings.append(f"User value '{user_value}' for '{connector_config_def.get('name')}' does not match any value in templateswitch case.")
-
-    def infer_dynamic_mappings(self, dynamic_mapper_fun_name: str, user_config_value: str) -> Optional[str]:
-        """
-        Infer dynamic mappings for a given FM property name.
-        This is a placeholder method that should be implemented based on specific requirements.
-        """
-        if dynamic_mapper_fun_name and dynamic_mapper_fun_name== 'value.converter.reference.subject.name.strategy.mapper':
-            sm_to_fm_mapping = {
-                "io.confluent.kafka.serializers.subject.TopicNameStrategy": "TopicNameStrategy",
-                "io.confluent.kafka.serializers.subject.RecordNameStrategy": "RecordNameStrategy",
-                "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy": "TopicRecordNameStrategy"
-            }
-            return sm_to_fm_mapping.get(user_config_value, None)
-
-        # Placeholder implementation - in real code, this would infer the mapping based on some logic
-        self.logger.warning(f"Dynamic mapping inference not implemented for {dynamic_mapper_fun_name}. Returning None.")
-        return None
-
-    def _process_dynamic_mapper_case(
-        self,
-        connector_config_def: Dict[str, Any],
-        user_config_value: str,
-        user_configs: Dict[str, str],
-        template_config_defs: List[Dict[str, Any]],
-        fm_configs: Dict[str, str],
-        warnings: List[str],
-        semantic_match_list: set
-    ):
-        """Process dynamic mapper case (following Java pattern)"""
-        connector_config_name = connector_config_def.get('name')
-
-        # Check if the connector config def name is part of template config defs
-        template_config_def = self._find_template_config_def_by_name(connector_config_name, template_config_defs)
-
-        if template_config_def is not None:
-            # If it exists in template config defs, add to fm_configs
-            fm_configs[connector_config_name] = user_config_value
-            return
-        elif connector_config_def.get('dynamic.mapper') is not None and connector_config_def.get('dynamic.mapper').get('name') is not None :
-            # Check if it has a dynamic mapper defined name is present in fm_template
-            fm_template_def = self._find_template_config_def_by_name(connector_config_name, template_config_defs)
-
-            if fm_template_def is not None:
-                # If it has a fm template dynamic mapper defined and not present in fm_configs, try to infer the mapping
-                dynamic_mapping_value = self.infer_dynamic_mappings(connector_config_def.get('dynamic.mapper').get('name'), user_config_value)
-                if dynamic_mapping_value is not None:
-                    # If dynamic mapping is found, add it to fm_configs
-                    fm_configs[fm_template_def.get('name')] = dynamic_mapping_value
-                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' inferred as '{dynamic_mapping_value}'")
-                    return
-                elif fm_configs.get(fm_template_def.get('name')) is not None:
-                    # If dynamic mapping is not found but fm_configs already has this config, skip
-                    self.logger.info(f"Dynamic mapping for '{connector_config_name}' already exists in fm_configs, skipping inference.")
-                    return
-
-        # If not found in template config defs, add to semantic matching list
-        semantic_match_list.add(connector_config_name)
-        self.logger.warning(f"Dynamic mapper config '{connector_config_name}' not found in template configs. Will attempt semantic matching.")
-
-    def _process_null_value_case(
-        self,
-        connector_config_def: Dict[str, Any],
-        user_config_value: str,
-        template_config_defs: List[Dict[str, Any]],
-        fm_configs: Dict[str, str],
-        warnings: List[str]
-    ):
-        """Process null value case (following Java pattern)"""
-        # This is a simplified implementation - in the real Java code, this would handle null values
-        # For now, we'll just add the value directly
-        fm_configs[connector_config_def.get('name')] = user_config_value
-
-    def _find_template_config_def_by_name(self, name: str, template_config_defs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """Find template config def by name (following Java pattern)"""
-        for template_config_def in template_config_defs:
-            if template_config_def.get('name') == name:
-                return template_config_def
-        return None
-
-    def _find_referenced_keys(self, value: str, high_level_keys: Set[str]) -> Set[str]:
-        """Find referenced keys in a value (following Java pattern)"""
-        import re
-        default_pattern = re.compile(r'\$\{([^}]+)\}')
-        referenced_keys = set()
-
-        for match in default_pattern.finditer(value):
-            referenced_key = match.group(1)
-            if referenced_key in high_level_keys:
-                referenced_keys.add(referenced_key)
-
-        return referenced_keys
-    
     def _derive_connection_host(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None, config_name: str = None) -> Optional[str]:
         """Derive connection.host from user configs (e.g., from JDBC URL or MongoDB connection string)"""
         # Try to extract from JDBC URL
@@ -2692,16 +2143,6 @@ class ConnectorComparator:
         
         return None
 
-    def _apply_reverse_switch(self, switch_mapping: Dict[str, str], user_value: str) -> Optional[str]:
-        """Apply reverse switch (following Java pattern)"""
-        for switch_key, switch_value in switch_mapping.items():
-            if switch_value == user_value:
-                # If the matched key is "default", return None
-                if switch_key == "default":
-                    return None
-                return switch_key
-        return None
-
     def _do_semantic_matching(self, fm_configs: Dict[str, str], semantic_match_list: set, user_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]], sm_template: Dict[str, Any]):
         """
         Perform semantic matching for configs that are not found in the template.
@@ -2742,8 +2183,6 @@ class ConnectorComparator:
             if config_name in user_configs:
                 user_value = user_configs[config_name]
                 self.logger.info(f"Processing semantic match for '{config_name}' = '{user_value}'")
-
-
 
                 # Get SM property from SM template
                 sm_prop = self._get_sm_property_from_template(config_name, sm_template)
@@ -2807,8 +2246,6 @@ class ConnectorComparator:
                 is_required = required_value
             elif isinstance(required_value, str):
                 is_required = required_value.lower() == 'true'
-
-
 
             # Skip internal configs as they are handled automatically
             if is_internal:
@@ -2994,7 +2431,6 @@ class ConnectorComparator:
 
     def _derive_connection_url(self, user_configs: Dict[str, str], fm_configs: Dict[str, str], template_config_defs: List[Dict[str, Any]] = None) -> Optional[str]:
         """Derive connection.url from user configs specifically for Snowflake connectors"""
-
 
         # Check for JDBC URL patterns that might contain Snowflake URLs
         jdbc_patterns = [
