@@ -200,9 +200,9 @@ def main():
                 continue
 
     # Write results to files
-    with open(migration_output_dir / "successful_migration.json", "w") as f:
+    with open(migration_output_dir / "successful_migration.json", "w", encoding="utf-8") as f:
         json.dump(successes, f, indent=2)
-    with open(migration_output_dir / "unsuccessful_migration.json", "w") as f:
+    with open(migration_output_dir / "unsuccessful_migration.json", "w", encoding="utf-8") as f:
         json.dump(failures, f, indent=2)
 
 

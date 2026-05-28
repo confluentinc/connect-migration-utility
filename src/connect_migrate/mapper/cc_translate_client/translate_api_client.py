@@ -83,8 +83,9 @@ class TranslateApiClient:
             response = self._session.put(url, json=config_dict, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
 
             if response.status_code != 200:
+                body_preview = response.text[:500]
                 self.logger.warning(
-                    f"/translate API failed with status {response.status_code}: {response.text}"
+                    f"/translate API failed with status {response.status_code}: {body_preview}"
                 )
                 return None
 

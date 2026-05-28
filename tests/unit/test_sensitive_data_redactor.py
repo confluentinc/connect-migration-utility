@@ -1,4 +1,4 @@
-from connect_migrate.discovery.sensitive_data_redactor import (
+from connect_migrate.utils.sensitive_data_redactor import (
     REDACTED_PLACEHOLDER,
     SensitiveDataRedactor,
 )

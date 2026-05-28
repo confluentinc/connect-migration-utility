@@ -11,7 +11,7 @@ Internally the work is delegated to:
 
 * :class:`connect_migrate.discovery.worker_rest_client.WorkerRestClient`
 * :class:`connect_migrate.discovery.local_file_loader.LocalFileLoader`
-* :class:`connect_migrate.discovery.sensitive_data_redactor.SensitiveDataRedactor`
+* :class:`connect_migrate.utils.sensitive_data_redactor.SensitiveDataRedactor`
 """
 
 import logging
@@ -28,8 +28,8 @@ from connect_migrate.discovery.local_file_loader import (
     LocalFileLoader,
     WORKER_CONFIG_PREFIXES,
 )
-from connect_migrate.discovery.sensitive_data_redactor import SensitiveDataRedactor
 from connect_migrate.discovery.worker_rest_client import WorkerRestClient
+from connect_migrate.utils.sensitive_data_redactor import SensitiveDataRedactor
 from connect_migrate.utils.json_files import write_json
 
 
@@ -120,12 +120,7 @@ class ConfigDiscovery:
 
         for worker_url in self.worker_urls:
             self.logger.info(f"=== Processing worker: {worker_url} ===")
-            configs = WorkerRestClient.get_connector_configs(
-                worker_url,
-                self.disable_ssl_verify,
-                self.logger,
-                auth=self.worker_auth,
-            )
+            configs = self._rest_client.get_connector_configs(worker_url)
             for config in configs:
                 if self.redact:
                     all_connectors[config["name"]] = self._redactor.redact(config)
@@ -147,7 +142,8 @@ class ConfigDiscovery:
         logger: Optional[logging.Logger] = None,
         auth: Optional[Any] = None,
     ) -> Optional[Dict[str, Any]]:
-        return WorkerRestClient.get_json(url, disable_ssl_verify, logger, auth)
+        client = WorkerRestClient(disable_ssl_verify=disable_ssl_verify, auth=auth, logger=logger)
+        return client.get_json(url)
 
     @staticmethod
     def get_connector_configs_from_worker(
@@ -156,9 +152,8 @@ class ConfigDiscovery:
         logger: Optional[logging.Logger] = None,
         auth: Optional[Any] = None,
     ) -> List[Dict[str, Any]]:
-        return WorkerRestClient.get_connector_configs(
-            worker_url, disable_ssl_verify, logger, auth
-        )
+        client = WorkerRestClient(disable_ssl_verify=disable_ssl_verify, auth=auth, logger=logger)
+        return client.get_connector_configs(worker_url)
 
     @staticmethod
     def get_connector_statuses_from_worker(
@@ -167,6 +162,5 @@ class ConfigDiscovery:
         logger: Optional[logging.Logger] = None,
         auth: Optional[Any] = None,
     ) -> Dict[str, Any]:
-        return WorkerRestClient.get_connector_statuses(
-            worker_url, disable_ssl_verify, logger, auth
-        )
+        client = WorkerRestClient(disable_ssl_verify=disable_ssl_verify, auth=auth, logger=logger)
+        return client.get_connector_statuses(worker_url)

@@ -11,7 +11,11 @@ import re
 from collections import defaultdict
 from typing import Any, Dict, Iterator, Tuple, Union
 
-from connect_migrate.mapper.connector_mapper import ConnectorMapper
+from connect_migrate.constants.paths import (
+    DISCOVERED_CONFIGS_DIR,
+    SUCCESSFUL_CONFIGS_SUBDIR,
+    UNSUCCESSFUL_CONFIGS_SUBDIR,
+)
 from connect_migrate.utils.json_files import iter_json_files, read_json
 
 
@@ -97,12 +101,12 @@ def summarize_output(base_dir):
     }
 
     for root, dirs, files in os.walk(base_dir):
-        if os.path.basename(root) == str(ConnectorMapper.DISCOVERED_CONFIGS_DIR):
+        if os.path.basename(root) == str(DISCOVERED_CONFIGS_DIR):
             summary["fm_configs_found"] += 1
             parent_folder = os.path.relpath(os.path.dirname(root), base_dir)
 
-            success_path = os.path.join(root, str(ConnectorMapper.SUCCESSFUL_CONFIGS_SUBDIR))
-            fail_path = os.path.join(root, str(ConnectorMapper.UNSUCCESSFUL_CONFIGS_SUBDIR))
+            success_path = os.path.join(root, str(SUCCESSFUL_CONFIGS_SUBDIR))
+            fail_path = os.path.join(root, str(UNSUCCESSFUL_CONFIGS_SUBDIR))
 
             successful_files = count_files(success_path)
             unsuccessful_files = count_files(fail_path)

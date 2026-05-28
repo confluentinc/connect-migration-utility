@@ -1,7 +1,8 @@
 """HTTP client for talking to Kafka Connect worker REST APIs.
 
-The instance form holds shared state (auth, ssl flag, logger); the static
-methods preserve the legacy call-shape used by other modules.
+All HTTP methods are instance methods that reuse a single
+:class:`requests.Session` (with retry adapter) held on the client, so
+auth/SSL state and connection pooling are shared across calls.
 """
 
 import logging
@@ -40,52 +41,33 @@ class WorkerRestClient:
             self.logger.warning(f"Worker at {worker_url} is not reachable: {e}")
         return False
 
-    @staticmethod
-    def get_json(
-        url: str,
-        disable_ssl_verify: bool = False,
-        logger: Optional[logging.Logger] = None,
-        auth: Optional[Any] = None,
-    ) -> Optional[Dict[str, Any]]:
+    def get_json(self, url: str) -> Optional[Dict[str, Any]]:
         """Make an HTTP GET request and return the JSON body, or ``None`` on error."""
-        if logger is None:
-            logger = logging.getLogger("worker_rest_client_default")
-        session = make_http_session(disable_ssl_verify=disable_ssl_verify, auth=auth, retries=3)
         try:
-            response = session.get(url, timeout=DEFAULT_HTTP_TIMEOUT)
+            response = self._session.get(url, timeout=DEFAULT_HTTP_TIMEOUT)
             response.raise_for_status()
             payload = response.json()
-            logger.debug(f"Response from {url} ({len(response.content)} bytes)")
+            self.logger.debug(f"Response from {url} ({len(response.content)} bytes)")
             return payload
         except requests.exceptions.RequestException as e:
-            logger.error(f"HTTP error for {url}: {e}")
+            self.logger.error(f"HTTP error for {url}: {e}")
         except ValueError:
-            logger.error(f"Invalid JSON response from {url}")
+            self.logger.error(f"Invalid JSON response from {url}")
         return None
 
-    @staticmethod
-    def get_connector_configs(
-        worker_url: str,
-        disable_ssl_verify: bool = False,
-        logger: Optional[logging.Logger] = None,
-        auth: Optional[Any] = None,
-    ) -> List[Dict[str, Any]]:
+    def get_connector_configs(self, worker_url: str) -> List[Dict[str, Any]]:
         """Fetch all connector configs from a worker via the ``?expand=info`` endpoint."""
-        if logger is None:
-            logger = logging.getLogger("worker_rest_client_default")
         try:
             expanded_url = f"{worker_url}/connectors?expand=info"
-            logger.info(f"Fetching connector info from: {expanded_url}")
-            connectors_data = WorkerRestClient.get_json(
-                expanded_url, disable_ssl_verify, logger, auth=auth
-            )
+            self.logger.info(f"Fetching connector info from: {expanded_url}")
+            connectors_data = self.get_json(expanded_url)
             if not connectors_data:
-                logger.error(f"No data received from {expanded_url}")
+                self.logger.error(f"No data received from {expanded_url}")
                 return []
 
             configs: List[Dict[str, Any]] = []
             for connector_name, connector_data in connectors_data.items():
-                logger.info(f"Processing connector: {connector_name}")
+                self.logger.info(f"Processing connector: {connector_name}")
                 info = connector_data.get("info", {})
                 config = info.get("config", {})
                 connector_type = info.get("type", "unknown")
@@ -99,27 +81,17 @@ class WorkerRestClient:
                 )
             return configs
         except Exception as e:
-            logger.error(f"Error getting connector configs from {worker_url}: {str(e)}")
+            self.logger.error(f"Error getting connector configs from {worker_url}: {str(e)}")
             return []
 
-    @staticmethod
-    def get_connector_statuses(
-        worker_url: str,
-        disable_ssl_verify: bool = False,
-        logger: Optional[logging.Logger] = None,
-        auth: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+    def get_connector_statuses(self, worker_url: str) -> Dict[str, Any]:
         """Fetch connector + task statuses from a worker via the ``?expand=status`` endpoint."""
-        if logger is None:
-            logger = logging.getLogger("worker_rest_client_default")
         try:
             expand_status_url = f"{worker_url}/connectors?expand=status"
-            logger.info(f"Fetching connector statuses info from: {expand_status_url}")
-            connectors_data = WorkerRestClient.get_json(
-                expand_status_url, disable_ssl_verify, logger, auth=auth
-            )
+            self.logger.info(f"Fetching connector statuses info from: {expand_status_url}")
+            connectors_data = self.get_json(expand_status_url)
             if not connectors_data:
-                logger.error(f"No data received from {expand_status_url}")
+                self.logger.error(f"No data received from {expand_status_url}")
                 return {}
 
             statuses_map: Dict[str, Any] = {}
@@ -132,5 +104,5 @@ class WorkerRestClient:
                 statuses_map[connector_name]["tasks_status"] = status.get("tasks", [])
             return statuses_map
         except Exception as e:
-            logger.error(f"Error getting connector statuses from {worker_url}: {str(e)}")
+            self.logger.error(f"Error getting connector statuses from {worker_url}: {str(e)}")
             return {}

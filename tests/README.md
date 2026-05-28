@@ -24,7 +24,7 @@ dependencies (no `sentence-transformers`, `torch`, or network access):
 |------|-------------------|
 | `test_jdbc_url_parser.py` | `mapper.jdbc.url_parser` |
 | `test_database_inferrer.py` | `mapper.jdbc.database_inferrer` |
-| `test_sensitive_data_redactor.py` | `discovery.sensitive_data_redactor` |
+| `test_sensitive_data_redactor.py` | `utils.sensitive_data_redactor` |
 | `test_smt_classifier.py` | `mapper.smt.smt_classifier` |
 | `test_direct_mappings.py` | `mapper.properties.direct_mappings` |
 | `test_config_def_processor.py` | `mapper.properties.config_def_processor` |

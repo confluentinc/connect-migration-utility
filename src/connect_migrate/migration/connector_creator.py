@@ -18,6 +18,8 @@ import requests
 
 from connect_migrate.mapper.connector_mapper import ConnectorMapper
 from connect_migrate.utils.encoding import encode_to_base64
+from connect_migrate.utils.http_session import DEFAULT_HTTP_TIMEOUT, make_http_session
+from connect_migrate.utils.sensitive_data_redactor import SensitiveDataRedactor
 
 
 class KafkaAuth:
@@ -52,12 +54,14 @@ class ConnectorCreator:
             self.url_template = "https://api.confluent.cloud/connect/v1/environments/{environment_id}/clusters/{kafka_cluster_id}/connectors"
         else:
             raise ValueError(f"Unknown environment: {environment}")
+        self._session = make_http_session()
+        self._redactor = SensitiveDataRedactor(logger=self.logger)
 
     def stop_cp_connector(self, worker_url: str, connector_name: str, disable_ssl_verify: bool = False, auth=None) -> None:
         """Makes an HTTP PUT request to stop a connector."""
         url = f"{worker_url}/connectors/{connector_name}/stop"
         try:
-            response = requests.put(url, timeout=5, verify=not disable_ssl_verify, auth=auth)
+            response = requests.put(url, timeout=DEFAULT_HTTP_TIMEOUT, verify=not disable_ssl_verify, auth=auth)
             if response.status_code == 202:
                 self.logger.info(f"Response from {url}: status 202 Accepted")
                 self.logger.info(f"Connector: {connector_name}, stop initiated successfully.")
@@ -79,9 +83,9 @@ class ConnectorCreator:
     ) -> Dict[str, Any]:
         response = None
         try:
-            response = requests.post(url, json=body, headers=headers)
+            response = self._session.post(url, json=body, headers=headers, timeout=DEFAULT_HTTP_TIMEOUT)
             self.logger.info(f"[INFO] Response status code for '{name}': {response.status_code}")
-            self.logger.info(f"[INFO] Response body for '{name}': {response.text}")
+            self.logger.debug(f"[DEBUG] Response body for '{name}' ({len(response.content)} bytes)")
             response.raise_for_status()
         except Exception as e:
             status = response.status_code if response is not None else 'N/A'
@@ -126,10 +130,8 @@ class ConnectorCreator:
         if offsets is not None:
             body["offsets"] = offsets
 
-        redacted_body = body.copy()
-        if 'config' in redacted_body:
-            redacted_body['config'] = {k: ('***' if 'password' in k.lower() or 'secret' in k.lower() else v) for k, v in
-                                       redacted_body['config'].items()}
+        redacted_body = dict(body)
+        redacted_body['config'] = self._redactor.redact(body['config'])
         self.logger.info(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
         return self.create_connector_api_call(url, name, body, headers)
 
@@ -172,9 +174,8 @@ class ConnectorCreator:
                 "name": name,
                 "config": config
             }
-            redacted_body = body.copy()
-            if 'config' in redacted_body:
-                redacted_body['config'] = {k: ('***' if 'password' in k.lower() or 'secret' in k.lower() else v) for k, v in redacted_body['config'].items()}
+            redacted_body = dict(body)
+            redacted_body['config'] = self._redactor.redact(body['config'])
             self.logger.info(f"[INFO] Request body for connector '{name}': {json.dumps(redacted_body, indent=2)}")
             response = self.create_connector_api_call(url, name, body, headers)
             results.append(response)

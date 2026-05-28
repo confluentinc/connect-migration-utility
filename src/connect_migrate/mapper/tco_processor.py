@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from requests.auth import HTTPBasicAuth
 
 from connect_migrate.constants.connector_packs import connector_pack_type
-from connect_migrate.discovery.config_discovery import ConfigDiscovery
+from connect_migrate.discovery.worker_rest_client import WorkerRestClient
 from connect_migrate.utils.json_files import write_json
 
 
@@ -36,13 +36,14 @@ class TcoProcessor:
         """Process all connectors and generate FM configurations"""
         connectors_dict: Dict[str, Dict[str, Any]] = {}
 
+        client = WorkerRestClient(
+            disable_ssl_verify=self.disable_ssl_verify,
+            auth=self.worker_auth,
+            logger=self.logger,
+        )
         for worker_url in self.worker_urls:
-            connector_statuses = ConfigDiscovery.get_connector_statuses_from_worker(
-                worker_url, self.disable_ssl_verify, self.logger, auth=self.worker_auth
-            )
-            connector_info_list = ConfigDiscovery.get_connector_configs_from_worker(
-                worker_url, self.disable_ssl_verify, self.logger, auth=self.worker_auth
-            )
+            connector_statuses = client.get_connector_statuses(worker_url)
+            connector_info_list = client.get_connector_configs(worker_url)
             connector_info_dict = {item['name']: item for item in connector_info_list if 'name' in item}
 
             for connector_name, connector_status in connector_statuses.items():

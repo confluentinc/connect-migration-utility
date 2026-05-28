@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from connect_migrate.constants.sensitive_keys import STATIC_SENSITIVE_CONFIG_KEYS
-from connect_migrate.mapper.connector_mapper import ConnectorMapper
 
 
 class TerraformGenerator:
