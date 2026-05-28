@@ -1,6 +1,6 @@
 # Kafka Connector Migration Utility
 
-A powerful tool to migrate self-managed connectors to fully-managed connectors on Confluent Cloud. This utility maps self-managed connector configurations to fully-managed connector configurations and gives comprehensive errors and warnings during the migration. 
+A powerful tool to migrate self-managed connectors to fully-managed connectors on Confluent Cloud. This utility maps self-managed connector configurations to fully-managed connector configurations and gives comprehensive errors and warnings during the migration.
 
 Follow the steps below to migrate your connectors to Confluent Cloud.
 
@@ -21,34 +21,17 @@ Follow the steps below to install the migration tool:
 git clone <repository-url>
 ```
 
-2. Go to the cloned repository and install the package:
+2. Go to the clone repository and install the dependencies:
 
 ```bash
 cd connect-migration-utility
 
-# Install in editable mode (recommended) — picks up dependencies from pyproject.toml.
-pip install -e .
-
-# Or install only the runtime deps without installing the package itself:
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-Installing with `pip install -e .` exposes two console scripts on your
-PATH:
 
-```
-connect-migrate-discover ...      # alias for: python src/discovery_script.py ...
-connect-migrate-migrate  ...      # alias for: python src/migrate_connector_script.py ...
-```
-
-The original `python src/discovery_script.py ...` and
-`python src/migrate_connector_script.py ...` invocations continue to
-work — the legacy entry points are thin shims that forward to the new
-console scripts, so every example in this README is valid in either
-form.
-
-
-## Migrate 
+## Migrate
 
 This section covers the steps about using the migration utility tool to migrate your connector(s).
 
