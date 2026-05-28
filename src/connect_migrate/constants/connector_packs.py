@@ -1,0 +1,117 @@
+"""
+Source-of-truth membership sets for premium / commercial pack connector classes.
+
+``premium ∩ commercial`` is non-empty by historical design; callers that need
+to bucket a connector should check premium first.
+"""
+
+PREMIUM_PACK_CONNECTORS: frozenset = frozenset({
+    "io.confluent.connect.jms.IbmMqSinkConnector",
+    "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+    "io.confluent.connect.splunk.s2s.SplunkS2SSourceConnector",
+    # Cloud connectors
+    "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
+    "io.confluent.connect.oracle.xstream.cdc.OracleXStreamSourceConnector",
+})
+
+COMMERCIAL_PACK_CONNECTORS: frozenset = frozenset({
+    "io.confluent.connect.amps.AmpsSourceConnector",
+    "io.confluent.connect.weblogic.WeblogicSourceConnector",
+    "io.confluent.connect.ftps.FtpsSourceConnector",
+    "io.confluent.connect.ftps.FtpsSinkConnector",
+    "io.confluent.connect.jms.ActiveMqSinkConnector",
+    "io.confluent.connect.kudu.KuduSourceConnector",
+    "io.confluent.connect.kudu.KuduSinkConnector",
+    "io.confluent.connect.appdynamics.metrics.AppDynamicsMetricsSinkConnector",
+    "io.confluent.connect.cassandra.CassandraSinkConnector",
+    "io.confluent.connect.diode.sink.DataDiodeSinkConnector",
+    "io.confluent.connect.diode.source.DataDiodeSourceConnector",
+    "io.confluent.connect.firebase.FirebaseSourceConnector",
+    "io.confluent.connect.firebase.FirebaseSinkConnector",
+    "io.confluent.connect.hbase.HBaseSinkConnector",
+    "io.confluent.connect.hdfs2.Hdfs2SourceConnector",
+    "io.confluent.connect.hdfs3.Hdfs3SinkConnector",
+    "io.confluent.connect.hdfs3.Hdfs3SourceConnector",
+    "io.confluent.connect.omnisci.OmnisciSinkConnector",
+    "io.confluent.connect.jms.IbmMqSinkConnector",
+    "io.confluent.influxdb.source.InfluxdbSourceConnector",
+    "io.confluent.influxdb.InfluxDBSinkConnector",
+    "io.confluent.connect.jms.JmsSinkConnector",
+    "io.confluent.connect.jms.JmsSourceConnector",
+    "io.confluent.connect.mapr.db.MapRDBSinkConnector",
+    "io.confluent.connect.netezza.NetezzaSinkConnector",
+    "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector",
+    "io.confluent.connect.snmp.SnmpTrapSourceConnector",
+    "io.confluent.salesforce.SalesforcePushTopicSourceConnector",
+    "io.confluent.salesforce.SalesforceSObjectSinkConnector",
+    "io.confluent.salesforce.SalesforceCdcSourceConnector",
+    "io.confluent.salesforce.SalesforcePlatformEventSourceConnector",
+    "io.confluent.salesforce.SalesforcePlatformEventSinkConnector",
+    "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector",
+    "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector",
+    "io.confluent.connect.solace.SolaceSourceConnector",
+    "io.confluent.connect.SplunkHttpSourceConnector",
+    "io.confluent.connect.syslog.SyslogSourceConnector",
+    "io.confluent.connect.tibco.TibcoSourceConnector",
+    "io.confluent.connect.jms.TibcoSinkConnector",
+    "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector",
+    "io.confluent.vertica.VerticaSinkConnector",
+    "io.confluent.connect.teradata.TeradataSourceConnector",
+    "io.confluent.connect.teradata.TeradataSinkConnector",
+    # Cloud connectors
+    "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector_sink",
+    "io.confluent.connect.activemq.ActiveMQSourceConnector",
+    "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
+    "io.confluent.connect.aws.cloudwatch.metrics.AwsCloudWatchMetricsSinkConnector",
+    "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector",
+    "io.confluent.connect.kinesis.KinesisSourceConnector",
+    "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
+    "io.confluent.connect.s3.source.S3SourceConnector",
+    "io.confluent.connect.sqs.source.SqsSourceConnector",
+    "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
+    "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
+    "io.confluent.connect.azure.search.AzureSearchSinkConnector",
+    "io.confluent.connect.azure.datalake.gen2.AzureDataLakeGen2SinkConnector",
+    "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector",
+    "io.confluent.connect.azure.functions.AzureFunctionsSinkConnector",
+    "io.confluent.connect.azure.servicebus.ServiceBusSourceConnector",
+    "io.confluent.connect.azureloganalytics.AzureLogAnalyticsSinkConnector",
+    "io.confluent.connect.databricks.deltalake.DatabricksDeltaLakeSinkConnector",
+    "io.confluent.connect.datadog.metrics.DatadogMetricsSinkConnector",
+    "io.confluent.connect.github.GithubSourceConnector",
+    "io.confluent.connect.gcp.bigtable.BigtableSinkConnector",
+    "io.confluent.connect.gcp.functions.GoogleCloudFunctionsSinkConnector",
+    "io.confluent.connect.gcp.pubsub.PubSubSourceConnector",
+    "io.confluent.connect.gcp.spanner.SpannerSinkConnector",
+    "io.confluent.connect.gcs.GcsSourceConnector",
+    "io.confluent.connect.gcs.GcsSinkConnector",
+    "io.confluent.connect.gcp.dataproc.DataprocSinkConnector",
+    "io.confluent.connect.http.HttpSourceConnector",
+    "io.confluent.connect.http.HttpSinkConnector",
+    "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+    "io.confluent.connect.jira.JiraSourceConnector",
+    "io.confluent.connect.mqtt.MqttSinkConnector",
+    "io.confluent.connect.pagerduty.PagerDutySinkConnector",
+    "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
+    "io.confluent.connect.rabbitmq.sink.RabbitMQSinkConnector",
+    "io.confluent.connect.sftp.SftpGenericSourceConnector",
+    "io.confluent.connect.sftp.SftpSinkConnector",
+    "io.confluent.connect.servicenow.ServiceNowSourceConnector",
+    "io.confluent.connect.servicenow.ServiceNowSinkConnector",
+    "io.confluent.connect.jms.SolaceSinkConnector",
+    "io.confluent.connect.zendesk.ZendeskSourceConnector",
+})
+
+
+def connector_pack_type(connector_class: str) -> str:
+    """Bucket a connector class into one of four pack categories.
+
+    premium is checked first because the two sets intersect.
+    """
+    if connector_class in PREMIUM_PACK_CONNECTORS:
+        return 'premium_pack_connectors'
+    if connector_class in COMMERCIAL_PACK_CONNECTORS:
+        return 'commercial_pack_connectors'
+    if connector_class == 'unknown':
+        return 'unknown_pack_connectors'
+    return 'non_commercial_pack_connectors'
