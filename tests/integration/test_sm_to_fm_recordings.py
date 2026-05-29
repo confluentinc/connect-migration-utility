@@ -79,8 +79,10 @@ def comparator(chdir_repo_root, tmp_path_factory):
 
 
 # Guard against a silently-empty fixture directory turning the whole suite green.
+# The fixture set is deduplicated to one representative per distinct
+# (sm class, fm class, input-key shape, output-key shape) signature.
 def test_recordings_present():
-    assert len(_recording_files()) >= 18
+    assert len(_recording_files()) >= 10
 
 
 @pytest.mark.parametrize("recording_path", _recording_files(), ids=lambda p: p.stem)
