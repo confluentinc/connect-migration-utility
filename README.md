@@ -363,10 +363,53 @@ The table below shows the command line options valid for the python translation 
 | `--sensitive-file` | Path to file containing sensitive config keys | No |
 | `--worker-config-file` | Path to file containing additional worker configs | No |
 | `--disable-ssl-verify` | Disable SSL certificate verification for HTTPS requests | No |
+| `--debezium-version` | Debezium connector version for CDC template selection. Options - [`v1`, `v2`] (default: `v2`) | No |
 
 *Either `--config-file` or `--config-dir` or `--worker-urls`/`--worker-urls-file` is required.
 
+### Connector version migration (V1 to V2)
 
+Some self-managed connectors have V1 and V2 variants. The utility maps these to the latest fully-managed equivalents and handles the version-specific configuration conversion automatically.
+
+#### Debezium connectors
+
+If you are migrating Debezium self-managed connectors, use the `--debezium-version` option with the discovery script to specify your current connector version. The utility defaults to V2.
+
+If you are running V1 connectors, specify `--debezium-version v1` to ensure accurate configuration mapping. The utility first maps your configuration to the fully-managed format, then applies the V1 to V2 conversion as a post-translation step on the resulting fully-managed configuration.
+
+```bash
+python src/discovery_script.py \
+  --config-file connectors.json \
+  --output-dir output/ \
+  --debezium-version v1
+```
+
+#### HTTP Sink connectors
+
+The utility automatically detects HTTP Sink V1 connectors (`io.confluent.connect.http.HttpSinkConnector`) and converts their configurations to the HTTP Sink V2 format as a post-translation step, after mapping to the fully-managed connector. No additional option is required.
+
+Key changes applied during the conversion include:
+
+- `connector.class` is set to the fully-managed HTTP Sink V2 template ID `HttpSinkV2` (underlying connector class `io.confluent.connect.http.sink.GenericHttpSinkConnector`).
+- A single `http.api.url` is split into `http.api.base.url` and the API-specific `api1.http.api.path`.
+- API-specific configurations are prefixed with `api1.` (for example, `request.method` becomes `api1.http.request.method`).
+- Support for multiple APIs (`apis.num`).
+- Some property values are adjusted (for example, `behavior.on.error` values).
+
+Any configurations that cannot be mapped, or values that change during the conversion, are reported as mapping errors or warnings in the output.
+
+#### BigQuery Sink connectors
+
+The utility automatically detects the legacy BigQuery Sink V1 connector (`com.wepay.kafka.connect.bigquery.BigQuerySinkConnector`, based on the InsertAll API) and converts its configurations to the BigQuery Storage Sink V2 format (`BigQueryStorageSink`, based on the Storage Write API) as a post-translation step, after mapping to the fully-managed connector. No additional option is required.
+
+Key changes applied during the conversion include:
+
+- `connector.class` changes from `com.wepay.kafka.connect.bigquery.BigQuerySinkConnector` to the fully-managed BigQuery Storage Sink V2 template ID `BigQueryStorageSink`.
+- `table.name.format` is mapped to `topic2table.map`.
+- New required fields are introduced (for example, `ingestion.mode` and `authentication.method`).
+- Some V1 configurations are not supported in V2 and are dropped.
+
+Because V2 uses the Storage Write API, review the converted configuration for breaking API changes (for example, `TIMESTAMP`, `DATE`, and `DATETIME` handling). Unsupported configurations and changed values are reported as mapping errors or warnings in the output.
 
 ### Step 2: Migrate the connector
 
