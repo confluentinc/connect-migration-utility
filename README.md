@@ -375,7 +375,7 @@ Some self-managed connectors have V1 and V2 variants. The utility maps these to 
 
 If you are migrating Debezium self-managed connectors, use the `--debezium-version` option with the discovery script to specify your current connector version. The utility defaults to V2.
 
-If you are running V1 connectors, specify `--debezium-version v1` to ensure accurate configuration mapping. The utility first maps your configuration to the fully-managed format, then applies the V1-to-V2 conversion as a post-translation step on the resulting fully-managed config.
+If you are running V1 connectors, specify `--debezium-version v1` to ensure accurate configuration mapping. The utility first maps your configuration to the fully-managed format, then applies the V1 to V2 conversion as a post-translation step on the resulting fully-managed configuration.
 
 ```bash
 python src/discovery_script.py \
