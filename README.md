@@ -404,7 +404,7 @@ The utility automatically detects the legacy BigQuery Sink V1 connector (`com.we
 
 Key changes applied during the conversion include:
 
-- `connector.class` changes from `BigQuerySinkConnector` to `BigQueryStorageSink`.
+- `connector.class` changes from `com.wepay.kafka.connect.bigquery.BigQuerySinkConnector` to the fully-managed BigQuery Storage Sink V2 template ID `BigQueryStorageSink`.
 - `table.name.format` is mapped to `topic2table.map`.
 - New required fields are introduced (for example, `ingestion.mode` and `authentication.method`).
 - Some V1 configurations are not supported in V2 and are dropped.
