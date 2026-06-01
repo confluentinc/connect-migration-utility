@@ -566,6 +566,12 @@ The utility provides mapping warnings for certain configurations that may affect
 
 
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up
+your environment, run the tests, add support for a new connector, and open a pull
+request.
+
 ## License
 
 Apache 2.0 License
