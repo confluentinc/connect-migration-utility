@@ -61,7 +61,7 @@ def install_dependencies():
             # Install core dependencies manually if requirements.txt doesn't exist
             core_deps = [
                 "sentence-transformers>=2.2.2",
-                "torch>=1.9.0",
+                "torch>=2.6.0",
                 "scikit-learn>=1.0.2",
                 "numpy>=1.21.0"
             ]
