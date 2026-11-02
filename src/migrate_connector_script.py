@@ -355,7 +355,10 @@ def main():
                     logger.info(f"No offsets found on workers for connector '{fm_name}'")
                 else:
                     logger.info(f"Found offsets on workers for connector '{fm_name}': {offsets}")
-                    fm_entry['offsets'] = offsets
+                    fm_entry['offsets'] = offset_manager.prepare_offsets_for_fm(
+                        matching_worker_sm_config['name'],
+                        matching_worker_sm_config.get('config', {}).get('connector.class', ''),
+                        offsets)
 
                 # create connector
                 logger.info(f"Creating connector '{fm_name}' with offsets from workers")
@@ -376,6 +379,13 @@ def main():
             except Exception as e:
                 failures.append({"connector": fm_name, "error": str(e)})
                 logger.info(f"Failed to create connector '{fm_name}': {str(e)}")
+                if (OffsetManager.offsets_use_connector_placeholder(fm_entry.get('offsets'))
+                        and OffsetManager.CONNECTOR_ID_PLACEHOLDER in str(e)):
+                    logger.error(
+                        f"Confluent Cloud does not yet accept the {OffsetManager.CONNECTOR_ID_PLACEHOLDER} placeholder "
+                        f"in initial offsets for connector '{fm_name}', so the connector was not created. Creating it "
+                        f"without offsets would re-read every file. Retry later, or create it stopped and apply the "
+                        f"offsets with the connector ID through the offsets API.")
                 continue
 
     # Write results to files

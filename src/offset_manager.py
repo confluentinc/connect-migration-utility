@@ -41,6 +41,18 @@ class OffsetManager:
         'io.confluent.connect.zendesk.ZendeskSourceConnector', # Zendesk Source connector
     ]
 
+    # Confluent Cloud replaces this placeholder in initial-offset partitions with the connector ID at create time.
+    CONNECTOR_ID_PLACEHOLDER = '${connector}'
+
+    # Source connectors whose offset partitions embed the connector name: {"taskId": "<connector name>-<n>"}.
+    # On Confluent Cloud that part is the connector ID, which is only assigned at create time, so the
+    # self-managed partitions never match unless the name is replaced with CONNECTOR_ID_PLACEHOLDER.
+    connector_id_keyed_source_connector_types = {
+        'io.confluent.connect.s3.source.S3SourceConnector', # Amazon S3 Source connector
+        'io.confluent.connect.gcs.GcsSourceConnector', # Google Cloud Storage (GCS) Source connector
+        'io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector', # Azure Blob Storage Source connector
+    }
+
     def __init__(self, logger):
         if OffsetManager._instance is not None:
             raise Exception("This class is a singleton! Use OffsetManager.get_instance(logger) instead.")
@@ -65,6 +77,48 @@ class OffsetManager:
                 return True
             else:
                 self.logger.info(f"Connector class {connector_class} does NOT support offsets")
+        return False
+
+    def prepare_offsets_for_fm(self, connector_name: str, connector_class: str, offsets: List[Any]) -> List[Any]:
+        """Return the self-managed offsets in the form a fully-managed create request needs.
+
+        For connector classes in connector_id_keyed_source_connector_types, the connector name in each partition's
+        "taskId" ("<connector name>-<n>", including the "-in_progress" partitions) is replaced with
+        CONNECTOR_ID_PLACEHOLDER, which Confluent Cloud resolves to the new connector's ID. Offset values and all
+        other connectors' offsets are returned unchanged. The input list is not modified.
+        """
+        if not offsets or connector_class not in OffsetManager.connector_id_keyed_source_connector_types:
+            return offsets
+
+        prefix = f"{connector_name}-"
+        prepared = []
+        rewritten = 0
+        for entry in offsets:
+            partition = entry.get('partition') if isinstance(entry, dict) else None
+            task_id = partition.get('taskId') if isinstance(partition, dict) else None
+            if isinstance(task_id, str) and task_id.startswith(prefix):
+                new_task_id = OffsetManager.CONNECTOR_ID_PLACEHOLDER + task_id[len(connector_name):]
+                entry = {**entry, 'partition': {**partition, 'taskId': new_task_id}}
+                rewritten += 1
+            prepared.append(entry)
+
+        self.logger.info(
+            f"Replaced the connector name with {OffsetManager.CONNECTOR_ID_PLACEHOLDER} in {rewritten} of "
+            f"{len(offsets)} offset partitions for connector '{connector_name}'")
+        if rewritten < len(offsets):
+            self.logger.warning(
+                f"{len(offsets) - rewritten} offset partitions of connector '{connector_name}' have no taskId "
+                f"starting with '{prefix}' and are sent unchanged")
+        return prepared
+
+    @staticmethod
+    def offsets_use_connector_placeholder(offsets: Optional[List[Any]]) -> bool:
+        """Whether any partition's taskId contains CONNECTOR_ID_PLACEHOLDER."""
+        for entry in offsets or []:
+            partition = entry.get('partition') if isinstance(entry, dict) else None
+            task_id = partition.get('taskId') if isinstance(partition, dict) else None
+            if isinstance(task_id, str) and OffsetManager.CONNECTOR_ID_PLACEHOLDER in task_id:
+                return True
         return False
 
     def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False, auth = None) -> Optional[List[Any]]:
