@@ -77,3 +77,49 @@ def test_offsets_use_connector_placeholder():
     assert not OffsetManager.offsets_use_connector_placeholder([task_offset("s3-src-prod-0")])
     assert not OffsetManager.offsets_use_connector_placeholder([{"partition": {"folder": "x"}}])
     assert not OffsetManager.offsets_use_connector_placeholder(None)
+
+
+# Bodies of Confluent Cloud's create errors, as they appear in the exception raised by the create call.
+PLACEHOLDER_NOT_ENABLED_ERROR = (
+    "Failed to create connector 'my-s3-source': 400 {\"error_code\":400,\"message\":\"Invalid offsets: the "
+    "${connector} placeholder in \\\"partition\\\" is not enabled for this connector.\"}")
+STRICT_PARTITION_ERROR = (
+    "Failed to create connector 'my-s3-source': 400 {\"error_code\":400,\"message\":\"Invalid offsets: "
+    "offsets[1].partition {\\\"taskId\\\":\\\"other-0\\\"} must contain ${connector}.\"}")
+VALIDATION_UNAVAILABLE_ERROR = (
+    "Failed to create connector 'my-s3-source': 503 {\"error_code\":503,\"message\":\"Unable to validate "
+    "initial offsets. Please retry after some time.\"}")
+
+
+def test_hint_for_placeholder_not_enabled():
+    hint = OffsetManager.placeholder_create_failure_hint(
+        "my-s3-source", [task_offset("${connector}-0")], PLACEHOLDER_NOT_ENABLED_ERROR)
+    assert hint is not None and "does not yet accept" in hint
+
+
+def test_hint_for_validation_unavailable():
+    hint = OffsetManager.placeholder_create_failure_hint(
+        "my-s3-source", [task_offset("${connector}-0")], VALIDATION_UNAVAILABLE_ERROR)
+    assert hint is not None and "temporary" in hint
+
+
+def test_no_hint_for_strict_partition_error():
+    # The strict check's 400 mentions the placeholder too, but the placeholder is enabled: the server's message
+    # explains the problem, so no "not yet accepted" guidance is given.
+    assert OffsetManager.placeholder_create_failure_hint(
+        "my-s3-source", [task_offset("${connector}-0"), task_offset("other-0")], STRICT_PARTITION_ERROR) is None
+
+
+def test_no_hint_without_placeholder_or_for_other_errors():
+    assert OffsetManager.placeholder_create_failure_hint(
+        "my-s3-source", [task_offset("my-s3-source-0")], PLACEHOLDER_NOT_ENABLED_ERROR) is None
+    assert OffsetManager.placeholder_create_failure_hint("my-s3-source", None, PLACEHOLDER_NOT_ENABLED_ERROR) is None
+    unauthorized = "Failed to create connector 'my-s3-source': 401 Unauthorized"
+    assert OffsetManager.placeholder_create_failure_hint(
+        "my-s3-source", [task_offset("${connector}-0")], unauthorized) is None
+
+
+def test_warning_for_partitions_not_rewritten_mentions_strict_validation(manager, caplog):
+    with caplog.at_level(logging.WARNING):
+        manager.prepare_offsets_for_fm("s3-src-prod", S3, [task_offset("s3-src-prod-0"), task_offset("other-0")])
+    assert "strict offset partition validation" in caplog.text

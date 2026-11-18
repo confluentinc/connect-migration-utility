@@ -379,13 +379,9 @@ def main():
             except Exception as e:
                 failures.append({"connector": fm_name, "error": str(e)})
                 logger.info(f"Failed to create connector '{fm_name}': {str(e)}")
-                if (OffsetManager.offsets_use_connector_placeholder(fm_entry.get('offsets'))
-                        and OffsetManager.CONNECTOR_ID_PLACEHOLDER in str(e)):
-                    logger.error(
-                        f"Confluent Cloud does not yet accept the {OffsetManager.CONNECTOR_ID_PLACEHOLDER} placeholder "
-                        f"in initial offsets for connector '{fm_name}', so the connector was not created. Creating it "
-                        f"without offsets would re-read every file. Retry later, or create it stopped and apply the "
-                        f"offsets with the connector ID through the offsets API.")
+                hint = OffsetManager.placeholder_create_failure_hint(fm_name, fm_entry.get('offsets'), str(e))
+                if hint:
+                    logger.error(hint)
                 continue
 
     # Write results to files
