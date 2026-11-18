@@ -41,6 +41,24 @@ class OffsetManager:
         'io.confluent.connect.zendesk.ZendeskSourceConnector', # Zendesk Source connector
     ]
 
+    # Confluent Cloud replaces this placeholder in initial-offset partitions with the connector ID at create time.
+    CONNECTOR_ID_PLACEHOLDER = '${connector}'
+
+    # Part of Confluent Cloud's 400 when the placeholder is not enabled for the connector's org or plugin. Other
+    # offset errors, such as the strict partition check's, also mention the placeholder, so match this text instead.
+    PLACEHOLDER_NOT_ENABLED_MESSAGE = 'is not enabled for this connector'
+    # Part of Confluent Cloud's 503 when it could not check whether the placeholder is enabled. It is transient.
+    OFFSETS_VALIDATION_UNAVAILABLE_MESSAGE = 'Unable to validate initial offsets'
+
+    # Source connectors whose offset partitions embed the connector name: {"taskId": "<connector name>-<n>"}.
+    # On Confluent Cloud that part is the connector ID, which is only assigned at create time, so the
+    # self-managed partitions never match unless the name is replaced with CONNECTOR_ID_PLACEHOLDER.
+    connector_id_keyed_source_connector_types = {
+        'io.confluent.connect.s3.source.S3SourceConnector', # Amazon S3 Source connector
+        'io.confluent.connect.gcs.GcsSourceConnector', # Google Cloud Storage (GCS) Source connector
+        'io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector', # Azure Blob Storage Source connector
+    }
+
     def __init__(self, logger):
         if OffsetManager._instance is not None:
             raise Exception("This class is a singleton! Use OffsetManager.get_instance(logger) instead.")
@@ -65,6 +83,71 @@ class OffsetManager:
                 return True
             else:
                 self.logger.info(f"Connector class {connector_class} does NOT support offsets")
+        return False
+
+    def prepare_offsets_for_fm(self, connector_name: str, connector_class: str, offsets: List[Any]) -> List[Any]:
+        """Return the self-managed offsets in the form a fully-managed create request needs.
+
+        For connector classes in connector_id_keyed_source_connector_types, the connector name in each partition's
+        "taskId" ("<connector name>-<n>", including the "-in_progress" partitions) is replaced with
+        CONNECTOR_ID_PLACEHOLDER, which Confluent Cloud resolves to the new connector's ID. Offset values and all
+        other connectors' offsets are returned unchanged. The input list is not modified.
+        """
+        if not offsets or connector_class not in OffsetManager.connector_id_keyed_source_connector_types:
+            return offsets
+
+        prefix = f"{connector_name}-"
+        prepared = []
+        rewritten = 0
+        for entry in offsets:
+            partition = entry.get('partition') if isinstance(entry, dict) else None
+            task_id = partition.get('taskId') if isinstance(partition, dict) else None
+            if isinstance(task_id, str) and task_id.startswith(prefix):
+                new_task_id = OffsetManager.CONNECTOR_ID_PLACEHOLDER + task_id[len(connector_name):]
+                entry = {**entry, 'partition': {**partition, 'taskId': new_task_id}}
+                rewritten += 1
+            prepared.append(entry)
+
+        self.logger.info(
+            f"Replaced the connector name with {OffsetManager.CONNECTOR_ID_PLACEHOLDER} in {rewritten} of "
+            f"{len(offsets)} offset partitions for connector '{connector_name}'")
+        if rewritten < len(offsets):
+            self.logger.warning(
+                f"{len(offsets) - rewritten} offset partitions of connector '{connector_name}' have no taskId "
+                f"starting with '{prefix}' and are sent unchanged. If strict offset partition validation is enabled "
+                f"on Confluent Cloud, it rejects the create, because every partition must contain "
+                f"{OffsetManager.CONNECTOR_ID_PLACEHOLDER}.")
+        return prepared
+
+    @staticmethod
+    def placeholder_create_failure_hint(connector_name: str, offsets: Optional[List[Any]], error: str) -> Optional[str]:
+        """Guidance for a failed create whose offsets use CONNECTOR_ID_PLACEHOLDER, or None when there is none.
+
+        Only Confluent Cloud's placeholder-not-enabled 400 and its offsets-validation 503 get guidance. Any other
+        error, including the strict partition check's 400, which also mentions the placeholder, returns None, so
+        the server's own message is the one the user acts on.
+        """
+        if not OffsetManager.offsets_use_connector_placeholder(offsets):
+            return None
+        if OffsetManager.PLACEHOLDER_NOT_ENABLED_MESSAGE in error:
+            return (f"Confluent Cloud does not yet accept the {OffsetManager.CONNECTOR_ID_PLACEHOLDER} placeholder in "
+                    f"initial offsets for connector '{connector_name}', so the connector was not created. Creating it "
+                    f"without offsets would re-read every file. Retry later, or create it stopped and apply the "
+                    f"offsets with the connector ID through the offsets API.")
+        if OffsetManager.OFFSETS_VALIDATION_UNAVAILABLE_MESSAGE in error:
+            return (f"Confluent Cloud could not validate the initial offsets for connector '{connector_name}' right "
+                    f"now, so the connector was not created. This is temporary: rerun the migration for this "
+                    f"connector.")
+        return None
+
+    @staticmethod
+    def offsets_use_connector_placeholder(offsets: Optional[List[Any]]) -> bool:
+        """Whether any partition's taskId contains CONNECTOR_ID_PLACEHOLDER."""
+        for entry in offsets or []:
+            partition = entry.get('partition') if isinstance(entry, dict) else None
+            task_id = partition.get('taskId') if isinstance(partition, dict) else None
+            if isinstance(task_id, str) and OffsetManager.CONNECTOR_ID_PLACEHOLDER in task_id:
+                return True
         return False
 
     def get_offsets_of_connector(self, config: Dict[str, Any], disable_ssl_verify: bool = False, auth = None) -> Optional[List[Any]]:

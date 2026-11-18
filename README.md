@@ -430,6 +430,8 @@ python src/migrate_connector_script.py --worker-urls "<WORKER_URL>" --cluster-id
 ```
 > The python script stops the self-managed connector and fetches the latest offset and creates a fully-managed connector on Confluent Cloud using the fetched offset.
 
+> **Object storage source connectors (Amazon S3, Google Cloud Storage, Azure Blob Storage).** These connectors key their offsets by connector name (`{"taskId": "<connector name>-<n>"}`), and on Confluent Cloud that part is the connector ID, which is assigned when the connector is created. In both `*_latest_offset` modes the script replaces the connector name with the `${connector}` placeholder (for example `my-s3-source-0` becomes `${connector}-0`), and Confluent Cloud replaces it with the new connector's ID. If Confluent Cloud rejects the placeholder, the connector is not created and the script logs the reason, rather than creating it without offsets.
+
 #### Create a connector with no downtime 
 
 To create a connector with no downtime, run the command below to create a fully-managed connector:
